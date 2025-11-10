@@ -2,20 +2,37 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111111;
+  /* White + Orange-forward palette */
+  --brand-navy-900: #0b1d2a;
+  /* reserved for subtle borders if needed */
+  --brand-navy-800: #102739;
+  --brand-navy-700: #16344b;
+  --brand-navy-600: #1e4565;
+  --brand-orange: #ff6a00;
+  /* primary accent */
+  --brand-orange-700: #e55e00;
+  --brand-gray-50: #f7f8fa;
+  --brand-gray-100: #eef1f4;
+  --brand-gray-200: #e3e7eb;
+  --brand-gray-500: #6b7280;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand-orange);
+  --color-brand-600: var(--brand-orange-700);
+  --color-accent: var(--brand-orange);
+  --color-muted: var(--brand-gray-50);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a0f14;
+    --foreground: #e6edf3;
   }
 }
 
