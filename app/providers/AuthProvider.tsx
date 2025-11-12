@@ -30,12 +30,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const [role, setRoleState] = useState<Role>("buyer");
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setLoading(false);
-        });
+        try {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                setUser(user);
+                setLoading(false);
+            });
 
-        return unsubscribe;
+            return unsubscribe;
+        } catch (error) {
+            // If Firebase fails to initialize, just set loading to false
+            console.warn('Firebase auth initialization failed:', error);
+            setLoading(false);
+            return () => {};
+        }
     }, []);
 
     // load persisted role
@@ -75,7 +82,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         logout
     };
 
-    return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+    // Always render children, even during loading
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

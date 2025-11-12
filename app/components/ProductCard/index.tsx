@@ -99,7 +99,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                 key={color.id}
                                 onClick={() => setSelectedVariant(color)}
                                 className={`h-6 w-6 rounded-full border-2 ${selectedVariant?.id === color.id
-                                        ? "border-indigo-600"
+                                        ? "border-[var(--brand-red)]"
                                         : "border-transparent"
                                     }`}
                                 style={{ background: color.hex }}
@@ -182,7 +182,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                             key={color.id}
                                             onClick={() => setSelectedVariant(color)}
                                             className={`group flex items-center gap-2 rounded-full border p-1 ${selectedVariant?.id === color.id
-                                                    ? "border-indigo-600"
+                                                    ? "border-[var(--brand-red)]"
                                                     : "border-transparent hover:border-zinc-200"
                                                 }`}
                                         >

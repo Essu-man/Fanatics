@@ -21,7 +21,7 @@ export default function Header() {
                     {/* Top Section */}
                     <div className="flex items-center justify-between py-4">
                         <Link href="/" className="text-2xl font-extrabold tracking-tight">
-                            <span className="text-indigo-600">cedi</span>man
+                            <span className="text-[var(--brand-red)]">FANATICS</span>
                         </Link>
 
                         {/* Search */}
@@ -45,7 +45,7 @@ export default function Header() {
 
                             <button className="relative text-zinc-700 hover:text-zinc-900">
                                 <Heart className="h-5 w-5" />
-                                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-medium text-white">
+                                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand-red)] text-[11px] font-medium text-white">
                                     0
                                 </span>
                             </button>
@@ -54,7 +54,7 @@ export default function Header() {
                                 <ShoppingBag className="h-5 w-5" />
                                 <span className="hidden sm:inline">Cart</span>
                                 {totalItems > 0 && (
-                                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-medium text-white">
+                                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand-red)] text-[11px] font-medium text-white">
                                         {totalItems}
                                     </span>
                                 )}
@@ -65,22 +65,22 @@ export default function Header() {
                     {/* Navigation */}
                     <nav className="flex h-12 items-center justify-between border-t border-zinc-100">
                         <div className="flex h-full">
-                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-indigo-600 hover:text-zinc-900">
+                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-[var(--brand-red)] hover:text-zinc-900">
                                 Teams
                                 <ChevronDown className="h-4 w-4" />
                             </button>
-                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-indigo-600 hover:text-zinc-900">
+                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-[var(--brand-red)] hover:text-zinc-900">
                                 Players
                                 <ChevronDown className="h-4 w-4" />
                             </button>
-                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-indigo-600 hover:text-zinc-900">
+                            <button className="flex items-center gap-2 border-b-2 border-transparent px-4 text-sm font-medium text-zinc-700 hover:border-[var(--brand-red)] hover:text-zinc-900">
                                 Leagues
                                 <ChevronDown className="h-4 w-4" />
                             </button>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+                            <button className="text-sm font-medium text-[var(--brand-red)] hover:text-[var(--brand-red-dark)]">
                                 Sale
                             </button>
                             <button className="text-sm font-medium text-zinc-700 hover:text-zinc-900">

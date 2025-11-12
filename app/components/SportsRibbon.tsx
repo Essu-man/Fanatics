@@ -1,19 +1,18 @@
 "use client";
 
 const sports = [
-	{ id: "nfl", label: "NFL", emoji: "🏈" },
-	{ id: "ncaa", label: "College", emoji: "🎓" },
-	{ id: "mlb", label: "MLB", emoji: "⚾" },
-	{ id: "nba", label: "NBA", emoji: "🏀" },
-	{ id: "nhl", label: "NHL", emoji: "🏒" },
-	{ id: "soccer", label: "Soccer", emoji: "⚽" },
-	{ id: "wwe", label: "WWE", emoji: "💪" },
-	{ id: "wnba", label: "WNBA", emoji: "🏀" },
-	{ id: "motorsports", label: "Motorsports", emoji: "🏎️" },
-	{ id: "collectibles", label: "Collectibles", emoji: "🎁" },
+	{ id: "premier-league", label: "Premier League", emoji: "⚽" },
+	{ id: "la-liga", label: "La Liga", emoji: "⚽" },
+	{ id: "bundesliga", label: "Bundesliga", emoji: "⚽" },
+	{ id: "serie-a", label: "Serie A", emoji: "⚽" },
+	{ id: "ligue-1", label: "Ligue 1", emoji: "⚽" },
+	{ id: "national-teams", label: "National Teams", emoji: "🌍" },
+	{ id: "mens", label: "Men's", emoji: "👔" },
+	{ id: "womens", label: "Women's", emoji: "👗" },
+	{ id: "kids", label: "Kids", emoji: "👶" },
+	{ id: "authentic", label: "Authentic", emoji: "⭐" },
 	{ id: "sale", label: "Sale", emoji: "💸" },
-	{ id: "jerseys", label: "Jerseys", emoji: "🎽" },
-	{ id: "gifts", label: "Gifts", emoji: "🎁" }
+	{ id: "new-arrivals", label: "New Arrivals", emoji: "🆕" }
 ];
 
 export default function SportsRibbon() {

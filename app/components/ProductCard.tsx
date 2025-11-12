@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Button from "./ui/button";
 import { useCart } from "../providers/CartProvider";
 import Modal from "./ui/modal";
@@ -8,10 +9,12 @@ import type { Product as PType } from "../../lib/products";
 import { PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
 import { Heart } from "lucide-react";
 import { useWishlist } from "../providers/WishlistProvider";
+import { useToast } from "./ui/ToastContainer";
 
 export default function ProductCard({ product }: { product: PType }) {
     const { addItem } = useCart();
     const { toggle, isSaved } = useWishlist();
+    const { showToast } = useToast();
     const [quantity, setQuantity] = useState(1);
     const [open, setOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | undefined>(product.images?.[0]);
@@ -35,8 +38,8 @@ export default function ProductCard({ product }: { product: PType }) {
         // Reset quantity
         setQuantity(1);
 
-        // Show success message (you might want to add a toast notification here)
-        alert('Item added to cart');
+        // Show toast notification
+        showToast(`${product.name} added to cart!`, "success");
     }
 
     function incrementQuantity() {
@@ -54,19 +57,25 @@ export default function ProductCard({ product }: { product: PType }) {
 
     return (
         <>
-            <article className="group relative flex w-72 flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-all hover:shadow-md">
-                <button onClick={openModal} className="relative block w-full overflow-hidden">
+            <article
+                className="group relative flex w-72 flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-all hover:shadow-md"
+                role="article"
+                aria-label={`Product: ${product.name}`}
+            >
+                <Link href={`/products/${product.id}`} className="relative block w-full overflow-hidden">
                     <div className="relative h-[200px]">
                         <img
                             src={product.images?.[0] || `https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=500&h=300&fit=crop`}
                             alt={product.name}
                             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 group-hover:opacity-0"
+                            loading="lazy"
                         />
                         {product.images?.[1] && (
                             <img
                                 src={product.images?.[1]}
                                 alt={`${product.name} alt`}
                                 className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                                loading="lazy"
                             />
                         )}
                     </div>
@@ -76,20 +85,21 @@ export default function ProductCard({ product }: { product: PType }) {
                         type="button"
                         onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             toggle(product.id);
                         }}
                         aria-label="Toggle wishlist"
-                        className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-zinc-700 shadow hover:text-[var(--brand-orange)]"
+                        className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-2 text-zinc-700 shadow hover:text-[var(--brand-red)]"
                     >
-                        <Heart className={`h-4 w-4 ${isSaved(product.id) ? "fill-[var(--brand-orange)] text-[var(--brand-orange)]" : ""}`} />
+                        <Heart className={`h-4 w-4 ${isSaved(product.id) ? "fill-[var(--brand-red)] text-[var(--brand-red)]" : ""}`} />
                     </button>
-                </button>
+                </Link>
 
                 <div className="flex flex-col bg-white px-3 py-2">
-                    <div>
+                    <Link href={`/products/${product.id}`} className="hover:text-[var(--brand-red)] transition-colors">
                         <h3 className="text-sm font-medium text-zinc-900 line-clamp-1">{product.name}</h3>
                         <p className="text-xs text-zinc-500">{product.team}</p>
-                    </div>
+                    </Link>
 
                     <div className="mt-2">
                         <div className="mb-2 flex items-center justify-between">
@@ -114,13 +124,19 @@ export default function ProductCard({ product }: { product: PType }) {
                         </div>
                         <Button
                             className="w-full justify-center py-1 text-xs font-medium"
-                            onClick={addToCart}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                addToCart();
+                            }}
+                            aria-label={`Add ${product.name} to cart`}
                         >
                             Add to Cart
                         </Button>
                     </div>
                 </div>
-            </article>            <Modal open={open} onClose={() => setOpen(false)}>
+            </article>
+            <Modal open={open} onClose={() => setOpen(false)}>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
                         <div className="rounded-md bg-zinc-100 p-4">
@@ -132,7 +148,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                 <button
                                     key={img}
                                     onClick={() => setSelectedImage(img)}
-                                    className={`h-16 w-16 overflow-hidden rounded-md border ${selectedImage === img ? "border-indigo-600" : "border-zinc-200"}`}
+                                    className={`h-16 w-16 overflow-hidden rounded-md border ${selectedImage === img ? "border-[var(--brand-red)]" : "border-zinc-200"}`}
                                 >
                                     <img src={img} className="h-full w-full object-cover" />
                                 </button>
@@ -153,7 +169,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                     <button
                                         key={c.id}
                                         onClick={() => setSelectedColor(c.id)}
-                                        className={`flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs transition-colors ${selectedColor === c.id ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "border-zinc-200 hover:border-zinc-300"}`}
+                                        className={`flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs transition-colors ${selectedColor === c.id ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]" : "border-zinc-200 hover:border-zinc-300"}`}
                                     >
                                         <span className="inline-block h-3 w-3 rounded-sm" style={{ background: c.hex ?? "#ddd" }} />
                                         {c.name}

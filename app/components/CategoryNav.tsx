@@ -81,7 +81,7 @@ export default function CategoryNav() {
 								onMouseEnter={() => setActive(cat.label)}
 								onMouseLeave={() => setActive((curr) => (curr === cat.label ? null : curr))}
 							>
-								<button className="flex h-full items-center gap-1 px-3 text-sm font-semibold text-zinc-800 hover:text-[var(--brand-orange)]">
+								<button className="flex h-full items-center gap-1 px-3 text-sm font-semibold text-zinc-800 hover:text-[var(--brand-red)]">
 									{cat.label}
 									<ChevronDown className="h-4 w-4" />
 								</button>
@@ -95,7 +95,7 @@ export default function CategoryNav() {
 											<Link
 												key={item.name}
 												href={item.href || "#"}
-												className="rounded-md p-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 hover:text-[var(--brand-orange)]"
+												className="rounded-md p-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 hover:text-[var(--brand-red)]"
 											>
 												{item.name}
 											</Link>

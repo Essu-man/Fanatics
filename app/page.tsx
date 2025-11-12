@@ -1,25 +1,24 @@
-import TopBanner from "./components/TopBanner";
 import Header from "./components/Header";
-import Hero from "./components/Hero";
+import SportsNav from "./components/SportsNav";
+import ShopYourTeams from "./components/ShopYourTeams";
+import PromoBanner from "./components/PromoBanner";
+import FeatureRibbons from "./components/FeatureRibbons";
+import HomeProductSections from "./components/HomeProductSections";
+import RecentlyViewed from "./components/RecentlyViewed";
 import Footer from "./components/Footer";
-import ProductSection from "./components/ProductSection";
-import SportsRibbon from "./components/SportsRibbon";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[var(--brand-gray-50)] text-zinc-900">
-      <TopBanner />
+    <div className="min-h-screen bg-white text-zinc-900">
+      <main id="main-content">
       <Header />
-      <SportsRibbon />
-
-      <main className="mx-auto max-w-7xl px-6 py-12">
-        <Hero />
-
-        <section className="mt-16">
-          <ProductSection />
-        </section>
+      <SportsNav />
+      <ShopYourTeams />
+      <PromoBanner />
+      <FeatureRibbons />
+      <HomeProductSections />
+      <RecentlyViewed />
       </main>
-
       <Footer />
     </div>
   );

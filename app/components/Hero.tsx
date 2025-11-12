@@ -51,26 +51,26 @@ export default function Hero() {
                         />
                     </div>
                 ))}
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 via-indigo-950/80 to-indigo-950/60 backdrop-blur-sm"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--brand-navy)]/90 via-[var(--brand-navy)]/80 to-[var(--brand-navy)]/60 backdrop-blur-sm"></div>
             </div>
 
             {/* Content */}
             <div className="relative mx-auto max-w-4xl">
                 <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                    Cediman — Football jerseys reinvented
+                    Official Football Jerseys
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg font-medium leading-relaxed text-white/90">
-                    Curated authentic jerseys, retro classics, and limited drops — designed for fans who demand more than just a logo.
+                    Shop authentic football jerseys from the world's top teams. Official licensed gear, fast shipping, and fan-first returns.
                 </p>
 
                 <div className="mt-10 flex flex-wrap gap-4">
                     <Button as="a" href="#"
-                        className="!bg-white !text-indigo-900 hover:!bg-indigo-50 px-8 py-3 text-sm font-bold shadow-lg shadow-indigo-950/20">
-                        Shop jerseys
+                        className="!bg-[var(--brand-red)] !text-white hover:!bg-[var(--brand-red-dark)] px-8 py-3 text-sm font-bold shadow-lg">
+                        Shop Football Jerseys
                     </Button>
                     <Button as="a" href="#" variant="ghost"
                         className="!border-2 !border-white/30 !bg-white/5 !text-white px-8 py-3 text-sm font-bold backdrop-blur hover:!border-white/50 hover:!bg-white/10">
-                        Limited drops
+                        New Arrivals
                     </Button>
                 </div>
             </div>
