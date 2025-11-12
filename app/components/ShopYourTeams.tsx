@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import TeamSelectionModal from "./TeamSelectionModal";
 import {
@@ -29,7 +29,7 @@ interface League {
 
 // Map league names to their logo components
 const getLeagueLogo = (leagueName: string) => {
-    const logoMap: Record<string, () => JSX.Element> = {
+    const logoMap: Record<string, () => React.ReactElement> = {
         "Premier League": PremierLeagueLogo,
         "Ligue 1": Ligue1Logo,
         "La Liga": LaLigaLogo,
