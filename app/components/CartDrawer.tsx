@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Plus, Minus, Heart } from "lucide-react";
+import { X, Plus, Minus, Heart, CreditCard } from "lucide-react";
 import { useCart } from "../providers/CartProvider";
 import { useSavedForLater } from "../providers/SavedForLaterProvider";
 import { useToast } from "./ui/ToastContainer";
@@ -36,17 +36,16 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 			/>
 			{/* Panel */}
 			<aside
-				className={`absolute right-0 top-0 h-full w-[360px] max-w-[90vw] bg-white shadow-2xl transition-transform ${open ? "translate-x-0" : "translate-x-full"}`}
+				className={`absolute right-0 top-0 flex h-full w-[360px] max-w-[90vw] flex-col bg-white shadow-2xl transition-transform ${open ? "translate-x-0" : "translate-x-full"}`}
 			>
-				<div className="flex items-center justify-between border-b px-5 py-4">
+				<div className="flex items-center justify-between border-b px-5 py-4 flex-shrink-0">
 					<h3 className="text-base font-semibold text-zinc-900">Your Cart</h3>
 					<button onClick={onClose} aria-label="Close" className="text-zinc-600 hover:text-zinc-900">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 
-				<div className="flex h-[calc(100%-160px)] flex-col overflow-hidden">
-					<div className="flex-1 overflow-y-auto px-5 py-4">
+				<div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
 						{items.length === 0 ? (
 							<div className="py-12 text-center">
 								<div className="mb-4 text-4xl">🛒</div>
@@ -166,9 +165,8 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 							</div>
 						)}
 					</div>
-				</div>
 
-				<div className="border-t px-5 py-4 bg-zinc-50">
+				<div className="border-t px-5 py-4 bg-zinc-50 flex-shrink-0">
 					<div className="mb-3 space-y-2 text-sm">
 						<div className="flex items-center justify-between">
 							<span className="text-zinc-600">Subtotal</span>
@@ -194,23 +192,38 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 							<span>₵{total.toFixed(2)}</span>
 						</div>
 					</div>
-					<div className="flex gap-2">
-						<Button className="flex-1" onClick={onClose}>
-							<Link href="/checkout" className="w-full text-center">Checkout</Link>
+					<div className="space-y-2">
+						<Button 
+							className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl" 
+							onClick={onClose}
+						>
+							<Link href="/checkout" className="flex items-center justify-center gap-2 w-full">
+								<CreditCard className="h-5 w-5" />
+								Proceed to Payment
+							</Link>
 						</Button>
-						{items.length > 0 && (
-							<Button
-								variant="outline"
-								className="px-3"
-								onClick={() => {
-									clear();
-									showToast("Cart cleared", "info");
-								}}
-								aria-label="Clear cart"
+						<div className="flex gap-2">
+							<Button 
+								variant="outline" 
+								className="flex-1" 
+								onClick={onClose}
 							>
-								<X className="h-4 w-4" />
+								<Link href="/checkout" className="w-full text-center">Checkout</Link>
 							</Button>
-						)}
+							{items.length > 0 && (
+								<Button
+									variant="outline"
+									className="px-3"
+									onClick={() => {
+										clear();
+										showToast("Cart cleared", "info");
+									}}
+									aria-label="Clear cart"
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							)}
+						</div>
 					</div>
 					<div className="mt-2 text-center text-[11px] text-zinc-500">
 						Taxes calculated at checkout
