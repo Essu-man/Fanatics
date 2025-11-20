@@ -17,11 +17,11 @@ export default function CheckoutPage() {
     const router = useRouter();
     const { items, clear } = useCart();
     const { showToast } = useToast();
-    
+
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
     const [sameAsShipping, setSameAsShipping] = useState(true);
     const [processing, setProcessing] = useState(false);
-    
+
     // Shipping form state
     const [shipping, setShipping] = useState({
         firstName: "",
@@ -34,7 +34,7 @@ export default function CheckoutPage() {
         zipCode: "",
         country: "Ghana",
     });
-    
+
     // Billing form state
     const [billing, setBilling] = useState({
         firstName: "",
@@ -45,7 +45,7 @@ export default function CheckoutPage() {
         zipCode: "",
         country: "Ghana",
     });
-    
+
     // Payment form state
     const [payment, setPayment] = useState({
         cardNumber: "",
@@ -53,24 +53,24 @@ export default function CheckoutPage() {
         expiryDate: "",
         cvv: "",
     });
-    
+
     const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
     const estimatedShipping = subtotal > 200 ? 0 : 20;
     const tax = subtotal * 0.12; // 12% tax
     const total = subtotal + estimatedShipping + tax;
-    
+
     const handleShippingChange = (field: string, value: string) => {
         setShipping((prev) => ({ ...prev, [field]: value }));
     };
-    
+
     const handleBillingChange = (field: string, value: string) => {
         setBilling((prev) => ({ ...prev, [field]: value }));
     };
-    
+
     const handlePaymentChange = (field: string, value: string) => {
         setPayment((prev) => ({ ...prev, [field]: value }));
     };
-    
+
     const formatCardNumber = (value: string) => {
         const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
         const matches = v.match(/\d{4,16}/g);
@@ -85,7 +85,7 @@ export default function CheckoutPage() {
             return v;
         }
     };
-    
+
     const formatExpiryDate = (value: string) => {
         const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
         if (v.length >= 2) {
@@ -93,22 +93,22 @@ export default function CheckoutPage() {
         }
         return v;
     };
-    
+
     const validateForm = () => {
-        if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone || 
+        if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone ||
             !shipping.address || !shipping.city || !shipping.state || !shipping.zipCode) {
             showToast("Please fill in all shipping details", "error");
             return false;
         }
-        
+
         if (!sameAsShipping) {
-            if (!billing.firstName || !billing.lastName || !billing.address || 
+            if (!billing.firstName || !billing.lastName || !billing.address ||
                 !billing.city || !billing.state || !billing.zipCode) {
                 showToast("Please fill in all billing details", "error");
                 return false;
             }
         }
-        
+
         if (paymentMethod === "card") {
             if (!payment.cardNumber || !payment.cardName || !payment.expiryDate || !payment.cvv) {
                 showToast("Please fill in all payment details", "error");
@@ -119,68 +119,140 @@ export default function CheckoutPage() {
                 return false;
             }
         }
-        
+
         return true;
     };
-    
+
     const handlePlaceOrder = async () => {
         if (items.length === 0) {
             showToast("Your cart is empty", "error");
             router.push("/");
             return;
         }
-        
+
         if (!validateForm()) {
             return;
         }
-        
+
         setProcessing(true);
-        
-        // Simulate payment processing
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        
-        // Create order object
-        const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
-        const order = {
-            id: orderId,
-            orderDate: new Date().toISOString(),
-            status: "processing" as const,
-            items: items.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image,
-                colorId: item.colorId || undefined
-            })),
-            shipping: { ...shipping },
-            billing: sameAsShipping ? { ...shipping, email: shipping.email, phone: shipping.phone } : { ...billing },
-            payment: {
-                method: paymentMethod,
-                last4: paymentMethod === "card" && payment.cardNumber ? payment.cardNumber.replace(/\s/g, "").slice(-4) : undefined
-            },
-            subtotal,
-            shippingCost: estimatedShipping,
-            tax,
-            total
-        };
-        
-        // Save order to localStorage
+
         try {
-            const existingOrders = localStorage.getItem("cediman:orders");
-            const orders = existingOrders ? JSON.parse(existingOrders) : [];
-            orders.push(order);
-            localStorage.setItem("cediman:orders", JSON.stringify(orders));
+            // Generate order ID
+            const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
+
+            // Initialize Paystack payment
+            const paymentResponse = await fetch("/api/paystack/initialize", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: shipping.email,
+                    amount: total,
+                    metadata: {
+                        orderId,
+                        customerName: `${shipping.firstName} ${shipping.lastName}`,
+                        phone: shipping.phone,
+                    },
+                }),
+            });
+
+            const paymentData = await paymentResponse.json();
+
+            if (!paymentData.success) {
+                showToast("Failed to initialize payment", "error");
+                setProcessing(false);
+                return;
+            }
+
+            const { publicKey, amount: amountInKobo, reference, currency } = paymentData.data;
+
+            // Open Paystack popup
+            if (typeof window !== "undefined" && (window as any).PaystackPop) {
+                const handler = (window as any).PaystackPop.setup({
+                    key: publicKey,
+                    email: shipping.email,
+                    amount: amountInKobo,
+                    currency,
+                    ref: reference,
+                    metadata: {
+                        orderId,
+                        customerName: `${shipping.firstName} ${shipping.lastName}`,
+                        phone: shipping.phone,
+                    },
+                    callback: async (response: any) => {
+                        // Verify payment
+                        const verifyResponse = await fetch("/api/paystack/verify", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ reference: response.reference }),
+                        });
+
+                        const verifyData = await verifyResponse.json();
+
+                        if (verifyData.success) {
+                            // Create order in Firestore and send notifications
+                            const orderResponse = await fetch("/api/orders/create", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    orderId,
+                                    userId: null, // Guest checkout
+                                    guestEmail: shipping.email,
+                                    guestPhone: shipping.phone,
+                                    customerName: `${shipping.firstName} ${shipping.lastName}`,
+                                    items: items.map(item => ({
+                                        id: item.id,
+                                        name: item.name,
+                                        price: item.price,
+                                        quantity: item.quantity,
+                                        image: item.image,
+                                    })),
+                                    shipping,
+                                    payment: {
+                                        method: "paystack",
+                                        reference: response.reference,
+                                    },
+                                    subtotal,
+                                    shippingCost: estimatedShipping,
+                                    tax,
+                                    total,
+                                    paystackReference: response.reference,
+                                }),
+                            });
+
+                            const orderData = await orderResponse.json();
+
+                            if (orderData.success) {
+                                // Clear cart
+                                clear();
+                                showToast("Order placed successfully! Check your email and SMS for confirmation.", "success");
+                                router.push(`/checkout/success?orderId=${orderId}`);
+                            } else {
+                                showToast("Payment successful but order creation failed. Please contact support.", "error");
+                            }
+                        } else {
+                            showToast("Payment verification failed", "error");
+                        }
+
+                        setProcessing(false);
+                    },
+                    onClose: () => {
+                        showToast("Payment cancelled", "error");
+                        setProcessing(false);
+                    },
+                });
+
+                handler.openIframe();
+            } else {
+                showToast("Payment system not available. Please refresh the page.", "error");
+                setProcessing(false);
+            }
         } catch (error) {
-            console.error("Error saving order:", error);
+            console.error("Checkout error:", error);
+            showToast("An error occurred. Please try again.", "error");
+            setProcessing(false);
         }
-        
-        // Clear cart and redirect to success page with order ID
-        clear();
-        showToast("Order placed successfully!", "success");
-        router.push(`/checkout/success?orderId=${orderId}`);
     };
-    
+
     if (items.length === 0) {
         return (
             <div className="min-h-screen bg-white">
@@ -196,7 +268,7 @@ export default function CheckoutPage() {
             </div>
         );
     }
-    
+
     return (
         <div className="min-h-screen bg-zinc-50">
             <Header />
@@ -205,9 +277,9 @@ export default function CheckoutPage() {
                     <ArrowLeft className="h-4 w-4" />
                     Continue Shopping
                 </Link>
-                
+
                 <h1 className="mb-8 text-3xl font-bold text-zinc-900">Checkout</h1>
-                
+
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
@@ -320,7 +392,7 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Billing Address */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-6 flex items-center justify-between">
@@ -419,14 +491,14 @@ export default function CheckoutPage() {
                                 </div>
                             )}
                         </div>
-                        
+
                         {/* Payment Method */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-6 flex items-center gap-2">
                                 <Lock className="h-5 w-5 text-[var(--brand-red)]" />
                                 <h2 className="text-xl font-bold text-zinc-900">Payment Method</h2>
                             </div>
-                            
+
                             <div className="mb-6 space-y-3">
                                 <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
                                     <input
@@ -440,7 +512,7 @@ export default function CheckoutPage() {
                                     <CreditCard className="h-5 w-5 text-zinc-600" />
                                     <span className="flex-1 font-medium text-zinc-900">Credit/Debit Card</span>
                                 </label>
-                                
+
                                 <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
                                     <input
                                         type="radio"
@@ -453,7 +525,7 @@ export default function CheckoutPage() {
                                     <div className="h-5 w-5 rounded bg-blue-500"></div>
                                     <span className="flex-1 font-medium text-zinc-900">PayPal</span>
                                 </label>
-                                
+
                                 <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
                                     <input
                                         type="radio"
@@ -467,7 +539,7 @@ export default function CheckoutPage() {
                                     <span className="flex-1 font-medium text-zinc-900">Mobile Money</span>
                                 </label>
                             </div>
-                            
+
                             {paymentMethod === "card" && (
                                 <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
                                     <div>
@@ -522,13 +594,13 @@ export default function CheckoutPage() {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {paymentMethod === "paypal" && (
                                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
                                     You will be redirected to PayPal to complete your payment.
                                 </div>
                             )}
-                            
+
                             {paymentMethod === "mobile_money" && (
                                 <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
                                     <div>
@@ -555,12 +627,12 @@ export default function CheckoutPage() {
                             )}
                         </div>
                     </div>
-                    
+
                     {/* Order Summary */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-8 rounded-lg bg-white p-6 shadow-sm">
                             <h2 className="mb-6 text-xl font-bold text-zinc-900">Order Summary</h2>
-                            
+
                             <div className="mb-6 space-y-3">
                                 {items.map((item) => (
                                     <div key={`${item.id}-${item.colorId}`} className="flex gap-3">
@@ -579,7 +651,7 @@ export default function CheckoutPage() {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             <div className="space-y-2 border-t border-zinc-200 pt-4">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Subtotal</span>
@@ -604,12 +676,12 @@ export default function CheckoutPage() {
                                     <span>₵{total.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
+
                             <div className="mt-6 flex items-center gap-2 text-xs text-zinc-500">
                                 <Shield className="h-4 w-4" />
                                 <span>Your payment information is secure and encrypted</span>
                             </div>
-                            
+
                             <Button
                                 onClick={handlePlaceOrder}
                                 disabled={processing}

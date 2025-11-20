@@ -6,10 +6,12 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import Button from "../../components/ui/button";
 import { CheckCircle, Package, Mail, Home } from "lucide-react";
+import OrderProgressTracker from "../../components/OrderProgressTracker";
 
 function SuccessContent() {
     const [orderId, setOrderId] = useState<string>("");
-    
+    const [order, setOrder] = useState<any>(null);
+
     useEffect(() => {
         // Get orderId from URL
         if (typeof window !== "undefined") {
@@ -17,6 +19,20 @@ function SuccessContent() {
             const id = params.get("orderId");
             if (id) {
                 setOrderId(id);
+
+                // Load order details from localStorage
+                try {
+                    const stored = localStorage.getItem("cediman:orders");
+                    if (stored) {
+                        const orders = JSON.parse(stored);
+                        const foundOrder = orders.find((o: any) => o.id === id);
+                        if (foundOrder) {
+                            setOrder(foundOrder);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading order:", error);
+                }
             } else {
                 // Fallback: generate a random order ID if not provided
                 const fallbackId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
@@ -24,26 +40,39 @@ function SuccessContent() {
             }
         }
     }, []);
-    
+
+    // Calculate estimated delivery
+    const orderDate = order ? new Date(order.orderDate) : new Date();
+    const estimatedDelivery = new Date(orderDate);
+    estimatedDelivery.setDate(orderDate.getDate() + 4);
+
     return (
         <div className="min-h-screen bg-zinc-50">
             <Header />
-            <div className="mx-auto max-w-3xl px-6 py-16">
-                <div className="rounded-lg bg-white p-8 text-center shadow-lg">
-                    <div className="mb-6 flex justify-center">
-                        <div className="rounded-full bg-green-100 p-4">
-                            <CheckCircle className="h-16 w-16 text-green-600" />
-                        </div>
+            <div className="mx-auto max-w-4xl px-6 py-12">
+                <div className="mb-8 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                        <CheckCircle className="h-10 w-10 text-green-600" />
                     </div>
-                    
-                    <h1 className="mb-4 text-3xl font-bold text-zinc-900">Order Confirmed!</h1>
-                    <p className="mb-2 text-lg text-zinc-600">
-                        Thank you for your purchase
+                    <h1 className="text-3xl font-bold text-zinc-900">Order Confirmed!</h1>
+                    <p className="mt-2 text-zinc-600">
+                        Thank you for your purchase. Your order has been received.
                     </p>
-                    <p className="mb-8 text-sm text-zinc-500">
-                        Order ID: <span className="font-semibold text-zinc-900">{orderId}</span>
+                    <p className="mt-1 text-sm font-medium text-zinc-900">
+                        Order ID: <span className="text-[var(--brand-red)]">{orderId}</span>
                     </p>
-                    
+                </div>
+
+                {/* Order Progress Tracker */}
+                <div className="mb-6">
+                    <OrderProgressTracker
+                        currentStage="confirmed"
+                        orderDate={orderDate.toLocaleDateString()}
+                        estimatedDelivery={estimatedDelivery.toLocaleDateString()}
+                    />
+                </div>
+
+                <div className="rounded-lg bg-white p-8 shadow-lg">
                     <div className="mb-8 rounded-lg border border-zinc-200 bg-zinc-50 p-6 text-left">
                         <h2 className="mb-4 text-lg font-semibold text-zinc-900">What's Next?</h2>
                         <div className="space-y-4">
@@ -76,17 +105,16 @@ function SuccessContent() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <Button as={Link} href="/" variant="outline" className="gap-2">
                             <Home className="h-4 w-4" />
                             Continue Shopping
                         </Button>
-                        {orderId && (
-                            <Button as={Link} href={`/orders/${orderId}`} className="gap-2">
-                                View Order Details
-                            </Button>
-                        )}
+                        <Button as={Link} href="/account/orders" className="gap-2">
+                            <Package className="h-4 w-4" />
+                            View All Orders
+                        </Button>
                     </div>
                 </div>
             </div>
