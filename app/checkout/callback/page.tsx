@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "../../providers/CartProvider";
 import { useAuth } from "../../providers/AuthProvider";
 import { auth } from "@/lib/firebase";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { items, clear } = useCart();
@@ -241,5 +241,23 @@ export default function PaymentCallbackPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function PaymentCallbackPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-6">
+                    <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+                        <Loader2 className="h-16 w-16 mx-auto text-[var(--brand-red)] animate-spin" />
+                        <h1 className="mt-6 text-2xl font-bold text-zinc-900">Loading...</h1>
+                        <p className="mt-2 text-zinc-600">Please wait while we process your payment.</p>
+                    </div>
+                </div>
+            }
+        >
+            <PaymentCallbackContent />
+        </Suspense>
     );
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, CheckCircle, ArrowRight } from "lucide-react";
+import { Mail, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { resendEmailVerification } from "@/lib/firebase-auth";
 import { useToast } from "../components/ui/ToastContainer";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email");
@@ -118,5 +118,25 @@ export default function VerifyEmailPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyEmailPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+                    <div className="w-full max-w-md">
+                        <div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm text-center">
+                            <Loader2 className="h-16 w-16 mx-auto mb-4 text-[var(--brand-red)] animate-spin" />
+                            <h1 className="text-2xl font-bold text-zinc-900 mb-2">Loading...</h1>
+                            <p className="text-zinc-600">Please wait while we load the page.</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        >
+            <VerifyEmailContent />
+        </Suspense>
     );
 }
