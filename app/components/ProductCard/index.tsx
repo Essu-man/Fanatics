@@ -6,6 +6,13 @@ import Button from "@/app/components/ui/button";
 import { useCart } from "@/app/providers/CartProvider";
 import Modal from "@/app/components/ui/modal";
 import type { Product as PType } from "@/lib/products";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/app/components/ui/select";
 
 type ColorOption = {
     id: string;
@@ -68,6 +75,14 @@ export default function ProductCard({ product }: { product: PType }) {
                         Sale
                     </div>
                 )}
+
+                {/* Out of Stock Badge */}
+                {((product as any).stock !== undefined && (product as any).stock === 0) ||
+                    ((product as any).available === false) ? (
+                    <div className="absolute left-4 top-4 rounded bg-zinc-900 px-2 py-1 text-xs font-medium text-white">
+                        Out of Stock
+                    </div>
+                ) : null}
             </div>
 
             {/* Product Info */}
@@ -99,8 +114,8 @@ export default function ProductCard({ product }: { product: PType }) {
                                 key={color.id}
                                 onClick={() => setSelectedVariant(color)}
                                 className={`h-6 w-6 rounded-full border-2 ${selectedVariant?.id === color.id
-                                        ? "border-[var(--brand-red)]"
-                                        : "border-transparent"
+                                    ? "border-[var(--brand-red)]"
+                                    : "border-transparent"
                                     }`}
                                 style={{ background: color.hex }}
                             />
@@ -109,13 +124,24 @@ export default function ProductCard({ product }: { product: PType }) {
                 )}
 
                 {/* Add to Cart */}
-                <Button
-                    onClick={handleAddToCart}
-                    className="mt-4 w-full justify-center gap-2 text-sm"
-                >
-                    <ShoppingBag className="h-4 w-4" />
-                    Add to Cart
-                </Button>
+                {((product as any).stock !== undefined && (product as any).stock === 0) ||
+                    ((product as any).available === false) ? (
+                    <Button
+                        disabled
+                        className="mt-4 w-full justify-center gap-2 text-sm opacity-50 cursor-not-allowed"
+                    >
+                        <ShoppingBag className="h-4 w-4" />
+                        Out of Stock
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={handleAddToCart}
+                        className="mt-4 w-full justify-center gap-2 text-sm"
+                    >
+                        <ShoppingBag className="h-4 w-4" />
+                        Add to Cart
+                    </Button>
+                )}
             </div>
 
             {/* Quick View Modal */}
@@ -182,8 +208,8 @@ export default function ProductCard({ product }: { product: PType }) {
                                             key={color.id}
                                             onClick={() => setSelectedVariant(color)}
                                             className={`group flex items-center gap-2 rounded-full border p-1 ${selectedVariant?.id === color.id
-                                                    ? "border-[var(--brand-red)]"
-                                                    : "border-transparent hover:border-zinc-200"
+                                                ? "border-[var(--brand-red)]"
+                                                : "border-transparent hover:border-zinc-200"
                                                 }`}
                                         >
                                             <span
@@ -204,28 +230,43 @@ export default function ProductCard({ product }: { product: PType }) {
                             <h3 className="text-sm font-medium text-zinc-900">
                                 Quantity
                             </h3>
-                            <select
-                                value={quantity}
-                                onChange={(e) => setQuantity(Number(e.target.value))}
-                                className="mt-2 block w-24 rounded-lg border border-zinc-200 py-2 pl-3 pr-10 text-sm"
+                            <Select
+                                value={quantity.toString()}
+                                onValueChange={(value) => setQuantity(Number(value))}
                             >
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                                    <option key={n} value={n}>
-                                        {n}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="mt-2 w-24">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                        <SelectItem key={n} value={n.toString()}>
+                                            {n}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Add to Cart */}
                         <div className="mt-6 flex gap-3">
-                            <Button
-                                onClick={handleAddToCart}
-                                className="flex-1 justify-center gap-2"
-                            >
-                                <ShoppingBag className="h-4 w-4" />
-                                Add to Cart
-                            </Button>
+                            {((product as any).stock !== undefined && (product as any).stock === 0) ||
+                                ((product as any).available === false) ? (
+                                <Button
+                                    disabled
+                                    className="flex-1 justify-center gap-2 opacity-50 cursor-not-allowed"
+                                >
+                                    <ShoppingBag className="h-4 w-4" />
+                                    Out of Stock
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={handleAddToCart}
+                                    className="flex-1 justify-center gap-2"
+                                >
+                                    <ShoppingBag className="h-4 w-4" />
+                                    Add to Cart
+                                </Button>
+                            )}
                             <Button
                                 variant="outline"
                                 className="flex items-center gap-2 px-4"

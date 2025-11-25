@@ -2,17 +2,31 @@
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, isAdmin, loading } = useAuth();
     const router = useRouter();
+    const hasRedirected = useRef(false);
 
     useEffect(() => {
-        if (!loading && !isAdmin) {
+        // Only redirect if:
+        // 1. Not currently loading
+        // 2. User is explicitly null (not just undefined during initial load)
+        // 3. Not an admin
+        // 4. Haven't already redirected (prevent multiple redirects)
+        if (!loading && user === null && !isAdmin && !hasRedirected.current) {
+            hasRedirected.current = true;
             router.push("/login?redirect=/admin");
         }
-    }, [loading, isAdmin, router]);
+    }, [loading, user, isAdmin, router]);
+
+    // Reset redirect flag if user becomes admin
+    useEffect(() => {
+        if (isAdmin) {
+            hasRedirected.current = false;
+        }
+    }, [isAdmin]);
 
     if (loading) {
         return (
@@ -25,7 +39,8 @@ export default function AdminProtectedRoute({ children }: { children: React.Reac
         );
     }
 
-    if (!isAdmin) {
+    // Don't render anything if we're redirecting or user is not admin
+    if (!isAdmin || user === null) {
         return null;
     }
 

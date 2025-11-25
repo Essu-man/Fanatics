@@ -13,9 +13,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+        const secretKey = process.env.PAYSTACK_SECRET_KEY;
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-        if (!publicKey) {
+        if (!secretKey) {
             return NextResponse.json(
                 { error: "Paystack configuration missing" },
                 { status: 500 }
@@ -25,16 +26,42 @@ export async function POST(request: NextRequest) {
         const reference = generatePaymentReference();
         const amountInKobo = cedisToKobo(amount);
 
-        // Return payment configuration for client-side Paystack popup
+        // Initialize transaction with Paystack API
+        const paystackResponse = await fetch(
+            "https://api.paystack.co/transaction/initialize",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${secretKey}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email,
+                    amount: amountInKobo,
+                    currency: "GHS",
+                    reference,
+                    callback_url: `${appUrl}/checkout/callback`,
+                    metadata,
+                }),
+            }
+        );
+
+        const paystackData = await paystackResponse.json();
+
+        if (!paystackData.status) {
+            return NextResponse.json(
+                { error: paystackData.message || "Failed to initialize payment" },
+                { status: 400 }
+            );
+        }
+
+        // Return authorization URL for redirect
         return NextResponse.json({
             success: true,
             data: {
-                publicKey,
-                email,
-                amount: amountInKobo,
-                reference,
-                metadata,
-                currency: "GHS",
+                authorization_url: paystackData.data.authorization_url,
+                access_code: paystackData.data.access_code,
+                reference: paystackData.data.reference,
             },
         });
     } catch (error: any) {

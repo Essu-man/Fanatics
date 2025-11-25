@@ -9,17 +9,13 @@ import Button from "../components/ui/button";
 import Input from "../components/ui/input";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { CreditCard, Lock, Shield, Truck, ArrowLeft } from "lucide-react";
-
-type PaymentMethod = "card" | "paypal" | "mobile_money";
+import { Shield, Truck, ArrowLeft } from "lucide-react";
 
 export default function CheckoutPage() {
     const router = useRouter();
     const { items, clear } = useCart();
     const { showToast } = useToast();
 
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-    const [sameAsShipping, setSameAsShipping] = useState(true);
     const [processing, setProcessing] = useState(false);
 
     // Shipping form state
@@ -35,63 +31,13 @@ export default function CheckoutPage() {
         country: "Ghana",
     });
 
-    // Billing form state
-    const [billing, setBilling] = useState({
-        firstName: "",
-        lastName: "",
-        address: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "Ghana",
-    });
-
-    // Payment form state
-    const [payment, setPayment] = useState({
-        cardNumber: "",
-        cardName: "",
-        expiryDate: "",
-        cvv: "",
-    });
-
     const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
-    const estimatedShipping = subtotal > 200 ? 0 : 20;
-    const tax = subtotal * 0.12; // 12% tax
+    const estimatedShipping = 0; // Free shipping
+    const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
 
     const handleShippingChange = (field: string, value: string) => {
         setShipping((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleBillingChange = (field: string, value: string) => {
-        setBilling((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handlePaymentChange = (field: string, value: string) => {
-        setPayment((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const formatCardNumber = (value: string) => {
-        const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-        const matches = v.match(/\d{4,16}/g);
-        const match = (matches && matches[0]) || "";
-        const parts = [];
-        for (let i = 0, len = match.length; i < len; i += 4) {
-            parts.push(match.substring(i, i + 4));
-        }
-        if (parts.length) {
-            return parts.join(" ");
-        } else {
-            return v;
-        }
-    };
-
-    const formatExpiryDate = (value: string) => {
-        const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-        if (v.length >= 2) {
-            return v.substring(0, 2) + "/" + v.substring(2, 4);
-        }
-        return v;
     };
 
     const validateForm = () => {
@@ -99,25 +45,6 @@ export default function CheckoutPage() {
             !shipping.address || !shipping.city || !shipping.state || !shipping.zipCode) {
             showToast("Please fill in all shipping details", "error");
             return false;
-        }
-
-        if (!sameAsShipping) {
-            if (!billing.firstName || !billing.lastName || !billing.address ||
-                !billing.city || !billing.state || !billing.zipCode) {
-                showToast("Please fill in all billing details", "error");
-                return false;
-            }
-        }
-
-        if (paymentMethod === "card") {
-            if (!payment.cardNumber || !payment.cardName || !payment.expiryDate || !payment.cvv) {
-                showToast("Please fill in all payment details", "error");
-                return false;
-            }
-            if (payment.cardNumber.replace(/\s/g, "").length < 16) {
-                showToast("Please enter a valid card number", "error");
-                return false;
-            }
         }
 
         return true;
@@ -137,9 +64,6 @@ export default function CheckoutPage() {
         setProcessing(true);
 
         try {
-            // Generate order ID
-            const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
-
             // Initialize Paystack payment
             const paymentResponse = await fetch("/api/paystack/initialize", {
                 method: "POST",
@@ -148,9 +72,20 @@ export default function CheckoutPage() {
                     email: shipping.email,
                     amount: total,
                     metadata: {
-                        orderId,
                         customerName: `${shipping.firstName} ${shipping.lastName}`,
                         phone: shipping.phone,
+                        custom_fields: [
+                            {
+                                display_name: "Customer Name",
+                                variable_name: "customer_name",
+                                value: `${shipping.firstName} ${shipping.lastName}`,
+                            },
+                            {
+                                display_name: "Phone",
+                                variable_name: "phone",
+                                value: shipping.phone,
+                            },
+                        ],
                     },
                 }),
             });
@@ -158,94 +93,18 @@ export default function CheckoutPage() {
             const paymentData = await paymentResponse.json();
 
             if (!paymentData.success) {
-                showToast("Failed to initialize payment", "error");
+                showToast(paymentData.error || "Failed to initialize payment", "error");
                 setProcessing(false);
                 return;
             }
 
-            const { publicKey, amount: amountInKobo, reference, currency } = paymentData.data;
+            // Store shipping info, cart items, and payment reference for callback page
+            sessionStorage.setItem("checkoutShipping", JSON.stringify(shipping));
+            sessionStorage.setItem("checkoutItems", JSON.stringify(items));
+            sessionStorage.setItem("paymentReference", paymentData.data.reference);
 
-            // Open Paystack popup
-            if (typeof window !== "undefined" && (window as any).PaystackPop) {
-                const handler = (window as any).PaystackPop.setup({
-                    key: publicKey,
-                    email: shipping.email,
-                    amount: amountInKobo,
-                    currency,
-                    ref: reference,
-                    metadata: {
-                        orderId,
-                        customerName: `${shipping.firstName} ${shipping.lastName}`,
-                        phone: shipping.phone,
-                    },
-                    callback: async (response: any) => {
-                        // Verify payment
-                        const verifyResponse = await fetch("/api/paystack/verify", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ reference: response.reference }),
-                        });
-
-                        const verifyData = await verifyResponse.json();
-
-                        if (verifyData.success) {
-                            // Create order in Firestore and send notifications
-                            const orderResponse = await fetch("/api/orders/create", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                    orderId,
-                                    userId: null, // Guest checkout
-                                    guestEmail: shipping.email,
-                                    guestPhone: shipping.phone,
-                                    customerName: `${shipping.firstName} ${shipping.lastName}`,
-                                    items: items.map(item => ({
-                                        id: item.id,
-                                        name: item.name,
-                                        price: item.price,
-                                        quantity: item.quantity,
-                                        image: item.image,
-                                    })),
-                                    shipping,
-                                    payment: {
-                                        method: "paystack",
-                                        reference: response.reference,
-                                    },
-                                    subtotal,
-                                    shippingCost: estimatedShipping,
-                                    tax,
-                                    total,
-                                    paystackReference: response.reference,
-                                }),
-                            });
-
-                            const orderData = await orderResponse.json();
-
-                            if (orderData.success) {
-                                // Clear cart
-                                clear();
-                                showToast("Order placed successfully! Check your email and SMS for confirmation.", "success");
-                                router.push(`/checkout/success?orderId=${orderId}`);
-                            } else {
-                                showToast("Payment successful but order creation failed. Please contact support.", "error");
-                            }
-                        } else {
-                            showToast("Payment verification failed", "error");
-                        }
-
-                        setProcessing(false);
-                    },
-                    onClose: () => {
-                        showToast("Payment cancelled", "error");
-                        setProcessing(false);
-                    },
-                });
-
-                handler.openIframe();
-            } else {
-                showToast("Payment system not available. Please refresh the page.", "error");
-                setProcessing(false);
-            }
+            // Redirect to Paystack's hosted checkout page
+            window.location.href = paymentData.data.authorization_url;
         } catch (error) {
             console.error("Checkout error:", error);
             showToast("An error occurred. Please try again.", "error");
@@ -392,240 +251,6 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Billing Address */}
-                        <div className="rounded-lg bg-white p-6 shadow-sm">
-                            <div className="mb-6 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <CreditCard className="h-5 w-5 text-[var(--brand-red)]" />
-                                    <h2 className="text-xl font-bold text-zinc-900">Billing Address</h2>
-                                </div>
-                                <label className="flex items-center gap-2 text-sm text-zinc-600">
-                                    <input
-                                        type="checkbox"
-                                        checked={sameAsShipping}
-                                        onChange={(e) => setSameAsShipping(e.target.checked)}
-                                        className="rounded border-zinc-300"
-                                    />
-                                    Same as shipping address
-                                </label>
-                            </div>
-                            {!sameAsShipping && (
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            First Name *
-                                        </label>
-                                        <Input
-                                            value={billing.firstName}
-                                            onChange={(e) => handleBillingChange("firstName", e.target.value)}
-                                            placeholder="John"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Last Name *
-                                        </label>
-                                        <Input
-                                            value={billing.lastName}
-                                            onChange={(e) => handleBillingChange("lastName", e.target.value)}
-                                            placeholder="Doe"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Address *
-                                        </label>
-                                        <Input
-                                            value={billing.address}
-                                            onChange={(e) => handleBillingChange("address", e.target.value)}
-                                            placeholder="Street address"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            City *
-                                        </label>
-                                        <Input
-                                            value={billing.city}
-                                            onChange={(e) => handleBillingChange("city", e.target.value)}
-                                            placeholder="Accra"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            State/Region *
-                                        </label>
-                                        <Input
-                                            value={billing.state}
-                                            onChange={(e) => handleBillingChange("state", e.target.value)}
-                                            placeholder="Greater Accra"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            ZIP/Postal Code *
-                                        </label>
-                                        <Input
-                                            value={billing.zipCode}
-                                            onChange={(e) => handleBillingChange("zipCode", e.target.value)}
-                                            placeholder="00233"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Country *
-                                        </label>
-                                        <Input
-                                            value={billing.country}
-                                            onChange={(e) => handleBillingChange("country", e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Payment Method */}
-                        <div className="rounded-lg bg-white p-6 shadow-sm">
-                            <div className="mb-6 flex items-center gap-2">
-                                <Lock className="h-5 w-5 text-[var(--brand-red)]" />
-                                <h2 className="text-xl font-bold text-zinc-900">Payment Method</h2>
-                            </div>
-
-                            <div className="mb-6 space-y-3">
-                                <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value="card"
-                                        checked={paymentMethod === "card"}
-                                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                                        className="text-[var(--brand-red)]"
-                                    />
-                                    <CreditCard className="h-5 w-5 text-zinc-600" />
-                                    <span className="flex-1 font-medium text-zinc-900">Credit/Debit Card</span>
-                                </label>
-
-                                <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value="paypal"
-                                        checked={paymentMethod === "paypal"}
-                                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                                        className="text-[var(--brand-red)]"
-                                    />
-                                    <div className="h-5 w-5 rounded bg-blue-500"></div>
-                                    <span className="flex-1 font-medium text-zinc-900">PayPal</span>
-                                </label>
-
-                                <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-zinc-200 p-4 hover:border-[var(--brand-red)]">
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value="mobile_money"
-                                        checked={paymentMethod === "mobile_money"}
-                                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                                        className="text-[var(--brand-red)]"
-                                    />
-                                    <div className="h-5 w-5 rounded bg-green-500"></div>
-                                    <span className="flex-1 font-medium text-zinc-900">Mobile Money</span>
-                                </label>
-                            </div>
-
-                            {paymentMethod === "card" && (
-                                <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Card Number *
-                                        </label>
-                                        <Input
-                                            value={payment.cardNumber}
-                                            onChange={(e) => handlePaymentChange("cardNumber", formatCardNumber(e.target.value))}
-                                            placeholder="1234 5678 9012 3456"
-                                            maxLength={19}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Cardholder Name *
-                                        </label>
-                                        <Input
-                                            value={payment.cardName}
-                                            onChange={(e) => handlePaymentChange("cardName", e.target.value)}
-                                            placeholder="John Doe"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                                Expiry Date *
-                                            </label>
-                                            <Input
-                                                value={payment.expiryDate}
-                                                onChange={(e) => handlePaymentChange("expiryDate", formatExpiryDate(e.target.value))}
-                                                placeholder="MM/YY"
-                                                maxLength={5}
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                                CVV *
-                                            </label>
-                                            <Input
-                                                type="password"
-                                                value={payment.cvv}
-                                                onChange={(e) => handlePaymentChange("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                                placeholder="123"
-                                                maxLength={4}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {paymentMethod === "paypal" && (
-                                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                                    You will be redirected to PayPal to complete your payment.
-                                </div>
-                            )}
-
-                            {paymentMethod === "mobile_money" && (
-                                <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Mobile Money Number *
-                                        </label>
-                                        <Input
-                                            type="tel"
-                                            placeholder="+233 XX XXX XXXX"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Network Provider *
-                                        </label>
-                                        <select className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm">
-                                            <option>MTN Mobile Money</option>
-                                            <option>Vodafone Cash</option>
-                                            <option>AirtelTigo Money</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* Order Summary */}
@@ -634,8 +259,8 @@ export default function CheckoutPage() {
                             <h2 className="mb-6 text-xl font-bold text-zinc-900">Order Summary</h2>
 
                             <div className="mb-6 space-y-3">
-                                {items.map((item) => (
-                                    <div key={`${item.id}-${item.colorId}`} className="flex gap-3">
+                                {items.map((item, index) => (
+                                    <div key={`${item.id}-${item.colorId || 'default'}-${index}`} className="flex gap-3">
                                         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-zinc-100">
                                             {item.image && (
                                                 <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
@@ -659,17 +284,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Shipping</span>
-                                    <span className="font-semibold text-zinc-900">
-                                        {estimatedShipping === 0 ? (
-                                            <span className="text-green-600">FREE</span>
-                                        ) : (
-                                            `₵${estimatedShipping.toFixed(2)}`
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-600">Tax</span>
-                                    <span className="font-semibold text-zinc-900">₵{tax.toFixed(2)}</span>
+                                    <span className="font-semibold text-green-600">FREE</span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">
                                     <span>Total</span>
@@ -679,7 +294,7 @@ export default function CheckoutPage() {
 
                             <div className="mt-6 flex items-center gap-2 text-xs text-zinc-500">
                                 <Shield className="h-4 w-4" />
-                                <span>Your payment information is secure and encrypted</span>
+                                <span>Secure payment with Paystack</span>
                             </div>
 
                             <Button
@@ -690,15 +305,16 @@ export default function CheckoutPage() {
                                 {processing ? (
                                     <>
                                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                        Processing...
+                                        Redirecting to Paystack...
                                     </>
                                 ) : (
-                                    <>
-                                        <Lock className="h-5 w-5" />
-                                        Place Order
-                                    </>
+                                    "Proceed to Payment"
                                 )}
                             </Button>
+
+                            <p className="mt-4 text-center text-xs text-zinc-500">
+                                You will be redirected to Paystack to complete your payment
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -707,4 +323,3 @@ export default function CheckoutPage() {
         </div>
     );
 }
-

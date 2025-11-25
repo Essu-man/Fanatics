@@ -23,7 +23,7 @@ export default function OrderTrackingPage() {
                 if (data.success) {
                     setOrder(data.order);
                 } else {
-                    setError("Order not found");
+                    setError(data.error || "Order not found");
                 }
             } catch (err) {
                 setError("Failed to load order");
@@ -104,13 +104,13 @@ export default function OrderTrackingPage() {
                         <h3 className="mb-4 text-lg font-bold text-zinc-900">Shipping Address</h3>
                         <div className="text-sm text-zinc-600">
                             <p className="font-medium text-zinc-900">
-                                {order.shipping.firstName} {order.shipping.lastName}
+                                {order.shipping?.firstName || ""} {order.shipping?.lastName || ""}
                             </p>
-                            <p>{order.shipping.address}</p>
+                            <p>{order.shipping?.address || "N/A"}</p>
                             <p>
-                                {order.shipping.city}, {order.shipping.state} {order.shipping.zipCode}
+                                {order.shipping?.city || ""}, {order.shipping?.state || ""} {order.shipping?.zipCode || ""}
                             </p>
-                            <p>{order.shipping.country}</p>
+                            <p>{order.shipping?.country || "N/A"}</p>
                         </div>
                     </div>
 
@@ -120,11 +120,11 @@ export default function OrderTrackingPage() {
                         <div className="space-y-3 text-sm">
                             <div className="flex items-center gap-2 text-zinc-600">
                                 <Mail className="h-4 w-4" />
-                                <span>{order.guestEmail || order.shipping.email}</span>
+                                <span>{order.guestEmail || order.shipping?.email || "N/A"}</span>
                             </div>
                             <div className="flex items-center gap-2 text-zinc-600">
                                 <Phone className="h-4 w-4" />
-                                <span>{order.guestPhone || order.shipping.phone}</span>
+                                <span>{order.guestPhone || order.shipping?.phone || "N/A"}</span>
                             </div>
                         </div>
                     </div>

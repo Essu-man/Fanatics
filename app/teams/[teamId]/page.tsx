@@ -10,6 +10,13 @@ import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
 import { TeamPageSkeleton } from "../../components/ui/Skeleton";
 import type { Product } from "../../../lib/products";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../components/ui/select";
 
 interface Team {
     id: string;
@@ -142,28 +149,33 @@ export default function TeamPage() {
                 <div className="mb-6 flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4 text-zinc-500" />
-                        <select
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]"
-                        >
-                            <option value="all">All Products</option>
-                            <option value="jerseys">Jerseys</option>
-                            <option value="apparel">Apparel</option>
-                            <option value="accessories">Accessories</option>
-                        </select>
+                        <Select value={filterType} onValueChange={setFilterType}>
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Products</SelectItem>
+                                <SelectItem value="jerseys">Jerseys</SelectItem>
+                                <SelectItem value="apparel">Apparel</SelectItem>
+                                <SelectItem value="accessories">Accessories</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="flex items-center gap-2">
                         <SortAsc className="h-4 w-4 text-zinc-500" />
-                        <select
+                        <Select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as "price-asc" | "price-desc" | "name")}
-                            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]"
+                            onValueChange={(value) => setSortBy(value as "price-asc" | "price-desc" | "name")}
                         >
-                            <option value="name">Sort by Name</option>
-                            <option value="price-asc">Price: Low to High</option>
-                            <option value="price-desc">Price: High to Low</option>
-                        </select>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="name">Sort by Name</SelectItem>
+                                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="ml-auto text-sm text-zinc-600">
                         {filteredAndSortedProducts.length} product{filteredAndSortedProducts.length !== 1 ? "s" : ""}

@@ -46,23 +46,104 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 				</div>
 
 				<div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-						{items.length === 0 ? (
-							<div className="py-12 text-center">
-								<div className="mb-4 text-4xl">🛒</div>
-								<p className="mb-2 text-sm font-medium text-zinc-900">Your cart is empty</p>
-								<p className="mb-4 text-xs text-zinc-500">Add some items to get started!</p>
-								<Button onClick={onClose} className="text-sm">
-									<Link href="/">Continue Shopping</Link>
-								</Button>
-							</div>
-						) : (
-							<ul className="space-y-4">
-								{items.map((it) => (
-									<li key={`${it.id}-${it.colorId || "default"}`} className="flex gap-3">
+					{items.length === 0 ? (
+						<div className="py-12 text-center">
+							<div className="mb-4 text-4xl">🛒</div>
+							<p className="mb-2 text-sm font-medium text-zinc-900">Your cart is empty</p>
+							<p className="mb-4 text-xs text-zinc-500">Add some items to get started!</p>
+							<Button onClick={onClose} className="text-sm">
+								<Link href="/">Continue Shopping</Link>
+							</Button>
+						</div>
+					) : (
+						<ul className="space-y-4">
+							{items.map((it, index) => (
+								<li key={`${it.id}-${it.colorId || "default"}-${index}`} className="flex gap-3">
+									<Link
+										href={`/products/${it.id}`}
+										onClick={onClose}
+										className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-zinc-100"
+									>
+										{it.image ? (
+											<img src={it.image} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
+										) : null}
+									</Link>
+									<div className="min-w-0 flex-1">
 										<Link
 											href={`/products/${it.id}`}
 											onClick={onClose}
-											className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-zinc-100"
+											className="truncate text-sm font-medium text-zinc-900 hover:text-[var(--brand-red)]"
+										>
+											{it.name}
+										</Link>
+										<div className="mt-0.5 text-xs text-zinc-500">
+											{it.colorId ? `${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
+										</div>
+
+										{/* Quantity Controls */}
+										<div className="mt-2 flex items-center gap-2">
+											<div className="flex items-center rounded border border-zinc-200">
+												<button
+													onClick={() => updateItem(it.id, it.colorId, it.quantity - 1)}
+													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
+													aria-label="Decrease quantity"
+												>
+													<Minus className="h-3 w-3 text-zinc-600" />
+												</button>
+												<span className="flex h-7 min-w-[2rem] items-center justify-center text-xs font-medium">
+													{it.quantity}
+												</span>
+												<button
+													onClick={() => updateItem(it.id, it.colorId, it.quantity + 1)}
+													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
+													aria-label="Increase quantity"
+												>
+													<Plus className="h-3 w-3 text-zinc-600" />
+												</button>
+											</div>
+											<div className="text-sm font-semibold text-zinc-900">
+												₵{(it.price * it.quantity).toFixed(2)}
+											</div>
+										</div>
+									</div>
+									<div className="flex flex-col gap-1">
+										<button
+											onClick={() => {
+												saveForLater(it);
+												removeItem(it.id, it.colorId);
+												showToast("Item saved for later", "success");
+											}}
+											className="rounded-md border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50"
+											aria-label="Save for later"
+										>
+											<Heart className="h-4 w-4" />
+										</button>
+										<button
+											onClick={() => {
+												removeItem(it.id, it.colorId);
+												showToast("Item removed from cart", "info");
+											}}
+											className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50"
+										>
+											Remove
+										</button>
+									</div>
+								</li>
+							))}
+						</ul>
+					)}
+
+					{/* Saved for Later Section */}
+					{savedItems.length > 0 && (
+						<div className="mt-8 border-t border-zinc-200 pt-6">
+							<h4 className="mb-3 text-sm font-semibold text-zinc-900">Saved for Later</h4>
+							<ul className="space-y-3">
+								{savedItems.map((it, index) => (
+									<li key={`saved-${it.id}-${it.colorId || "default"}-${index}`} className="flex gap-3">
+										<Link
+											href={`/products/${it.id}`}
+											onClick={onClose}
+											className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-zinc-100"
 										>
 											{it.image ? (
 												<img src={it.image} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
@@ -72,99 +153,18 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 											<Link
 												href={`/products/${it.id}`}
 												onClick={onClose}
-												className="truncate text-sm font-medium text-zinc-900 hover:text-[var(--brand-red)]"
+												className="truncate text-xs font-medium text-zinc-900 hover:text-[var(--brand-red)]"
 											>
 												{it.name}
 											</Link>
-											<div className="mt-0.5 text-xs text-zinc-500">
-												{it.colorId ? `${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
-											</div>
-
-											{/* Quantity Controls */}
-											<div className="mt-2 flex items-center gap-2">
-												<div className="flex items-center rounded border border-zinc-200">
-													<button
-														onClick={() => updateItem(it.id, it.colorId, it.quantity - 1)}
-														className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
-														aria-label="Decrease quantity"
-													>
-														<Minus className="h-3 w-3 text-zinc-600" />
-													</button>
-													<span className="flex h-7 min-w-[2rem] items-center justify-center text-xs font-medium">
-														{it.quantity}
-													</span>
-													<button
-														onClick={() => updateItem(it.id, it.colorId, it.quantity + 1)}
-														className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
-														aria-label="Increase quantity"
-													>
-														<Plus className="h-3 w-3 text-zinc-600" />
-													</button>
-												</div>
-												<div className="text-sm font-semibold text-zinc-900">
-													₵{(it.price * it.quantity).toFixed(2)}
-												</div>
-											</div>
-										</div>
-										<div className="flex flex-col gap-1">
-											<button
-												onClick={() => {
-													saveForLater(it);
-													removeItem(it.id, it.colorId);
-													showToast("Item saved for later", "success");
-												}}
-												className="rounded-md border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50"
-												aria-label="Save for later"
-											>
-												<Heart className="h-4 w-4" />
-											</button>
-											<button
-												onClick={() => {
-													removeItem(it.id, it.colorId);
-													showToast("Item removed from cart", "info");
-												}}
-												className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50"
-											>
-												Remove
-											</button>
+											<div className="mt-0.5 text-xs text-zinc-500">₵{it.price.toFixed(2)}</div>
 										</div>
 									</li>
 								))}
 							</ul>
-						)}
-
-						{/* Saved for Later Section */}
-						{savedItems.length > 0 && (
-							<div className="mt-8 border-t border-zinc-200 pt-6">
-								<h4 className="mb-3 text-sm font-semibold text-zinc-900">Saved for Later</h4>
-								<ul className="space-y-3">
-									{savedItems.map((it) => (
-										<li key={`saved-${it.id}-${it.colorId || "default"}`} className="flex gap-3">
-											<Link
-												href={`/products/${it.id}`}
-												onClick={onClose}
-												className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-zinc-100"
-											>
-												{it.image ? (
-													<img src={it.image} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
-												) : null}
-											</Link>
-											<div className="min-w-0 flex-1">
-												<Link
-													href={`/products/${it.id}`}
-													onClick={onClose}
-													className="truncate text-xs font-medium text-zinc-900 hover:text-[var(--brand-red)]"
-												>
-													{it.name}
-												</Link>
-												<div className="mt-0.5 text-xs text-zinc-500">₵{it.price.toFixed(2)}</div>
-											</div>
-										</li>
-									))}
-								</ul>
-							</div>
-						)}
-					</div>
+						</div>
+					)}
+				</div>
 
 				<div className="border-t px-5 py-4 bg-zinc-50 flex-shrink-0">
 					<div className="mb-3 space-y-2 text-sm">
@@ -193,8 +193,8 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 						</div>
 					</div>
 					<div className="space-y-2">
-						<Button 
-							className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl" 
+						<Button
+							className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl"
 							onClick={onClose}
 						>
 							<Link href="/checkout" className="flex items-center justify-center gap-2 w-full">
@@ -203,9 +203,9 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 							</Link>
 						</Button>
 						<div className="flex gap-2">
-							<Button 
-								variant="outline" 
-								className="flex-1" 
+							<Button
+								variant="outline"
+								className="flex-1"
 								onClick={onClose}
 							>
 								<Link href="/checkout" className="w-full text-center">Checkout</Link>

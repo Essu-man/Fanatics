@@ -3,10 +3,30 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Package, Mail, Phone, MapPin, CreditCard, Clock } from "lucide-react";
+import { ArrowLeft, Package, Mail, Phone, MapPin, CreditCard, Clock, CheckCircle2, History } from "lucide-react";
 import OrderStatusUpdater from "../../../components/admin/OrderStatusUpdater";
 import OrderProgressTracker from "../../../components/OrderProgressTracker";
-import type { Order } from "@/lib/database";
+
+type Order = {
+    id: string;
+    userId?: string | null;
+    guestEmail?: string | null;
+    guestPhone?: string | null;
+    orderDate?: string | Date;
+    order_date?: string;
+    status: string;
+    items: any[];
+    shipping?: any;
+    subtotal: number;
+    shippingCost?: number;
+    shipping_cost?: number;
+    tax: number;
+    total: number;
+    paystackReference?: string;
+    paystack_reference?: string;
+    statusHistory?: any[];
+    status_history?: any[];
+};
 
 export default function AdminOrderDetailPage() {
     const params = useParams();
@@ -69,14 +89,18 @@ export default function AdminOrderDetailPage() {
         );
     }
 
-    const estimatedDelivery = new Date(order.order_date);
+    const orderDate = order.order_date || order.orderDate || new Date().toISOString();
+    const estimatedDelivery = new Date(orderDate);
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 4);
 
-    const customerEmail = order.guest_email || order.shipping?.email;
-    const customerPhone = order.guest_phone || order.shipping?.phone;
+    const customerEmail = order.guestEmail || order.shipping?.email;
+    const customerPhone = order.guestPhone || order.shipping?.phone;
     const customerName = order.shipping
         ? `${order.shipping.firstName} ${order.shipping.lastName}`
         : "Customer";
+
+    // Get status history (handle both naming conventions)
+    const statusHistory = order.status_history || order.statusHistory || [];
 
     return (
         <div className="space-y-6">
@@ -100,15 +124,78 @@ export default function AdminOrderDetailPage() {
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Main Content - 2 columns */}
                 <div className="space-y-6 lg:col-span-2">
-                    {/* Order Progress */}
+                    {/* Order Status & Progress */}
                     <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-bold text-zinc-900">Order Progress</h2>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-zinc-900">Order Status</h2>
+                            <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold ${order.status === "delivered"
+                                    ? "bg-green-100 text-green-700"
+                                    : order.status === "cancelled"
+                                        ? "bg-red-100 text-red-700"
+                                        : order.status === "out_for_delivery" || order.status === "in_transit"
+                                            ? "bg-purple-100 text-purple-700"
+                                            : order.status === "processing" || order.status === "confirmed"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : "bg-yellow-100 text-yellow-700"
+                                    }`}
+                            >
+                                {order.status === "delivered" && <CheckCircle2 className="h-4 w-4" />}
+                                {order.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </span>
+                        </div>
                         <OrderProgressTracker
-                            currentStage={order.status}
-                            orderDate={new Date(order.order_date).toLocaleDateString()}
+                            currentStage={order.status as any}
+                            orderDate={new Date(orderDate).toLocaleDateString()}
                             estimatedDelivery={estimatedDelivery.toLocaleDateString()}
                         />
                     </div>
+
+                    {/* Status History */}
+                    {statusHistory.length > 0 && (
+                        <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+                            <div className="mb-4 flex items-center gap-2">
+                                <History className="h-5 w-5 text-zinc-600" />
+                                <h2 className="text-lg font-bold text-zinc-900">Status History</h2>
+                            </div>
+                            <div className="space-y-3">
+                                {statusHistory
+                                    .slice()
+                                    .reverse()
+                                    .map((historyItem: any, index: number) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-start gap-3 border-l-2 border-zinc-200 pl-4 pb-3 last:pb-0"
+                                        >
+                                            <div className="mt-0.5 flex h-2 w-2 rounded-full bg-[var(--brand-red)]"></div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-semibold text-zinc-900">
+                                                        {historyItem.status
+                                                            ? historyItem.status.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())
+                                                            : "Status Updated"}
+                                                    </p>
+                                                    <p className="text-xs text-zinc-500">
+                                                        {historyItem.timestamp
+                                                            ? new Date(historyItem.timestamp).toLocaleString("en-US", {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })
+                                                            : "Unknown date"}
+                                                    </p>
+                                                </div>
+                                                {historyItem.note && (
+                                                    <p className="mt-1 text-sm text-zinc-600">{historyItem.note}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Order Items */}
                     <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
@@ -146,10 +233,10 @@ export default function AdminOrderDetailPage() {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-zinc-600">Shipping</span>
                                 <span className="font-semibold text-zinc-900">
-                                    {order.shipping_cost === 0 ? (
+                                    {(order.shippingCost || order.shipping_cost || 0) === 0 ? (
                                         <span className="text-green-600">FREE</span>
                                     ) : (
-                                        `₵${order.shipping_cost.toFixed(2)}`
+                                        `₵${(order.shippingCost || order.shipping_cost || 0).toFixed(2)}`
                                     )}
                                 </span>
                             </div>

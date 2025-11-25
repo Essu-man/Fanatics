@@ -6,7 +6,7 @@ import { saveUserProduct } from "../../lib/productStore";
 import Button from "./ui/button";
 
 export default function ProductUploader() {
-    const { role } = useAuth();
+    const { isAdmin } = useAuth();
     const [name, setName] = useState("");
     const [team, setTeam] = useState("");
     const [price, setPrice] = useState(0);
@@ -14,8 +14,8 @@ export default function ProductUploader() {
     const [colors, setColors] = useState("");
     const [message, setMessage] = useState("");
 
-    if (role !== "buyer" && role !== "seller") {
-        return <div className="p-6">You need to be a buyer or seller to upload products.</div>;
+    if (!isAdmin) {
+        return <div className="p-6">You need to be an admin to upload products.</div>;
     }
 
     function onSubmit(e: React.FormEvent) {

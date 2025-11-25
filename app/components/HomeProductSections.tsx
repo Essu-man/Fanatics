@@ -3,158 +3,77 @@
 import { useState, useRef, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import type { Product } from "../../lib/products";
+import { footballTeams, basketballTeams } from "../../lib/teams";
 
-// Football products
-const footballProducts: Product[] = [
-    {
-        id: "man-utd-7",
-        name: "Manchester United Kit",
-        team: "Manchester United",
-        price: 120.00,
-        images: [
-            "https://images.unsplash.com/photo-1637089760728-0707413a1a03?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "red", name: "Red", hex: "#DA020E" },
-        ],
-    },
-    {
-        id: "messi-10",
-        name: "Lionel Messi Jersey",
-        team: "Argentina",
-        price: 195.00,
-        images: [
-            "https://images.unsplash.com/photo-1616124619460-ff4ed8f4683c?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "blue", name: "Dark Blue", hex: "#6CACE4" },
-        ],
-    },
-    {
-        id: "cowboys-93",
-        name: "Dallas Cowboys Jersey",
-        team: "Dallas Cowboys",
-        price: 110.00,
-        images: [
-            "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "navy", name: "Navy Blue", hex: "#003594" },
-        ],
-    },
-    {
-        id: "mahomes-15",
-        name: "Patrick Mahomes Jersey",
-        team: "Kansas City Chiefs",
-        price: 150.00,
-        images: [
-            "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "green", name: "Green", hex: "#E31837" },
-        ],
-    },
-    {
-        id: "brady-12",
-        name: "Tom Brady Jersey",
-        team: "Tampa Bay Buccaneers",
-        price: 140.00,
-        images: [
-            "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "red", name: "Red", hex: "#D50A0A" },
-        ],
-    },
-    {
-        id: "ronaldo-7",
-        name: "Cristiano Ronaldo Jersey",
-        team: "Portugal",
-        price: 200.00,
-        images: [
-            "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "red", name: "Red", hex: "#DA020E" },
-        ],
-    },
-];
+// Helper function to determine if a league is football or basketball
+const isFootballLeague = (league: string | undefined): boolean => {
+    if (!league) return false;
+    const footballLeagues = new Set(footballTeams.map(t => t.league));
+    return footballLeagues.has(league);
+};
 
-// Basketball products
-const basketballProducts: Product[] = [
-    {
-        id: "lebron-23",
-        name: "LeBron James Jersey",
-        team: "Los Angeles Lakers",
-        price: 180.00,
-        images: [
-            "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "yellow", name: "Yellow", hex: "#FDB927" },
-        ],
-    },
-    {
-        id: "jordan-23",
-        name: "Michael Jordan Jersey",
-        team: "Chicago Bulls",
-        price: 250.00,
-        images: [
-            "https://images.unsplash.com/photo-1565877302143-786477b33d82?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "red", name: "Red", hex: "#CE1141" },
-        ],
-    },
-    {
-        id: "curry-30",
-        name: "Stephen Curry Jersey",
-        team: "Golden State Warriors",
-        price: 175.00,
-        images: [
-            "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "white", name: "White", hex: "#FFFFFF" },
-        ],
-    },
-    {
-        id: "celtics-green",
-        name: "Boston Celtics Jersey",
-        team: "Boston Celtics",
-        price: 115.00,
-        images: [
-            "https://images.unsplash.com/photo-1434648957308-5e6a859697e8?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "green", name: "Green", hex: "#007A33" },
-        ],
-    },
-    {
-        id: "durant-7",
-        name: "Kevin Durant Jersey",
-        team: "Phoenix Suns",
-        price: 165.00,
-        images: [
-            "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "orange", name: "Orange", hex: "#E56020" },
-        ],
-    },
-    {
-        id: "giannis-34",
-        name: "Giannis Antetokounmpo Jersey",
-        team: "Milwaukee Bucks",
-        price: 170.00,
-        images: [
-            "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=500&h=600&fit=crop",
-        ],
-        colors: [
-            { id: "green", name: "Green", hex: "#00471B" },
-        ],
-    },
-];
+const isBasketballLeague = (league: string | undefined): boolean => {
+    if (!league) return false;
+    const basketballLeagues = new Set(basketballTeams.map(t => t.league));
+    return basketballLeagues.has(league);
+};
+
+// Helper function to generate 2 products per team
+const generateTeamProducts = (teams: typeof footballTeams | typeof basketballTeams, basePrice: number = 120): Product[] => {
+    const products: Product[] = [];
+    const imageUrls = [
+        "https://images.unsplash.com/photo-1637089760728-0707413a1a03?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1616124619460-ff4ed8f4683c?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=500&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1565877302143-786477b33d82?w=500&h=600&fit=crop",
+    ];
+
+    teams.forEach((team, index) => {
+        const imageIndex1 = index % imageUrls.length;
+        const imageIndex2 = (index + 1) % imageUrls.length;
+
+        // Product 1: Home Jersey
+        products.push({
+            id: `${team.id}-home`,
+            name: `${team.name} Home Jersey`,
+            team: team.name,
+            price: basePrice + (index % 5) * 10,
+            images: [imageUrls[imageIndex1]],
+            colors: [
+                { id: "primary", name: "Primary", hex: "#000000" },
+            ],
+        });
+
+        // Product 2: Away Jersey
+        products.push({
+            id: `${team.id}-away`,
+            name: `${team.name} Away Jersey`,
+            team: team.name,
+            price: basePrice + (index % 5) * 10 + 15,
+            images: [imageUrls[imageIndex2]],
+            colors: [
+                { id: "secondary", name: "Secondary", hex: "#FFFFFF" },
+            ],
+        });
+    });
+
+    return products;
+};
+
+// Generate fallback products: 2 per team
+const fallbackFootballProducts: Product[] = generateTeamProducts(
+    footballTeams.slice(0, 20), // Top 20 football teams = 40 products
+    120
+);
+
+const fallbackBasketballProducts: Product[] = generateTeamProducts(
+    basketballTeams.slice(0, 15), // Top 15 basketball teams = 30 products
+    150
+);
 
 function ProductCarousel({ products }: { products: Product[] }) {
     const [scrollPosition, setScrollPosition] = useState(0);
@@ -216,9 +135,8 @@ function ProductCarousel({ products }: { products: Product[] }) {
             <button
                 onClick={scrollLeft}
                 disabled={!canScrollLeft}
-                className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    !canScrollLeft ? "hidden" : ""
-                }`}
+                className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 ${!canScrollLeft ? "hidden" : ""
+                    }`}
                 aria-label="Scroll left"
             >
                 <svg
@@ -252,9 +170,8 @@ function ProductCarousel({ products }: { products: Product[] }) {
             <button
                 onClick={scrollRight}
                 disabled={!canScrollRight}
-                className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    !canScrollRight ? "hidden" : ""
-                }`}
+                className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 ${!canScrollRight ? "hidden" : ""
+                    }`}
                 aria-label="Scroll right"
             >
                 <svg
@@ -276,6 +193,141 @@ function ProductCarousel({ products }: { products: Product[] }) {
 }
 
 export default function HomeProductSections() {
+    const [footballProducts, setFootballProducts] = useState<Product[]>([]);
+    const [basketballProducts, setBasketballProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch("/api/admin/products");
+                const data = await response.json();
+
+                if (data.success && data.products) {
+                    // Filter available products with images
+                    const availableProducts = data.products.filter(
+                        (p: any) => p.available && p.images && p.images.length > 0
+                    );
+
+                    // Convert to Product type and filter by league
+                    const allProducts: any[] = availableProducts.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        team: p.team,
+                        teamId: p.teamId,
+                        league: p.league,
+                        price: p.price,
+                        images: p.images || [],
+                        colors: p.colors || [],
+                    }));
+
+                    // Separate football and basketball products using the league field
+                    const football = allProducts.filter((p: any) => {
+                        // First try: use league field directly
+                        if (p.league) {
+                            const isFootball = isFootballLeague(p.league);
+                            if (isFootball) return true;
+                        }
+
+                        // Second try: find team by teamId
+                        if (p.teamId) {
+                            const team = footballTeams.find((t) => t.id === p.teamId);
+                            if (team) return true;
+                        }
+
+                        // Third try: find team by team name
+                        if (p.team) {
+                            const team = footballTeams.find((t) => t.name === p.team);
+                            if (team) return true;
+                        }
+
+                        return false;
+                    });
+
+                    const basketball = allProducts.filter((p: any) => {
+                        // First try: use league field directly
+                        if (p.league) {
+                            const isBasketball = isBasketballLeague(p.league);
+                            if (isBasketball) return true;
+                        }
+
+                        // Second try: find team by teamId
+                        if (p.teamId) {
+                            const team = basketballTeams.find((t) => t.id === p.teamId);
+                            if (team) return true;
+                        }
+
+                        // Third try: find team by team name
+                        if (p.team) {
+                            const team = basketballTeams.find((t) => t.name === p.team);
+                            if (team) return true;
+                        }
+
+                        return false;
+                    });
+
+                    // Debug logging
+                    console.log("Total products:", allProducts.length);
+                    console.log("Football products found:", football.length);
+                    console.log("Basketball products found:", basketball.length);
+                    if (allProducts.length > 0) {
+                        console.log("Sample product:", {
+                            id: allProducts[0].id,
+                            name: allProducts[0].name,
+                            league: allProducts[0].league,
+                            teamId: allProducts[0].teamId,
+                            team: allProducts[0].team
+                        });
+                    }
+
+                    // Use real products if available, otherwise fallback
+                    setFootballProducts(football.length > 0 ? football.slice(0, 8) : fallbackFootballProducts);
+                    setBasketballProducts(basketball.length > 0 ? basketball.slice(0, 8) : fallbackBasketballProducts);
+                } else {
+                    // Use fallback products if API fails
+                    setFootballProducts(fallbackFootballProducts);
+                    setBasketballProducts(fallbackBasketballProducts);
+                }
+            } catch (error) {
+                console.error("Error fetching products:", error);
+                // Use fallback products on error
+                setFootballProducts(fallbackFootballProducts);
+                setBasketballProducts(fallbackBasketballProducts);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
+    if (loading) {
+        return (
+            <>
+                <section className="bg-white py-12">
+                    <div className="mx-auto max-w-7xl px-6">
+                        <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
+                            Gear Up for Game Day: Shop Football
+                        </h2>
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">Loading...</div>
+                        </div>
+                    </div>
+                </section>
+                <section className="bg-white py-12">
+                    <div className="mx-auto max-w-7xl px-6">
+                        <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
+                            Rule the Court: Shop Basketball
+                        </h2>
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">Loading...</div>
+                        </div>
+                    </div>
+                </section>
+            </>
+        );
+    }
+
     return (
         <>
             {/* Football Section */}
@@ -284,7 +336,13 @@ export default function HomeProductSections() {
                     <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
                         Gear Up for Game Day: Shop Football
                     </h2>
-                    <ProductCarousel products={footballProducts} />
+                    {footballProducts.length > 0 ? (
+                        <ProductCarousel products={footballProducts} />
+                    ) : (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">No football products available</div>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -294,7 +352,13 @@ export default function HomeProductSections() {
                     <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
                         Rule the Court: Shop Basketball
                     </h2>
-                    <ProductCarousel products={basketballProducts} />
+                    {basketballProducts.length > 0 ? (
+                        <ProductCarousel products={basketballProducts} />
+                    ) : (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">No basketball products available</div>
+                        </div>
+                    )}
                 </div>
             </section>
         </>

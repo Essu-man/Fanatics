@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateOrderStatus, getOrder } from "@/lib/database";
+import { updateOrderStatus, getOrder } from "@/lib/firestore";
 import {
     getOrderStatusEmail,
     getOrderStatusSMS,
     sendEmail,
     sendSMS,
-} from "@/lib/arkesel";
+} from "@/lib/frogwigal";
 
 export async function POST(request: NextRequest) {
     try {
@@ -32,26 +32,36 @@ export async function POST(request: NextRequest) {
         // Generate tracking link
         const trackingLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/track/${orderId}`;
 
-        // Send email notification
+        // Send email notification (non-blocking - don't fail status update if email fails)
         if (customerEmail) {
-            const emailHtml = getOrderStatusEmail(
-                customerName || "Customer",
-                orderId,
-                status,
-                trackingLink
-            );
+            try {
+                const emailHtml = getOrderStatusEmail(
+                    customerName || "Customer",
+                    orderId,
+                    status,
+                    trackingLink
+                );
 
-            await sendEmail(
-                customerEmail,
-                `Order Update - ${orderId}`,
-                emailHtml
-            );
+                await sendEmail(
+                    customerEmail,
+                    `Order Update - ${orderId}`,
+                    emailHtml
+                );
+            } catch (emailError) {
+                console.error("Failed to send email notification:", emailError);
+                // Don't fail the status update if email fails
+            }
         }
 
-        // Send SMS notification
+        // Send SMS notification (non-blocking - don't fail status update if SMS fails)
         if (customerPhone) {
-            const smsMessage = getOrderStatusSMS(orderId, status, trackingLink);
-            await sendSMS(customerPhone, smsMessage);
+            try {
+                const smsMessage = getOrderStatusSMS(orderId, status, trackingLink);
+                await sendSMS(customerPhone, smsMessage);
+            } catch (smsError) {
+                console.error("Failed to send SMS notification:", smsError);
+                // Don't fail the status update if SMS fails
+            }
         }
 
         return NextResponse.json({

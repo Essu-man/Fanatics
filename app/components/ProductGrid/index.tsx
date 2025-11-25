@@ -5,6 +5,13 @@ import Button from "@/app/components/ui/button";
 import Input from "@/app/components/ui/input";
 import type { Product } from "@/lib/products";
 import ProductCard from "@/app/components/ProductCard";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/app/components/ui/select";
 
 interface ProductGridProps {
     products: Product[];
@@ -29,16 +36,17 @@ export default function ProductGrid({ products }: ProductGridProps) {
             {/* Filters */}
             <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
                 <div>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                        className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
-                    >
-                        <option value="featured">Featured</option>
-                        <option value="price-asc">Price: Low to High</option>
-                        <option value="price-desc">Price: High to Low</option>
-                        <option value="new">Newest</option>
-                    </select>
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="featured">Featured</SelectItem>
+                            <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                            <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                            <SelectItem value="new">Newest</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="flex items-center gap-3">

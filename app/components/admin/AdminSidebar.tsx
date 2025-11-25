@@ -34,17 +34,21 @@ export default function AdminSidebar() {
         >
             {/* Logo */}
             <div className="flex h-16 items-center justify-between border-b border-zinc-200 px-4">
-                {!collapsed && (
-                    <Link href="/admin" className="flex items-center gap-2 text-xl font-extrabold">
-                        <span className="text-2xl font-black">X</span>
-                        <span className="text-zinc-900">Cediman</span>
-                    </Link>
-                )}
-                {collapsed && (
-                    <Link href="/admin" className="flex items-center justify-center w-full">
-                        <span className="text-2xl font-black">X</span>
-                    </Link>
-                )}
+                <Link href="/admin" className="flex items-center justify-center w-full">
+                    {collapsed ? (
+                        <img
+                            src="/cediman.png"
+                            alt="Cediman"
+                            className="h-8 w-auto"
+                        />
+                    ) : (
+                        <img
+                            src="/cediman.png"
+                            alt="Cediman"
+                            className="h-8 w-auto"
+                        />
+                    )}
+                </Link>
             </div>
 
             {/* Navigation */}
@@ -58,8 +62,8 @@ export default function AdminSidebar() {
                             key={item.name}
                             href={item.href}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                                    ? "bg-[var(--brand-red)] text-white"
-                                    : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                                ? "bg-[var(--brand-red)] text-white"
+                                : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                                 } ${collapsed ? "justify-center" : ""}`}
                             title={collapsed ? item.name : undefined}
                         >
