@@ -14,21 +14,62 @@ interface Order {
 }
 
 export default function OrdersPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load orders from localStorage
-        try {
-            const stored = localStorage.getItem("cediman:orders");
-            if (stored) {
-                setOrders(JSON.parse(stored));
+        // Wait for auth to finish loading before checking user
+        if (!authLoading) {
+            if (user?.id) {
+                fetchOrders();
+            } else {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Error loading orders:", error);
         }
-    }, []);
+    }, [user, authLoading]);
 
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/orders/user?userId=${user?.id}`, { cache: "no-store" });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Unable to load orders");
+            }
+
+            // Map the API response to the Order interface
+            const mappedOrders: Order[] = (data.orders || []).map((order: any) => ({
+                id: order.id,
+                orderDate: order.orderDate || order.order_date || new Date().toISOString(),
+                status: order.status || "pending",
+                items: order.items || [],
+                total: Number(order.total || 0),
+            }));
+
+            setOrders(mappedOrders);
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+            setOrders([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Show loading while auth is being checked
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+                <div className="text-center">
+                    <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--brand-red)] border-t-transparent"></div>
+                    <p className="text-zinc-600">Checking authentication...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Only show sign in prompt if auth has finished loading and user is not authenticated
     if (!user) {
         return (
             <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
@@ -45,16 +86,28 @@ export default function OrdersPage() {
         );
     }
 
+    // Show loading while orders are being fetched
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+                <div className="text-center">
+                    <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--brand-red)] border-t-transparent"></div>
+                    <p className="text-zinc-600">Loading orders...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-zinc-50">
             <div className="mx-auto max-w-7xl px-6 py-12">
                 {/* Header */}
                 <Link
-                    href="/account"
+                    href="/"
                     className="mb-6 inline-flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900"
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Account
+                    Back to Home
                 </Link>
 
                 <div className="mb-8">
@@ -103,10 +156,10 @@ export default function OrdersPage() {
                                     <div className="text-right">
                                         <span
                                             className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${order.status === "delivered"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : order.status === "shipped"
-                                                        ? "bg-blue-100 text-blue-700"
-                                                        : "bg-yellow-100 text-yellow-700"
+                                                ? "bg-green-100 text-green-700"
+                                                : order.status === "shipped"
+                                                    ? "bg-blue-100 text-blue-700"
+                                                    : "bg-yellow-100 text-yellow-700"
                                                 }`}
                                         >
                                             {order.status}
@@ -142,10 +195,13 @@ export default function OrdersPage() {
                                 </div>
 
                                 <div className="mt-4 flex gap-3">
-                                    <button className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                                    <Link
+                                        href={`/orders/${order.id}`}
+                                        className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                                    >
                                         <Eye className="h-4 w-4" />
                                         View Details
-                                    </button>
+                                    </Link>
                                     <button className="rounded-lg border border-[var(--brand-red)] px-4 py-2 text-sm font-medium text-[var(--brand-red)] hover:bg-red-50">
                                         Reorder
                                     </button>

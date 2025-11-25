@@ -1,6 +1,6 @@
 import { Check, Package, Truck, MapPin, Home } from "lucide-react";
 
-type OrderStage = "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered";
+type OrderStage = "submitted" | "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
 
 interface OrderProgressTrackerProps {
     currentStage: OrderStage;
@@ -10,10 +10,16 @@ interface OrderProgressTrackerProps {
 
 const stages = [
     {
+        id: "submitted" as OrderStage,
+        label: "Order Submitted",
+        icon: Package,
+        description: "Your order has been submitted",
+    },
+    {
         id: "confirmed" as OrderStage,
         label: "Order Confirmed",
         icon: Check,
-        description: "Your order has been placed",
+        description: "Your order has been confirmed",
     },
     {
         id: "processing" as OrderStage,
@@ -46,6 +52,34 @@ export default function OrderProgressTracker({
     orderDate,
     estimatedDelivery,
 }: OrderProgressTrackerProps) {
+    // Don't show progress tracker for cancelled orders
+    if (currentStage === "cancelled") {
+        return (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+                <p className="text-center text-sm font-medium text-red-900">
+                    ❌ This order has been cancelled.
+                </p>
+            </div>
+        );
+    }
+
+    // For submitted orders, show a special message
+    if (currentStage === "submitted") {
+        return (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
+                <div className="text-center">
+                    <Package className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                        Order Submitted
+                    </p>
+                    <p className="text-xs text-gray-600">
+                        Your order has been submitted and is awaiting admin confirmation.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     const currentIndex = stages.findIndex((stage) => stage.id === currentStage);
 
     return (
@@ -83,8 +117,8 @@ export default function OrderProgressTracker({
                                 {/* Circle */}
                                 <div
                                     className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${isCompleted
-                                            ? "border-[var(--brand-red)] bg-[var(--brand-red)] text-white"
-                                            : "border-zinc-300 bg-white text-zinc-400"
+                                        ? "border-[var(--brand-red)] bg-[var(--brand-red)] text-white"
+                                        : "border-zinc-300 bg-white text-zinc-400"
                                         } ${isCurrent ? "scale-110 shadow-lg" : ""}`}
                                 >
                                     <Icon className="h-5 w-5" />
@@ -137,7 +171,11 @@ export default function OrderProgressTracker({
                                 ? "🚚 Your order is on its way to you."
                                 : currentStage === "processing"
                                     ? "⏳ We're carefully preparing your items for shipment."
-                                    : "✅ Your order has been confirmed and will be processed soon."}
+                                    : currentStage === "confirmed"
+                                        ? "✅ Your order has been confirmed and will be processed soon."
+                                        : currentStage === "submitted"
+                                            ? "📝 Your order has been submitted and is awaiting confirmation."
+                                            : "✅ Your order has been confirmed and will be processed soon."}
                 </p>
             </div>
         </div>

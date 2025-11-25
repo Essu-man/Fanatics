@@ -1,0 +1,392 @@
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut as firebaseSignOut,
+    sendPasswordResetEmail,
+    sendEmailVerification,
+    confirmPasswordReset as firebaseConfirmPasswordReset,
+    onAuthStateChanged,
+    type User as FirebaseUser,
+    updateProfile,
+} from 'firebase/auth';
+import { auth } from './firebase';
+import {
+    createUserProfile,
+    getUserProfile,
+    updateUserProfile as updateFirestoreProfile,
+    type UserProfile
+} from './firestore';
+
+// Auth User Interface (matches the existing AuthUser interface)
+export interface AuthUser {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'admin' | 'customer' | 'delivery';
+    phone?: string;
+}
+
+/**
+ * Sign up a new user
+ */
+export const signUp = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone?: string
+) => {
+    try {
+        // Create Firebase auth user
+        const { user: firebaseUser } = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+        );
+
+        // Update Firebase auth profile
+        await updateProfile(firebaseUser, {
+            displayName: `${firstName} ${lastName}`,
+        });
+
+        // Send email verification with custom action handler
+        try {
+            await sendEmailVerification(firebaseUser, {
+                url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+                handleCodeInApp: false,
+            });
+        } catch (emailError) {
+            console.warn('Could not send verification email:', emailError);
+            // Don't fail signup if email sending fails
+        }
+
+        // Create user profile in Firestore
+        const profileData: Omit<UserProfile, 'uid' | 'createdAt'> = {
+            email,
+            firstName,
+            lastName,
+            role: 'customer',
+            emailVerified: firebaseUser.emailVerified,
+            // Only include phone if it's provided (not undefined)
+            ...(phone && { phone }),
+        };
+
+        const profileResult = await createUserProfile(firebaseUser.uid, profileData);
+
+        if (!profileResult.success) {
+            // If profile creation fails, delete the auth user
+            await firebaseUser.delete();
+            return { success: false, error: profileResult.error || 'Failed to create user profile' };
+        }
+
+        // Get the created profile
+        const profile = await getUserProfile(firebaseUser.uid);
+
+        return {
+            success: true,
+            user: profile ? {
+                id: profile.uid,
+                email: profile.email,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                role: profile.role,
+                phone: profile.phone,
+            } as AuthUser : null,
+        };
+    } catch (error: any) {
+        console.error('Error signing up:', error);
+        return {
+            success: false,
+            error: error.message || 'Sign up failed',
+        };
+    }
+};
+
+/**
+ * Sign in an existing user
+ */
+export const signIn = async (email: string, password: string) => {
+    try {
+        const { user: firebaseUser } = await signInWithEmailAndPassword(
+            auth,
+            email,
+            password
+        );
+
+        // Get user profile from Firestore
+        let profile = await getUserProfile(firebaseUser.uid);
+
+        // If profile doesn't exist, create it from auth metadata
+        if (!profile) {
+            const displayName = firebaseUser.displayName || '';
+            const nameParts = displayName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            const profileData: Omit<UserProfile, 'uid' | 'createdAt'> = {
+                email: firebaseUser.email!,
+                firstName,
+                lastName,
+                role: 'customer',
+                emailVerified: firebaseUser.emailVerified,
+            };
+
+            await createUserProfile(firebaseUser.uid, profileData);
+            profile = await getUserProfile(firebaseUser.uid);
+        }
+
+        if (!profile) {
+            return { success: false, error: 'Failed to load user profile' };
+        }
+
+        return {
+            success: true,
+            user: {
+                id: profile.uid,
+                email: profile.email,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                role: profile.role,
+                phone: profile.phone,
+            } as AuthUser,
+        };
+    } catch (error: any) {
+        console.error('Error signing in:', error);
+        return {
+            success: false,
+            error: error.message || 'Sign in failed',
+        };
+    }
+};
+
+/**
+ * Sign out the current user
+ */
+export const signOut = async () => {
+    try {
+        await firebaseSignOut(auth);
+        // Clear session storage (but not all localStorage to preserve other app data)
+        if (typeof window !== 'undefined') {
+            sessionStorage.clear();
+            // Only clear auth-related localStorage items, not everything
+            // localStorage.clear() is too aggressive and can break other features
+        }
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error signing out:', error);
+        return {
+            success: false,
+            error: error.message || 'Sign out failed',
+        };
+    }
+};
+
+/**
+ * Get the current authenticated user
+ */
+export const getCurrentUser = async (): Promise<AuthUser | null> => {
+    try {
+        const firebaseUser = auth.currentUser;
+
+        if (!firebaseUser) {
+            return null;
+        }
+
+        // Get user profile from Firestore
+        const profile = await getUserProfile(firebaseUser.uid);
+
+        if (!profile) {
+            // Fallback to auth metadata
+            const displayName = firebaseUser.displayName || '';
+            const nameParts = displayName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            return {
+                id: firebaseUser.uid,
+                email: firebaseUser.email!,
+                firstName,
+                lastName,
+                role: 'customer',
+            };
+        }
+
+        return {
+            id: profile.uid,
+            email: profile.email,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            role: profile.role,
+            phone: profile.phone,
+        };
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
+    }
+};
+
+/**
+ * Listen to auth state changes
+ */
+export const onAuthStateChange = (callback: (user: AuthUser | null) => void) => {
+    return onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            try {
+                const profile = await getUserProfile(firebaseUser.uid);
+                if (profile) {
+                    callback({
+                        id: profile.uid,
+                        email: profile.email,
+                        firstName: profile.firstName,
+                        lastName: profile.lastName,
+                        role: profile.role,
+                        phone: profile.phone,
+                    });
+                } else {
+                    // Profile not found, but Firebase user exists - use metadata as fallback
+                    const displayName = firebaseUser.displayName || '';
+                    const nameParts = displayName.split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    const metadata = firebaseUser.metadata;
+
+                    callback({
+                        id: firebaseUser.uid,
+                        email: firebaseUser.email!,
+                        firstName,
+                        lastName,
+                        role: 'customer', // Default role if profile not found
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching profile in auth state change:', error);
+                // On error, still provide user info from Firebase auth
+                // Don't clear user on temporary errors
+                const displayName = firebaseUser.displayName || '';
+                const nameParts = displayName.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                callback({
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email!,
+                    firstName,
+                    lastName,
+                    role: 'customer',
+                });
+            }
+        } else {
+            // Firebase user is null - real logout
+            callback(null);
+        }
+    });
+};
+
+/**
+ * Send password reset email
+ */
+export const sendPasswordReset = async (email: string, redirectUrl?: string) => {
+    try {
+        const actionCodeSettings = {
+            url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+            handleCodeInApp: false,
+        };
+
+        await sendPasswordResetEmail(auth, email, actionCodeSettings);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sending password reset:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to send password reset email',
+        };
+    }
+};
+
+/**
+ * Confirm password reset with code
+ */
+export const confirmPasswordReset = async (code: string, newPassword: string) => {
+    try {
+        await firebaseConfirmPasswordReset(auth, code, newPassword);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error confirming password reset:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to reset password',
+        };
+    }
+};
+
+/**
+ * Resend email verification
+ */
+export const resendEmailVerification = async () => {
+    try {
+        const firebaseUser = auth.currentUser;
+
+        if (!firebaseUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        if (firebaseUser.emailVerified) {
+            return { success: false, error: 'Email already verified' };
+        }
+
+        await sendEmailVerification(firebaseUser, {
+            url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+            handleCodeInApp: false,
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sending email verification:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to send verification email',
+        };
+    }
+};
+
+/**
+ * Update user profile
+ */
+export const updateUserProfile = async (updates: Partial<AuthUser>) => {
+    try {
+        const firebaseUser = auth.currentUser;
+
+        if (!firebaseUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        // Update Firestore profile
+        const firestoreUpdates: Partial<UserProfile> = {};
+        if (updates.firstName !== undefined) firestoreUpdates.firstName = updates.firstName;
+        if (updates.lastName !== undefined) firestoreUpdates.lastName = updates.lastName;
+        if (updates.phone !== undefined) firestoreUpdates.phone = updates.phone;
+        if (updates.role !== undefined) firestoreUpdates.role = updates.role;
+
+        const result = await updateFirestoreProfile(firebaseUser.uid, firestoreUpdates);
+
+        // Update Firebase auth display name if name changed
+        if (updates.firstName || updates.lastName) {
+            const currentProfile = await getUserProfile(firebaseUser.uid);
+            if (currentProfile) {
+                await updateProfile(firebaseUser, {
+                    displayName: `${currentProfile.firstName} ${currentProfile.lastName}`,
+                });
+            }
+        }
+
+        return result;
+    } catch (error: any) {
+        console.error('Error updating user profile:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to update profile',
+        };
+    }
+};
+

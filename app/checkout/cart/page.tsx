@@ -52,9 +52,9 @@ export default function CheckoutCartPage() {
                     {/* Cart Items */}
                     <div className="lg:col-span-2">
                         <div className="space-y-4">
-                            {items.map((item: any) => (
+                            {items.map((item: any, index: number) => (
                                 <div
-                                    key={`${item.id}-${item.colorId || 'default'}`}
+                                    key={`${item.id}-${item.colorId || 'default'}-${index}`}
                                     className="flex gap-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm"
                                 >
                                     {/* Product Image */}

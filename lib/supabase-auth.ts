@@ -101,20 +101,75 @@ export const signIn = async (email: string, password: string) => {
             .single();
 
         if (profileError || !profile) {
-            // If profile doesn't exist, create it from metadata
+            // If profile doesn't exist or can't be read, try to create it
+            // Use upsert to handle case where profile exists but RLS blocks read
             const metadata = data.user.user_metadata;
-            const { error: insertError } = await supabase.from('users').insert({
-                id: data.user.id,
-                email: data.user.email,
-                first_name: metadata.first_name || '',
-                last_name: metadata.last_name || '',
-                role: metadata.role || 'customer',
-            });
+            const { data: upsertedProfile, error: upsertError } = await supabase
+                .from('users')
+                .upsert({
+                    id: data.user.id,
+                    email: data.user.email,
+                    first_name: metadata.first_name || '',
+                    last_name: metadata.last_name || '',
+                    role: metadata.role || 'customer',
+                }, {
+                    onConflict: 'id',
+                })
+                .select()
+                .single();
 
-            if (insertError) {
-                console.error('Error creating user profile:', insertError);
+            if (upsertError) {
+                console.error('Error upserting user profile:', upsertError);
+                // If upsert fails, try to get profile again (might have been created)
+                const { data: retryProfile } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (retryProfile) {
+                    return {
+                        success: true,
+                        user: {
+                            id: retryProfile.id,
+                            email: retryProfile.email,
+                            firstName: retryProfile.first_name,
+                            lastName: retryProfile.last_name,
+                            role: retryProfile.role,
+                            phone: retryProfile.phone,
+                        } as AuthUser,
+                    };
+                }
+
+                // Fallback to metadata if all else fails
+                return {
+                    success: true,
+                    user: {
+                        id: data.user.id,
+                        email: data.user.email!,
+                        firstName: metadata.first_name || '',
+                        lastName: metadata.last_name || '',
+                        role: metadata.role || 'customer',
+                    } as AuthUser,
+                };
             }
 
+            // Use upserted profile if available
+            if (upsertedProfile) {
+                return {
+                    success: true,
+                    user: {
+                        id: upsertedProfile.id,
+                        email: upsertedProfile.email,
+                        firstName: upsertedProfile.first_name,
+                        lastName: upsertedProfile.last_name,
+                        role: upsertedProfile.role,
+                        phone: upsertedProfile.phone,
+                    } as AuthUser,
+                };
+            }
+
+            // Final fallback
             return {
                 success: true,
                 user: {
@@ -148,12 +203,26 @@ export const signIn = async (email: string, password: string) => {
  */
 export const signOut = async () => {
     try {
-        const { error } = await supabase.auth.signOut();
+        // Sign out from all sessions
+        const { error } = await supabase.auth.signOut({ scope: 'global' });
         if (error) {
+            console.error('Supabase signOut error:', error);
             return { success: false, error: error.message };
         }
+
+        // Clear any cached session data
+        try {
+            // Force clear session storage
+            if (typeof window !== 'undefined') {
+                sessionStorage.clear();
+            }
+        } catch (e) {
+            console.warn('Error clearing sessionStorage:', e);
+        }
+
         return { success: true };
     } catch (error: any) {
+        console.error('Sign out exception:', error);
         return { success: false, error: error.message || 'Sign out failed' };
     }
 };
@@ -170,13 +239,14 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
         }
 
         // Get user profile from users table
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('users')
             .select('*')
             .eq('id', user.id)
             .single();
 
-        if (!profile) {
+        if (profileError || !profile) {
+            console.warn('Profile not found or error:', profileError);
             // Fallback to metadata
             const metadata = user.user_metadata;
             return {
@@ -188,12 +258,19 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
             };
         }
 
+        // Log the role for debugging
+        console.log('User profile loaded:', {
+            id: profile.id,
+            email: profile.email,
+            role: profile.role
+        });
+
         return {
             id: profile.id,
             email: profile.email,
             firstName: profile.first_name,
             lastName: profile.last_name,
-            role: profile.role,
+            role: profile.role as 'admin' | 'customer' | 'delivery',
             phone: profile.phone,
         };
     } catch (error) {
@@ -238,8 +315,12 @@ export const updateUserProfile = async (updates: Partial<AuthUser>) => {
  */
 export const resetPassword = async (email: string) => {
     try {
+        // Get the base URL (use localhost for development, or env variable)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+            (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+            redirectTo: `${baseUrl}/reset-password`,
         });
 
         if (error) {

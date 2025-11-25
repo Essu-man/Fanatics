@@ -5,6 +5,7 @@ import { ShoppingBag, Search, User, LogOut, Settings, Package } from "lucide-rea
 import { useCart } from "../providers/CartProvider";
 import { useAuth } from "../providers/AuthProvider";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import CartDrawer from "./CartDrawer";
 import SearchAutocomplete from "./SearchAutocomplete";
 import MobileSearchModal from "./MobileSearchModal";
@@ -12,16 +13,21 @@ import MobileSearchModal from "./MobileSearchModal";
 export default function Header() {
     const { items } = useCart();
     const { user, isAdmin, logout } = useAuth();
+    const router = useRouter();
     const [cartOpen, setCartOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     return (
         <header className="border-b border-zinc-200 bg-white text-zinc-900">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
-                    <span className="text-3xl font-black">X</span>
-                    <span className="text-zinc-900">Cediman</span>
+                <Link href="/" className="flex items-center gap-2">
+                    <img
+                        src="/cediman.png"
+                        alt="Cediman"
+                        className="h-8 w-auto"
+                    />
                 </Link>
 
                 <div className="hidden md:block flex-1 max-w-[560px] mx-4 lg:mx-8">
@@ -37,7 +43,17 @@ export default function Header() {
                     </button>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                    {/* Track Order Link */}
+                    <Link
+                        href="/track"
+                        className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-700 hover:text-[var(--brand-red)] transition-colors"
+                        title="Track Your Order"
+                    >
+                        <Package className="h-5 w-5" />
+                        <span className="hidden lg:inline">Track Order</span>
+                    </Link>
+
                     {user ? (
                         <div className="relative">
                             <button
@@ -51,10 +67,10 @@ export default function Header() {
                             {userDropdownOpen && (
                                 <>
                                     <div
-                                        className="fixed inset-0 z-10"
+                                        className="fixed inset-0 z-[110]"
                                         onClick={() => setUserDropdownOpen(false)}
                                     ></div>
-                                    <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-lg border border-zinc-200 bg-white shadow-lg">
+                                    <div className="absolute right-0 top-full z-[120] mt-2 w-48 rounded-lg border border-zinc-200 bg-white shadow-lg">
                                         <div className="p-2 space-y-1">
                                             {isAdmin && (
                                                 <Link
@@ -83,14 +99,31 @@ export default function Header() {
                                                 My Orders
                                             </Link>
                                             <button
-                                                onClick={() => {
-                                                    logout();
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    if (loggingOut) return;
+
+                                                    setLoggingOut(true);
                                                     setUserDropdownOpen(false);
+
+                                                    try {
+                                                        await logout();
+                                                        // Use router for better navigation
+                                                        router.push('/');
+                                                        router.refresh(); // Refresh to clear any cached data
+                                                    } catch (error) {
+                                                        console.error('Logout error:', error);
+                                                        // Still redirect even if logout has issues
+                                                        router.push('/');
+                                                    } finally {
+                                                        setLoggingOut(false);
+                                                    }
                                                 }}
-                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
+                                                disabled={loggingOut}
+                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <LogOut className="h-4 w-4" />
-                                                Sign Out
+                                                {loggingOut ? 'Signing out...' : 'Sign Out'}
                                             </button>
                                         </div>
                                     </div>
@@ -98,17 +131,9 @@ export default function Header() {
                             )}
                         </div>
                     ) : (
-                        <>
-                            <Link href="/login" className="text-sm text-zinc-700 hover:text-zinc-900">
-                                Sign In
-                            </Link>
-                            <Link
-                                href="/signup"
-                                className="rounded-lg bg-[var(--brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-red-dark)]"
-                            >
-                                Sign Up
-                            </Link>
-                        </>
+                        <Link href="/login" className="ml-auto rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 transition-colors">
+                            Sign In
+                        </Link>
                     )}
                     <button
                         onClick={() => setCartOpen(true)}

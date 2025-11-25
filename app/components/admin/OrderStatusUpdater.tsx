@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { useToast } from "../ui/ToastContainer";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../ui/select";
 
 interface OrderStatusUpdaterProps {
     orderId: string;
@@ -13,6 +20,7 @@ interface OrderStatusUpdaterProps {
 }
 
 const statusOptions = [
+    { value: "submitted", label: "Submitted", color: "bg-gray-100 text-gray-700" },
     { value: "confirmed", label: "Confirmed", color: "bg-blue-100 text-blue-700" },
     { value: "processing", label: "Processing", color: "bg-yellow-100 text-yellow-700" },
     { value: "in_transit", label: "In Transit", color: "bg-purple-100 text-purple-700" },
@@ -78,18 +86,22 @@ export default function OrderStatusUpdater({
                 <label className="block text-sm font-medium text-zinc-700 mb-2">
                     Order Status
                 </label>
-                <select
+                <Select
                     value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    onValueChange={setSelectedStatus}
                     disabled={updating}
-                    className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 disabled:opacity-50"
                 >
-                    {statusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
+                    <SelectTrigger className="w-full" disabled={updating}>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {statusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             {currentStatusConfig && (

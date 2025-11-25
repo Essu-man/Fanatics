@@ -1,36 +1,106 @@
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import StatsCard from "../components/admin/StatsCard";
-import { DollarSign, ShoppingCart, Package, Users, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, Users, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
+
+interface DashboardStats {
+    revenue: string;
+    revenueChange: string;
+    orders: string;
+    ordersChange: string;
+    products: string;
+    productsChange: string;
+    customers: string;
+    customersChange: string;
+}
+
+interface RecentOrder {
+    id: string;
+    customer: string;
+    amount: string;
+    status: string;
+    date: string;
+}
+
+interface TopProduct {
+    name: string;
+    sales: number;
+    revenue: string;
+}
 
 export default function AdminDashboard() {
-    // Mock data - in production, fetch from API
-    const stats = {
-        revenue: "₵45,231",
-        revenueChange: "+12.5% from last month",
-        orders: "234",
-        ordersChange: "+8.2% from last month",
-        products: "1,234",
-        productsChange: "12 new this week",
-        customers: "892",
-        customersChange: "+23 new this month",
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<DashboardStats>({
+        revenue: "₵0.00",
+        revenueChange: "Loading...",
+        orders: "0",
+        ordersChange: "Loading...",
+        products: "0",
+        productsChange: "Loading...",
+        customers: "0",
+        customersChange: "Loading...",
+    });
+    const [allRecentOrders, setAllRecentOrders] = useState<RecentOrder[]>([]);
+    const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ordersPerPage = 4;
+
+    // Calculate pagination
+    const totalPages = Math.ceil(allRecentOrders.length / ordersPerPage);
+    const startIndex = (currentPage - 1) * ordersPerPage;
+    const endIndex = startIndex + ordersPerPage;
+    const recentOrders = useMemo(() => {
+        return allRecentOrders.slice(startIndex, endIndex);
+    }, [allRecentOrders, startIndex, endIndex]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    // Reset to page 1 when orders change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [allRecentOrders.length]);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch("/api/admin/dashboard", { cache: "no-store" });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Unable to load dashboard data");
+            }
+
+            setStats(data.stats);
+            setAllRecentOrders(data.recentOrders || []);
+            setTopProducts(data.topProducts || []);
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const recentOrders = [
-        { id: "ORD-001", customer: "John Doe", amount: "₵120.00", status: "Completed", date: "2024-01-15" },
-        { id: "ORD-002", customer: "Jane Smith", amount: "₵85.50", status: "Processing", date: "2024-01-15" },
-        { id: "ORD-003", customer: "Bob Johnson", amount: "₵200.00", status: "Shipped", date: "2024-01-14" },
-        { id: "ORD-004", customer: "Alice Brown", amount: "₵150.75", status: "Pending", date: "2024-01-14" },
-        { id: "ORD-005", customer: "Charlie Wilson", amount: "₵95.00", status: "Completed", date: "2024-01-13" },
-    ];
-
-    const topProducts = [
-        { name: "Manchester United Home Jersey", sales: 145, revenue: "₵7,250" },
-        { name: "Barcelona Away Jersey", sales: 132, revenue: "₵6,600" },
-        { name: "Real Madrid Third Jersey", sales: 98, revenue: "₵4,900" },
-        { name: "Liverpool Home Jersey", sales: 87, revenue: "₵4,350" },
-        { name: "PSG Home Jersey", sales: 76, revenue: "₵3,800" },
-    ];
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
+                    <p className="mt-1 text-sm text-zinc-600">
+                        Welcome back! Here's what's happening with your store today.
+                    </p>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--brand-red)] border-r-transparent"></div>
+                        <p className="mt-4 text-sm text-zinc-600">Loading dashboard data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -48,7 +118,7 @@ export default function AdminDashboard() {
                     title="Total Revenue"
                     value={stats.revenue}
                     change={stats.revenueChange}
-                    changeType="positive"
+                    changeType={stats.revenueChange.includes("+") ? "positive" : stats.revenueChange.includes("-") ? "negative" : "neutral"}
                     icon={DollarSign}
                     iconColor="bg-green-500"
                 />
@@ -56,7 +126,7 @@ export default function AdminDashboard() {
                     title="Total Orders"
                     value={stats.orders}
                     change={stats.ordersChange}
-                    changeType="positive"
+                    changeType={stats.ordersChange.includes("+") ? "positive" : stats.ordersChange.includes("-") ? "negative" : "neutral"}
                     icon={ShoppingCart}
                     iconColor="bg-blue-500"
                 />
@@ -94,56 +164,108 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
-                                {recentOrders.map((order) => (
-                                    <tr key={order.id} className="border-b border-zinc-100">
-                                        <td className="py-3 font-medium text-zinc-900">{order.id}</td>
-                                        <td className="py-3 text-zinc-600">{order.customer}</td>
-                                        <td className="py-3 font-semibold text-zinc-900">{order.amount}</td>
-                                        <td className="py-3">
-                                            <span
-                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${order.status === "Completed"
+                                {recentOrders.length > 0 ? (
+                                    recentOrders.map((order) => (
+                                        <tr key={order.id} className="border-b border-zinc-100">
+                                            <td className="py-3 font-medium text-zinc-900">{order.id}</td>
+                                            <td className="py-3 text-zinc-600">{order.customer}</td>
+                                            <td className="py-3 font-semibold text-zinc-900">{order.amount}</td>
+                                            <td className="py-3">
+                                                <span
+                                                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${order.status === "delivered"
                                                         ? "bg-green-100 text-green-700"
-                                                        : order.status === "Processing"
+                                                        : order.status === "processing" || order.status === "confirmed"
                                                             ? "bg-blue-100 text-blue-700"
-                                                            : order.status === "Shipped"
+                                                            : order.status === "out_for_delivery" || order.status === "in_transit"
                                                                 ? "bg-purple-100 text-purple-700"
-                                                                : "bg-yellow-100 text-yellow-700"
-                                                    }`}
-                                            >
-                                                {order.status}
-                                            </span>
+                                                                : order.status === "cancelled"
+                                                                    ? "bg-red-100 text-red-700"
+                                                                    : "bg-yellow-100 text-yellow-700"
+                                                        }`}
+                                                >
+                                                    {order.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="py-8 text-center text-sm text-zinc-500">
+                                            No recent orders
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>
+                    {/* Pagination */}
+                    {allRecentOrders.length > ordersPerPage && (
+                        <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4">
+                            <div className="text-sm text-zinc-600">
+                                Showing {startIndex + 1} to {Math.min(endIndex, allRecentOrders.length)} of {allRecentOrders.length} orders
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${currentPage === page
+                                                ? "bg-[var(--brand-red)] text-white"
+                                                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Top Products */}
                 <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-lg font-bold text-zinc-900">Top Products</h2>
                     <div className="space-y-4">
-                        {topProducts.map((product, index) => (
-                            <div key={product.name} className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-600">
-                                        {index + 1}
+                        {topProducts.length > 0 ? (
+                            topProducts.map((product, index) => (
+                                <div key={`${product.name}-${index}`} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-600">
+                                            {index + 1}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-zinc-900">{product.name}</p>
+                                            <p className="text-xs text-zinc-500">{product.sales} {product.sales === 1 ? 'sale' : 'sales'}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-zinc-900">{product.name}</p>
-                                        <p className="text-xs text-zinc-500">{product.sales} sales</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-semibold text-zinc-900">{product.revenue}</p>
-                                    <div className="flex items-center gap-1 text-xs text-green-600">
-                                        <TrendingUp className="h-3 w-3" />
-                                        <span>+12%</span>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold text-zinc-900">{product.revenue}</p>
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="py-8 text-center text-sm text-zinc-500">
+                                No product sales data available
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>

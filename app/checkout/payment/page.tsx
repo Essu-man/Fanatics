@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Package, MapPin, CreditCard } from "lucide-react";
+import { ArrowLeft, Package, MapPin } from "lucide-react";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
 import PaystackButton from "../../components/PaystackButton";
 
 export default function CheckoutPaymentPage() {
     const router = useRouter();
-    const { items, clear } = useCart();
+    const { items } = useCart();
     const [shippingInfo, setShippingInfo] = useState<any>(null);
 
     const getCartTotal = () => {
@@ -37,40 +37,6 @@ export default function CheckoutPaymentPage() {
         router.push("/checkout/shipping");
     };
 
-    const handlePaymentSuccess = async (reference: string) => {
-        // Create order in database
-        try {
-            const response = await fetch("/api/orders/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    items,
-                    shipping: shippingInfo,
-                    paymentReference: reference,
-                    total: getCartTotal(),
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Clear cart
-                clear();
-
-                // Clear shipping info
-                sessionStorage.removeItem("checkoutShipping");
-
-                // Redirect to success page
-                router.push(`/checkout/success?orderId=${data.orderId}`);
-            } else {
-                alert("Failed to create order. Please contact support.");
-            }
-        } catch (error) {
-            console.error("Error creating order:", error);
-            alert("An error occurred. Please contact support.");
-        }
-    };
-
     if (!shippingInfo) {
         return null; // Will redirect
     }
@@ -94,9 +60,9 @@ export default function CheckoutPaymentPage() {
                         <ArrowLeft className="h-4 w-4" />
                         Back to Shipping
                     </button>
-                    <h1 className="text-3xl font-bold text-zinc-900">Payment</h1>
+                    <h1 className="text-3xl font-bold text-zinc-900">Review & Pay</h1>
                     <p className="mt-1 text-sm text-zinc-600">
-                        Review your order and complete payment
+                        Review your order and proceed to payment
                     </p>
                 </div>
 
@@ -129,8 +95,8 @@ export default function CheckoutPaymentPage() {
                                 <h2 className="text-lg font-semibold text-zinc-900">Order Items</h2>
                             </div>
                             <div className="space-y-4">
-                                {items.map((item: any) => (
-                                    <div key={`${item.id}-${item.colorId || 'default'}`} className="flex gap-4">
+                                {items.map((item: any, index: number) => (
+                                    <div key={`${item.id}-${item.colorId || 'default'}-${index}`} className="flex gap-4">
                                         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-100">
                                             {item.image && (
                                                 <img
@@ -158,10 +124,7 @@ export default function CheckoutPaymentPage() {
                     {/* Payment Summary */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-8 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <CreditCard className="h-5 w-5 text-zinc-600" />
-                                <h2 className="text-lg font-semibold text-zinc-900">Payment Summary</h2>
-                            </div>
+                            <h2 className="mb-4 text-lg font-semibold text-zinc-900">Order Summary</h2>
 
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
@@ -186,8 +149,7 @@ export default function CheckoutPaymentPage() {
                                 <PaystackButton
                                     email={shippingInfo.email}
                                     amount={total}
-                                    onSuccess={handlePaymentSuccess}
-                                    onClose={() => console.log("Payment closed")}
+                                    onSuccess={() => { }}
                                     metadata={{
                                         custom_fields: [
                                             {
@@ -202,6 +164,7 @@ export default function CheckoutPaymentPage() {
                                             },
                                         ],
                                     }}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -217,7 +180,7 @@ export default function CheckoutPaymentPage() {
                                     <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
-                                    <span>Your data is encrypted</span>
+                                    <span>You will be redirected to Paystack</span>
                                 </div>
                             </div>
                         </div>
@@ -227,3 +190,4 @@ export default function CheckoutPaymentPage() {
         </div>
     );
 }
+``

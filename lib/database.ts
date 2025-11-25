@@ -69,7 +69,7 @@ export interface Order {
     guest_email: string | null;
     guest_phone: string | null;
     order_date: string;
-    status: "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
+    status: "submitted" | "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
     items: any[];
     shipping: any;
     payment: any;
@@ -85,43 +85,112 @@ export interface Order {
 
 export const createOrder = async (orderId: string, orderData: Omit<Order, "id" | "order_date" | "status_history">) => {
     try {
-        const { data, error } = await supabase
+        // Use admin client if service role key is available, otherwise use regular client
+        // The RLS policy should allow "Anyone can create orders" for guest checkout
+        const clientToUse = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseAdmin : supabase;
+
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            console.warn("SUPABASE_SERVICE_ROLE_KEY is not set. Using anon key - ensure RLS policies allow order creation.");
+        }
+
+        // Ensure all required fields are present
+        const insertData = {
+            id: orderId,
+            user_id: orderData.user_id || null,
+            guest_email: orderData.guest_email || null,
+            guest_phone: orderData.guest_phone || null,
+            order_date: new Date().toISOString(),
+            status: orderData.status || "confirmed",
+            items: Array.isArray(orderData.items) ? orderData.items : [],
+            shipping: orderData.shipping || {},
+            payment: orderData.payment || {},
+            subtotal: Number(orderData.subtotal) || 0,
+            shipping_cost: Number(orderData.shipping_cost) || 0,
+            tax: Number(orderData.tax) || 0,
+            total: Number(orderData.total) || 0,
+            paystack_reference: orderData.paystack_reference || null,
+            assigned_delivery_person: null,
+            delivery_proof: null,
+            status_history: [
+                {
+                    status: orderData.status || "submitted",
+                    timestamp: new Date().toISOString(),
+                    note: "Order submitted successfully",
+                },
+            ],
+        };
+
+        console.log("Inserting order with data:", JSON.stringify(insertData, null, 2));
+
+        // Use the appropriate client (admin if service role key exists, otherwise anon)
+        // If using anon key, the RLS policy "Anyone can create orders" should allow this
+        const { data, error } = await clientToUse
             .from("orders")
-            .insert({
-                id: orderId,
-                ...orderData,
-                status: "confirmed",
-                status_history: [
-                    {
-                        status: "confirmed",
-                        timestamp: new Date().toISOString(),
-                        note: "Order placed successfully",
-                    },
-                ],
-            })
+            .insert(insertData)
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase error creating order:", error);
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+
+            // Provide helpful error message for RLS recursion issues
+            if (error.code === '42P17' || error.message?.includes('infinite recursion')) {
+                return {
+                    success: false,
+                    error: "Database configuration error: RLS policy recursion detected",
+                    details: "This usually means SUPABASE_SERVICE_ROLE_KEY is not set or the service role key is invalid. Please check your environment variables."
+                };
+            }
+
+            throw error;
+        }
+
+        console.log("Order created successfully:", data);
         return { success: true, data };
     } catch (error: any) {
         console.error("Error creating order:", error);
-        return { success: false, error: error.message };
+        console.error("Error stack:", error.stack);
+        return {
+            success: false,
+            error: error.message || "Unknown error occurred",
+            details: error.details || error.hint || null,
+            code: error.code || null
+        };
     }
 };
 
 export const getOrder = async (orderId: string): Promise<Order | null> => {
     try {
-        const { data, error } = await supabase
+        // Use admin client to bypass RLS for public order tracking
+        // This allows anyone to track orders by ID without authentication
+        const clientToUse = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseAdmin : supabase;
+
+        const { data, error } = await clientToUse
             .from("orders")
             .select("*")
             .eq("id", orderId)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Error getting order:", error);
+            console.error("Order ID:", orderId);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+            throw error;
+        }
+
+        if (!data) {
+            console.log("No order found with ID:", orderId);
+            return null;
+        }
+
         return data as Order;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error getting order:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
         return null;
     }
 };
@@ -340,5 +409,227 @@ export const getUserComplaints = async (userId: string): Promise<Complaint[]> =>
     } catch (error) {
         console.error("Error getting user complaints:", error);
         return [];
+    }
+};
+
+// ============================================
+// Cart Operations
+// ============================================
+
+export interface DBCartItem {
+    id: string;
+    product_id: string;
+    product_name: string;
+    price: number;
+    color_id: string | null;
+    quantity: number;
+    image: string | null;
+}
+
+export const getUserCart = async (userId: string): Promise<DBCartItem[]> => {
+    try {
+        const { data, error } = await supabase
+            .from("cart_items")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(item => ({
+            id: item.product_id,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            price: parseFloat(item.price),
+            color_id: item.color_id,
+            quantity: item.quantity,
+            image: item.image,
+        }));
+    } catch (error) {
+        console.error("Error getting user cart:", error);
+        return [];
+    }
+};
+
+export const addCartItem = async (userId: string, item: Omit<DBCartItem, "id">): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("cart_items")
+            .upsert({
+                user_id: userId,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                price: item.price,
+                color_id: item.color_id || null,
+                quantity: item.quantity,
+                image: item.image || null,
+            }, {
+                onConflict: "user_id,product_id,color_id",
+            });
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error adding cart item:", error);
+        return false;
+    }
+};
+
+export const updateCartItem = async (userId: string, productId: string, colorId: string | null | undefined, quantity: number): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("cart_items")
+            .update({ quantity: Math.max(1, Math.min(10, quantity)) })
+            .eq("user_id", userId)
+            .eq("product_id", productId)
+            .eq("color_id", colorId ?? null);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error updating cart item:", error);
+        return false;
+    }
+};
+
+export const removeCartItem = async (userId: string, productId: string, colorId?: string | null): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("cart_items")
+            .delete()
+            .eq("user_id", userId)
+            .eq("product_id", productId)
+            .eq("color_id", colorId || null);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error removing cart item:", error);
+        return false;
+    }
+};
+
+export const clearUserCart = async (userId: string): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("cart_items")
+            .delete()
+            .eq("user_id", userId);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error clearing cart:", error);
+        return false;
+    }
+};
+
+export const syncCartToDatabase = async (userId: string, items: Array<{
+    product_id: string;
+    product_name: string;
+    price: number;
+    color_id: string | null;
+    quantity: number;
+    image: string | null;
+}>): Promise<boolean> => {
+    try {
+        // Clear existing cart
+        await clearUserCart(userId);
+
+        // Add all items
+        for (const item of items) {
+            await addCartItem(userId, item);
+        }
+        return true;
+    } catch (error) {
+        console.error("Error syncing cart to database:", error);
+        return false;
+    }
+};
+
+// ============================================
+// Wishlist Operations
+// ============================================
+
+export const getUserWishlist = async (userId: string): Promise<string[]> => {
+    try {
+        const { data, error } = await supabase
+            .from("wishlist_items")
+            .select("product_id")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(item => item.product_id);
+    } catch (error) {
+        console.error("Error getting user wishlist:", error);
+        return [];
+    }
+};
+
+export const addWishlistItem = async (userId: string, productId: string): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("wishlist_items")
+            .insert({
+                user_id: userId,
+                product_id: productId,
+            });
+
+        if (error) {
+            // If item already exists, that's okay
+            if (error.code === '23505') return true;
+            throw error;
+        }
+        return true;
+    } catch (error) {
+        console.error("Error adding wishlist item:", error);
+        return false;
+    }
+};
+
+export const removeWishlistItem = async (userId: string, productId: string): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("wishlist_items")
+            .delete()
+            .eq("user_id", userId)
+            .eq("product_id", productId);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error removing wishlist item:", error);
+        return false;
+    }
+};
+
+export const clearUserWishlist = async (userId: string): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from("wishlist_items")
+            .delete()
+            .eq("user_id", userId);
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error clearing wishlist:", error);
+        return false;
+    }
+};
+
+export const syncWishlistToDatabase = async (userId: string, productIds: string[]): Promise<boolean> => {
+    try {
+        // Clear existing wishlist
+        await clearUserWishlist(userId);
+
+        // Add all items
+        for (const productId of productIds) {
+            await addWishlistItem(userId, productId);
+        }
+        return true;
+    } catch (error) {
+        console.error("Error syncing wishlist to database:", error);
+        return false;
     }
 };

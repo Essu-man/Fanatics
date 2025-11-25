@@ -3,10 +3,13 @@
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Bell, Search, User } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminHeader() {
     const { user, logout } = useAuth();
+    const router = useRouter();
     const [showDropdown, setShowDropdown] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     return (
         <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white">
@@ -57,13 +60,30 @@ export default function AdminHeader() {
                                 <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-lg border border-zinc-200 bg-white shadow-lg">
                                     <div className="p-2">
                                         <button
-                                            onClick={() => {
-                                                logout();
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                if (loggingOut) return;
+
+                                                setLoggingOut(true);
                                                 setShowDropdown(false);
+
+                                                try {
+                                                    await logout();
+                                                    // Redirect to home page
+                                                    router.push('/');
+                                                    router.refresh();
+                                                } catch (error) {
+                                                    console.error('Logout error:', error);
+                                                    // Still redirect even if logout has issues
+                                                    router.push('/');
+                                                } finally {
+                                                    setLoggingOut(false);
+                                                }
                                             }}
-                                            className="w-full rounded-md px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
+                                            disabled={loggingOut}
+                                            className="w-full rounded-md px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Sign Out
+                                            {loggingOut ? 'Signing out...' : 'Sign Out'}
                                         </button>
                                     </div>
                                 </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { initializePaystack, type PaystackConfig } from "@/lib/paystack";
 import { useToast } from "./ui/ToastContainer";
 
 interface PaystackButtonProps {
@@ -53,55 +52,14 @@ export default function PaystackButton({
                 return;
             }
 
-            const { publicKey, amount: amountInKobo, reference, currency } = result.data;
+            // Store reference and callback data in sessionStorage for callback page
+            sessionStorage.setItem("paymentReference", result.data.reference);
+            sessionStorage.setItem("paymentCallback", JSON.stringify({
+                onSuccessCallback: true,
+            }));
 
-            // Initialize Paystack popup
-            const config: PaystackConfig = {
-                publicKey,
-                email,
-                amount: amountInKobo,
-                currency,
-                ref: reference,
-                metadata,
-                onSuccess: async (response) => {
-                    setLoading(true);
-
-                    // Verify payment on backend
-                    const verifyResponse = await fetch("/api/paystack/verify", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            reference: response.reference,
-                        }),
-                    });
-
-                    const verifyResult = await verifyResponse.json();
-
-                    if (verifyResult.success) {
-                        showToast("Payment successful!", "success");
-                        onSuccess(response.reference);
-                    } else {
-                        showToast("Payment verification failed", "error");
-                    }
-
-                    setLoading(false);
-                },
-                onClose: () => {
-                    setLoading(false);
-                    if (onClose) onClose();
-                },
-            };
-
-            const handler = initializePaystack(config);
-
-            if (handler) {
-                handler.openIframe();
-            } else {
-                showToast("Payment system not available. Please refresh the page.", "error");
-                setLoading(false);
-            }
+            // Redirect to Paystack's hosted checkout page
+            window.location.href = result.data.authorization_url;
         } catch (error) {
             console.error("Payment error:", error);
             showToast("An error occurred. Please try again.", "error");
@@ -118,7 +76,7 @@ export default function PaystackButton({
             {loading ? (
                 <>
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    Processing...
+                    Redirecting to Paystack...
                 </>
             ) : (
                 children

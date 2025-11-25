@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Eye, Mail, Phone } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Search, Eye, Mail, Phone, Trophy } from "lucide-react";
 
 interface Customer {
     id: string;
@@ -12,48 +12,139 @@ interface Customer {
     totalSpent: number;
     joinedDate: string;
     status: "active" | "inactive";
+    rank?: number;
 }
 
-const mockCustomers: Customer[] = [
-    {
-        id: "CUST-001",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "+233 XX XXX XXXX",
-        orders: 12,
-        totalSpent: 1245.50,
-        joinedDate: "2023-06-15",
-        status: "active",
-    },
-    {
-        id: "CUST-002",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        phone: "+233 XX XXX XXXX",
-        orders: 8,
-        totalSpent: 890.00,
-        joinedDate: "2023-08-22",
-        status: "active",
-    },
-    {
-        id: "CUST-003",
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        phone: "+233 XX XXX XXXX",
-        orders: 5,
-        totalSpent: 450.00,
-        joinedDate: "2023-11-10",
-        status: "active",
-    },
-];
+interface Order {
+    id: string;
+    userId?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    total: number;
+    orderDate: string;
+}
 
 export default function AdminCustomersPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [customers, setCustomers] = useState<Customer[]>([]);
 
-    const filteredCustomers = mockCustomers.filter((customer) =>
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+
+    const fetchCustomers = async () => {
+        try {
+            setLoading(true);
+            // Fetch all orders to calculate customer stats
+            const response = await fetch("/api/orders/admin?limit=1000", { cache: "no-store" });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Unable to load orders");
+            }
+
+            const orders: Order[] = data.orders || [];
+
+            // Group orders by customer (userId or guestEmail)
+            const customerMap = new Map<string, {
+                id: string;
+                email: string;
+                phone: string;
+                name: string;
+                orders: number;
+                totalSpent: number;
+                firstOrderDate: string;
+            }>();
+
+            orders.forEach((order) => {
+                const customerKey = order.userId || order.guestEmail || "unknown";
+                const existing = customerMap.get(customerKey);
+
+                if (existing) {
+                    existing.orders += 1;
+                    existing.totalSpent += order.total || 0;
+                    // Keep the earliest order date
+                    const orderDate = new Date(order.orderDate);
+                    if (orderDate < new Date(existing.firstOrderDate)) {
+                        existing.firstOrderDate = order.orderDate;
+                    }
+                } else {
+                    // Extract name from email or use "Guest Customer"
+                    const email = order.userId ? "" : (order.guestEmail || "");
+                    const name = email ? email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : "Guest Customer";
+
+                    customerMap.set(customerKey, {
+                        id: order.userId || `guest-${customerKey}`,
+                        email: email || order.guestEmail || "N/A",
+                        phone: order.guestPhone || "N/A",
+                        name: order.userId ? "Registered User" : name,
+                        orders: 1,
+                        totalSpent: order.total || 0,
+                        firstOrderDate: order.orderDate,
+                    });
+                }
+            });
+
+            // Convert to array and rank by total spent
+            const customersList: Customer[] = Array.from(customerMap.values())
+                .map((customer) => ({
+                    id: customer.id,
+                    name: customer.name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    orders: customer.orders,
+                    totalSpent: customer.totalSpent,
+                    joinedDate: new Date(customer.firstOrderDate).toISOString().split("T")[0],
+                    status: (customer.orders > 0 ? "active" : "inactive") as "active" | "inactive",
+                }))
+                .sort((a, b) => b.totalSpent - a.totalSpent) // Sort by total spent descending
+                .map((customer, index) => ({
+                    ...customer,
+                    rank: index + 1,
+                }));
+
+            setCustomers(customersList);
+        } catch (error) {
+            console.error("Error fetching customers:", error);
+            setCustomers([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredCustomers = useMemo(() => {
+        return customers.filter((customer) =>
+            customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [customers, searchQuery]);
+
+    const stats = useMemo(() => {
+        const totalCustomers = customers.length;
+        const activeCustomers = customers.filter((c) => c.status === "active").length;
+        const totalOrders = customers.reduce((sum, c) => sum + c.orders, 0);
+        const avgOrderValue = totalOrders > 0
+            ? customers.reduce((sum, c) => sum + c.totalSpent, 0) / totalOrders
+            : 0;
+
+        return {
+            totalCustomers,
+            activeCustomers,
+            avgOrderValue,
+        };
+    }, [customers]);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-[400px] items-center justify-center">
+                <div className="text-center">
+                    <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-[var(--brand-red)] border-t-transparent"></div>
+                    <p className="text-zinc-600">Loading customers...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -61,7 +152,7 @@ export default function AdminCustomersPage() {
             <div>
                 <h1 className="text-3xl font-bold text-zinc-900">Customers</h1>
                 <p className="mt-1 text-sm text-zinc-600">
-                    Manage your customer base and view customer insights
+                    Manage your customer base and view customer insights. Ranked by total purchases.
                 </p>
             </div>
 
@@ -69,18 +160,18 @@ export default function AdminCustomersPage() {
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
                     <p className="text-sm font-medium text-zinc-600">Total Customers</p>
-                    <p className="mt-1 text-2xl font-bold text-zinc-900">{mockCustomers.length}</p>
+                    <p className="mt-1 text-2xl font-bold text-zinc-900">{stats.totalCustomers}</p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
                     <p className="text-sm font-medium text-zinc-600">Active Customers</p>
                     <p className="mt-1 text-2xl font-bold text-green-600">
-                        {mockCustomers.filter((c) => c.status === "active").length}
+                        {stats.activeCustomers}
                     </p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
                     <p className="text-sm font-medium text-zinc-600">Avg. Order Value</p>
                     <p className="mt-1 text-2xl font-bold text-zinc-900">
-                        ₵{(mockCustomers.reduce((sum, c) => sum + c.totalSpent, 0) / mockCustomers.reduce((sum, c) => sum + c.orders, 0)).toFixed(2)}
+                        ₵{stats.avgOrderValue.toFixed(2)}
                     </p>
                 </div>
             </div>
@@ -105,11 +196,12 @@ export default function AdminCustomersPage() {
                     <table className="w-full">
                         <thead className="border-b border-zinc-200 bg-zinc-50">
                             <tr className="text-left text-sm font-medium text-zinc-600">
+                                <th className="p-4">Rank</th>
                                 <th className="p-4">Customer</th>
                                 <th className="p-4">Contact</th>
                                 <th className="p-4">Orders</th>
                                 <th className="p-4">Total Spent</th>
-                                <th className="p-4">Joined</th>
+                                <th className="p-4">First Order</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4">Actions</th>
                             </tr>
@@ -118,13 +210,29 @@ export default function AdminCustomersPage() {
                             {filteredCustomers.map((customer) => (
                                 <tr key={customer.id} className="text-sm hover:bg-zinc-50">
                                     <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            {customer.rank === 1 && (
+                                                <Trophy className="h-4 w-4 text-yellow-500" />
+                                            )}
+                                            {customer.rank === 2 && (
+                                                <Trophy className="h-4 w-4 text-zinc-400" />
+                                            )}
+                                            {customer.rank === 3 && (
+                                                <Trophy className="h-4 w-4 text-orange-600" />
+                                            )}
+                                            <span className={`font-bold ${(customer.rank || 0) <= 3 ? "text-[var(--brand-red)]" : "text-zinc-600"}`}>
+                                                #{customer.rank || 0}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-red)] text-white font-semibold">
-                                                {customer.name.split(" ").map((n) => n[0]).join("")}
+                                                {customer.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-zinc-900">{customer.name}</p>
-                                                <p className="text-xs text-zinc-500">{customer.id}</p>
+                                                <p className="text-xs text-zinc-500">{customer.id.substring(0, 20)}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -134,10 +242,12 @@ export default function AdminCustomersPage() {
                                                 <Mail className="h-3 w-3" />
                                                 <span className="text-xs">{customer.email}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-zinc-600">
-                                                <Phone className="h-3 w-3" />
-                                                <span className="text-xs">{customer.phone}</span>
-                                            </div>
+                                            {customer.phone !== "N/A" && (
+                                                <div className="flex items-center gap-2 text-zinc-600">
+                                                    <Phone className="h-3 w-3" />
+                                                    <span className="text-xs">{customer.phone}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="p-4 font-semibold text-zinc-900">{customer.orders}</td>

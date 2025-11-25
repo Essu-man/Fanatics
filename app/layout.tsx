@@ -30,10 +30,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {/* Paystack Inline JS */}
-        <script src="https://js.paystack.co/v1/inline.js"></script>
-      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <a href="#main-content" className="skip-to-main">
           Skip to main content

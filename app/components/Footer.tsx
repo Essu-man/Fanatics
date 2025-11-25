@@ -14,8 +14,11 @@ export default function Footer() {
                     {/* Cediman Column */}
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <span className="text-2xl font-black text-[var(--brand-red)]">X</span>
-                            <span className="text-xl font-extrabold text-zinc-900">Cediman</span>
+                            <img
+                                src="/cediman.png"
+                                alt="Cediman"
+                                className="h-8 w-auto"
+                            />
                         </div>
                         <p className="text-sm text-zinc-700">
                             Your official source for football and basketball jerseys.
