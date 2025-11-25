@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "../components/ui/ToastContainer";
 import { confirmPasswordReset } from "@/lib/firebase-auth";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { showToast } = useToast();
@@ -208,6 +208,24 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center px-4">
+                    <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                        <Loader2 className="w-16 h-16 mx-auto mb-4 text-[var(--brand-red)] animate-spin" />
+                        <h1 className="text-2xl font-bold text-zinc-900 mb-2">Loading...</h1>
+                        <p className="text-zinc-600">Please wait while we load the page.</p>
+                    </div>
+                </div>
+            }
+        >
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
 
