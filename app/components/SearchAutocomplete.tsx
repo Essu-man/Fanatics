@@ -22,7 +22,7 @@ export default function SearchAutocomplete() {
 		try {
 			const raw = localStorage.getItem(recentKey);
 			if (raw) setRecent(JSON.parse(raw));
-		} catch {}
+		} catch { }
 	}, []);
 
 	useEffect(() => {
@@ -37,7 +37,7 @@ export default function SearchAutocomplete() {
 	const searchResults = useMemo(() => {
 		if (!query.trim()) return { teams: [], products: [], suggestions: trending.slice(0, 6) };
 		const q = query.toLowerCase();
-		
+
 		// Search teams
 		const allTeams = [...footballTeams, ...basketballTeams];
 		const matchingTeams = allTeams
@@ -46,8 +46,8 @@ export default function SearchAutocomplete() {
 
 		// Search products
 		const matchingProducts = products
-			.filter((p) => 
-				p.name.toLowerCase().includes(q) || 
+			.filter((p) =>
+				p.name.toLowerCase().includes(q) ||
 				p.team?.toLowerCase().includes(q)
 			)
 			.slice(0, 3);
@@ -68,7 +68,7 @@ export default function SearchAutocomplete() {
 		setRecent(next);
 		try {
 			localStorage.setItem(recentKey, JSON.stringify(next));
-		} catch {}
+		} catch { }
 		setOpen(false);
 		setQuery("");
 		router.push(`/search?q=${encodeURIComponent(val)}`);
@@ -78,21 +78,26 @@ export default function SearchAutocomplete() {
 		setRecent([]);
 		try {
 			localStorage.removeItem(recentKey);
-		} catch {}
+		} catch { }
 	}
 
 	return (
 		<div ref={containerRef} className="relative w-full max-w-[560px]">
 			<div className="relative">
 				<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-					<Search className="h-5 w-5 text-zinc-500" />
+					<Search className="h-5 w-5 text-zinc-600" />
 				</div>
 				<input
 					value={query}
 					onChange={(e) => setQuery(e.target.value)}
 					onFocus={() => setOpen(true)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" && query.trim()) {
+							submit(query);
+						}
+					}}
 					placeholder="What can we help you find?"
-					className="h-11 w-full rounded-full border-0 bg-white pl-11 pr-4 text-sm text-zinc-900 shadow-sm outline-none ring-1 ring-zinc-200 placeholder:text-zinc-500 focus:ring-[var(--brand-red)]"
+					className="h-11 w-full rounded-full border border-zinc-300 bg-white pl-11 pr-4 text-sm text-zinc-900 outline-none placeholder:text-zinc-500 focus:border-zinc-400 focus:ring-0 sm:pl-12"
 				/>
 			</div>
 			<div

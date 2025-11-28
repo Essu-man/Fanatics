@@ -94,8 +94,21 @@ export default function AdminEditProductPage() {
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
-        setImageFiles((prev) => [...prev, ...files]);
-        setPreviewUrls((prev) => [...prev, ...files.map((file) => URL.createObjectURL(file))]);
+        const currentCount = previewUrls.length;
+        const remainingSlots = 3 - currentCount;
+
+        if (remainingSlots <= 0) {
+            showToast("Maximum 3 images allowed", "error");
+            return;
+        }
+
+        const filesToAdd = files.slice(0, remainingSlots);
+        if (files.length > remainingSlots) {
+            showToast(`Only ${remainingSlots} more image(s) can be added (max 3 total)`, "error");
+        }
+
+        setImageFiles((prev) => [...prev, ...filesToAdd]);
+        setPreviewUrls((prev) => [...prev, ...filesToAdd.map((file) => URL.createObjectURL(file))]);
     };
 
     const removeImage = (index: number) => {
@@ -104,7 +117,7 @@ export default function AdminEditProductPage() {
         if (url && url.startsWith("blob:")) {
             URL.revokeObjectURL(url);
         }
-        
+
         // Remove from both arrays
         setImageFiles((prev) => {
             // If it's a new file, remove it from imageFiles
@@ -114,10 +127,10 @@ export default function AdminEditProductPage() {
             }
             return prev;
         });
-        
+
         // Remove from preview URLs
         setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
-        
+
         // If it's an existing image, remove it from existingImages
         if (index < existingImages.length) {
             setExistingImages((prev) => prev.filter((_, i) => i !== index));
@@ -136,17 +149,45 @@ export default function AdminEditProductPage() {
         setExistingImages([]);
     };
 
+    // Color name to hex mapping
+    const getColorHex = (colorName: string): string => {
+        const colorMap: Record<string, string> = {
+            'red': '#FF0000', 'blue': '#0000FF', 'green': '#008000',
+            'yellow': '#FFFF00', 'orange': '#FFA500', 'purple': '#800080',
+            'pink': '#FFC0CB', 'black': '#000000', 'white': '#FFFFFF',
+            'gray': '#808080', 'grey': '#808080', 'brown': '#A52A2A',
+            'navy': '#000080', 'maroon': '#800000', 'teal': '#008080',
+            'cyan': '#00FFFF', 'lime': '#00FF00', 'magenta': '#FF00FF',
+            'silver': '#C0C0C0', 'gold': '#FFD700',
+        };
+        const normalized = colorName.toLowerCase().trim();
+        return colorMap[normalized] || newColorHex;
+    };
+
     const addColor = () => {
         if (!newColorName.trim()) {
             showToast("Please enter a color name", "error");
             return;
         }
-        const colorId = newColorName.toLowerCase().replace(/\s+/g, "-");
+
+        // Extract hex color from input if it's a hex value
+        let hexColor = newColorHex;
+        const trimmedName = newColorName.trim();
+        if (trimmedName.startsWith('#') && /^#[0-9A-Fa-f]{6}$/.test(trimmedName)) {
+            hexColor = trimmedName;
+        } else if (/^[0-9A-Fa-f]{6}$/.test(trimmedName)) {
+            hexColor = `#${trimmedName}`;
+        } else {
+            // Try to get hex from color name
+            hexColor = getColorHex(trimmedName);
+        }
+
+        const colorId = trimmedName.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "");
         if (colors.some(c => c.id === colorId)) {
             showToast("Color already exists", "error");
             return;
         }
-        setColors([...colors, { id: colorId, name: newColorName.trim(), hex: newColorHex }]);
+        setColors([...colors, { id: colorId, name: trimmedName, hex: hexColor }]);
         setNewColorName("");
         setNewColorHex("#000000");
     };
@@ -362,8 +403,32 @@ export default function AdminEditProductPage() {
                             <input
                                 type="text"
                                 value={newColorName}
-                                onChange={(e) => setNewColorName(e.target.value)}
-                                placeholder="Color name (e.g., Red, Blue)"
+                                onChange={(e) => {
+                                    setNewColorName(e.target.value);
+                                    // Try to parse as hex color if it looks like one
+                                    const value = e.target.value.trim();
+                                    if (value.startsWith('#') && /^#[0-9A-Fa-f]{6}$/.test(value)) {
+                                        setNewColorHex(value);
+                                    } else if (/^[0-9A-Fa-f]{6}$/.test(value)) {
+                                        setNewColorHex(`#${value}`);
+                                    } else if (value) {
+                                        // Try to get hex from color name
+                                        const colorMap: Record<string, string> = {
+                                            'red': '#FF0000', 'blue': '#0000FF', 'green': '#008000',
+                                            'yellow': '#FFFF00', 'orange': '#FFA500', 'purple': '#800080',
+                                            'pink': '#FFC0CB', 'black': '#000000', 'white': '#FFFFFF',
+                                            'gray': '#808080', 'grey': '#808080', 'brown': '#A52A2A',
+                                            'navy': '#000080', 'maroon': '#800000', 'teal': '#008080',
+                                            'cyan': '#00FFFF', 'lime': '#00FF00', 'magenta': '#FF00FF',
+                                            'silver': '#C0C0C0', 'gold': '#FFD700',
+                                        };
+                                        const normalized = value.toLowerCase();
+                                        if (colorMap[normalized]) {
+                                            setNewColorHex(colorMap[normalized]);
+                                        }
+                                    }
+                                }}
+                                placeholder="Color name or hex (e.g., Blue or #0000FF)"
                                 className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
@@ -373,12 +438,31 @@ export default function AdminEditProductPage() {
                                 }}
                             />
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={newColorHex}
-                                    onChange={(e) => setNewColorHex(e.target.value)}
-                                    className="h-10 w-16 rounded-lg border border-zinc-200 cursor-pointer"
-                                    title="Pick color"
+                                <div
+                                    className="h-10 w-16 rounded-lg border border-zinc-200 flex-shrink-0"
+                                    style={{
+                                        backgroundColor: (() => {
+                                            const value = newColorName.trim();
+                                            if (value.startsWith('#') && /^#[0-9A-Fa-f]{6}$/.test(value)) {
+                                                return value;
+                                            } else if (/^[0-9A-Fa-f]{6}$/.test(value)) {
+                                                return `#${value}`;
+                                            } else if (value) {
+                                                const colorMap: Record<string, string> = {
+                                                    'red': '#FF0000', 'blue': '#0000FF', 'green': '#008000',
+                                                    'yellow': '#FFFF00', 'orange': '#FFA500', 'purple': '#800080',
+                                                    'pink': '#FFC0CB', 'black': '#000000', 'white': '#FFFFFF',
+                                                    'gray': '#808080', 'grey': '#808080', 'brown': '#A52A2A',
+                                                    'navy': '#000080', 'maroon': '#800000', 'teal': '#008080',
+                                                    'cyan': '#00FFFF', 'lime': '#00FF00', 'magenta': '#FF00FF',
+                                                    'silver': '#C0C0C0', 'gold': '#FFD700',
+                                                };
+                                                return colorMap[value.toLowerCase()] || newColorHex;
+                                            }
+                                            return newColorHex;
+                                        })()
+                                    }}
+                                    title="Color preview"
                                 />
                                 <button
                                     type="button"
@@ -420,7 +504,7 @@ export default function AdminEditProductPage() {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <label className="text-sm font-medium text-zinc-700">
-                                Product Images
+                                Product Images ({previewUrls.length}/3)
                             </label>
                             {previewUrls.length > 0 && (
                                 <button
@@ -438,7 +522,7 @@ export default function AdminEditProductPage() {
                                     <UploadCloud className="h-8 w-8 text-zinc-400" />
                                     <div className="text-center">
                                         <p className="font-semibold text-zinc-900">Drop jersey shots here</p>
-                                        <p className="text-xs text-zinc-500 mt-1">PNG, JPG up to 5MB each</p>
+                                        <p className="text-xs text-zinc-500 mt-1">PNG, JPG up to 5MB each (Max 3 images)</p>
                                     </div>
                                     <input
                                         type="file"
@@ -472,15 +556,16 @@ export default function AdminEditProductPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    <label className="flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer w-full sm:w-auto">
+                                    <label className={`flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors w-full sm:w-auto ${previewUrls.length >= 3 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50 cursor-pointer'}`}>
                                         <UploadCloud className="h-4 w-4" />
-                                        <span>Add More Images</span>
+                                        <span>{previewUrls.length >= 3 ? 'Maximum 3 images reached' : 'Add More Images'}</span>
                                         <input
                                             type="file"
                                             accept="image/*"
                                             multiple
                                             onChange={handleFileChange}
                                             className="hidden"
+                                            disabled={previewUrls.length >= 3}
                                         />
                                     </label>
                                 </div>

@@ -7,12 +7,12 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import Button from "../../components/ui/button";
 import { useToast } from "../../components/ui/ToastContainer";
-import { 
-    ArrowLeft, 
-    Package, 
-    Truck, 
-    CreditCard, 
-    MapPin, 
+import {
+    ArrowLeft,
+    Package,
+    Truck,
+    CreditCard,
+    MapPin,
     Calendar,
     CheckCircle,
     Clock,
@@ -30,6 +30,7 @@ interface OrderItem {
     quantity: number;
     image?: string;
     colorId?: string;
+    size?: string;
 }
 
 interface Order {
@@ -73,10 +74,10 @@ export default function OrderDetailsPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const orderId = params.orderId as string;
-    
+
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
     useEffect(() => {
         // In a real app, this would fetch from an API
         // For now, we'll simulate loading order data from localStorage or generate mock data
@@ -93,7 +94,7 @@ export default function OrderDetailsPage() {
                         return;
                     }
                 }
-                
+
                 // Generate mock order data for demonstration
                 const mockOrder: Order = {
                     id: orderId,
@@ -147,7 +148,7 @@ export default function OrderDetailsPage() {
                     total: 501.60,
                     trackingNumber: "TRK" + Math.random().toString(36).substring(2, 11).toUpperCase()
                 };
-                
+
                 setOrder(mockOrder);
             } catch (error) {
                 console.error("Error loading order:", error);
@@ -155,10 +156,10 @@ export default function OrderDetailsPage() {
                 setLoading(false);
             }
         };
-        
+
         loadOrder();
     }, [orderId]);
-    
+
     const getStatusIcon = (status: OrderStatus) => {
         switch (status) {
             case "delivered":
@@ -173,7 +174,7 @@ export default function OrderDetailsPage() {
                 return <Clock className="h-5 w-5 text-zinc-600" />;
         }
     };
-    
+
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
             case "delivered":
@@ -188,7 +189,7 @@ export default function OrderDetailsPage() {
                 return "bg-zinc-100 text-zinc-800 border-zinc-200";
         }
     };
-    
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -199,16 +200,16 @@ export default function OrderDetailsPage() {
             minute: "2-digit"
         });
     };
-    
+
     const handlePrint = () => {
         window.print();
     };
-    
+
     const handleDownload = () => {
         // In a real app, this would generate and download a PDF
         showToast("Invoice download feature coming soon", "info");
     };
-    
+
     if (loading) {
         return (
             <div className="min-h-screen bg-zinc-50">
@@ -223,7 +224,7 @@ export default function OrderDetailsPage() {
             </div>
         );
     }
-    
+
     if (!order) {
         return (
             <div className="min-h-screen bg-zinc-50">
@@ -239,7 +240,7 @@ export default function OrderDetailsPage() {
             </div>
         );
     }
-    
+
     return (
         <div className="min-h-screen bg-zinc-50">
             <Header />
@@ -248,7 +249,7 @@ export default function OrderDetailsPage() {
                     <ArrowLeft className="h-4 w-4" />
                     Back to Home
                 </Link>
-                
+
                 {/* Order Header */}
                 <div className="mb-8 rounded-lg bg-white p-6 shadow-sm">
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -284,7 +285,7 @@ export default function OrderDetailsPage() {
                             </Button>
                         </div>
                     </div>
-                    
+
                     {/* Order Status */}
                     <div className="mt-6 flex items-center gap-3">
                         <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 ${getStatusColor(order.status)}`}>
@@ -299,7 +300,7 @@ export default function OrderDetailsPage() {
                         )}
                     </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
@@ -320,9 +321,11 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="mb-1 font-semibold text-zinc-900">{item.name}</h3>
-                                            {item.colorId && (
-                                                <p className="mb-2 text-sm text-zinc-500">Color: {item.colorId}</p>
-                                            )}
+                                            <div className="mb-2 flex gap-2 text-sm text-zinc-500">
+                                                {item.size && <span>Size: {item.size}</span>}
+                                                {item.size && item.colorId && <span>•</span>}
+                                                {item.colorId && <span>Color: {item.colorId}</span>}
+                                            </div>
                                             <div className="flex items-center justify-between">
                                                 <p className="text-sm text-zinc-600">Quantity: {item.quantity}</p>
                                                 <p className="font-semibold text-zinc-900">
@@ -334,7 +337,7 @@ export default function OrderDetailsPage() {
                                 ))}
                             </div>
                         </div>
-                        
+
                         {/* Shipping Address */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
@@ -350,7 +353,7 @@ export default function OrderDetailsPage() {
                                 <p className="text-zinc-600">Email: {order.shipping.email}</p>
                             </div>
                         </div>
-                        
+
                         {/* Billing Address */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
@@ -364,7 +367,7 @@ export default function OrderDetailsPage() {
                                 <p>{order.billing.country}</p>
                             </div>
                         </div>
-                        
+
                         {/* Payment Information */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
@@ -384,12 +387,12 @@ export default function OrderDetailsPage() {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Order Summary Sidebar */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-8 rounded-lg bg-white p-6 shadow-sm">
                             <h2 className="mb-6 text-xl font-bold text-zinc-900">Order Summary</h2>
-                            
+
                             <div className="space-y-3 border-b border-zinc-200 pb-4">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Subtotal</span>
@@ -410,12 +413,12 @@ export default function OrderDetailsPage() {
                                     <span className="font-semibold text-zinc-900">₵{order.tax.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
+
                             <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 text-lg font-bold text-zinc-900">
                                 <span>Total</span>
                                 <span>₵{order.total.toFixed(2)}</span>
                             </div>
-                            
+
                             {order.status === "processing" && (
                                 <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                                     <p className="text-sm text-yellow-800">
@@ -423,7 +426,7 @@ export default function OrderDetailsPage() {
                                     </p>
                                 </div>
                             )}
-                            
+
                             {order.status === "shipped" && order.trackingNumber && (
                                 <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                                     <p className="mb-2 text-sm font-semibold text-blue-900">Your order has shipped!</p>
@@ -432,7 +435,7 @@ export default function OrderDetailsPage() {
                                     </p>
                                 </div>
                             )}
-                            
+
                             {order.status === "delivered" && (
                                 <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
                                     <p className="mb-2 text-sm font-semibold text-green-900">Order Delivered</p>
@@ -441,7 +444,7 @@ export default function OrderDetailsPage() {
                                     </p>
                                 </div>
                             )}
-                            
+
                             <div className="mt-6">
                                 <Button as={Link} href="/" className="w-full justify-center">
                                     Continue Shopping

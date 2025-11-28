@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Button from "./ui/button";
 import { useCart } from "../providers/CartProvider";
 import Modal from "./ui/modal";
 import type { Product as PType } from "../../lib/products";
 import { PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWishlist } from "../providers/WishlistProvider";
 import { useToast } from "./ui/ToastContainer";
 
@@ -17,8 +17,13 @@ export default function ProductCard({ product }: { product: PType }) {
     const { showToast } = useToast();
     const [quantity, setQuantity] = useState(1);
     const [open, setOpen] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(product.images?.[0]);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
+    const [selectedSize, setSelectedSize] = useState<string>("M");
+
+    const images = product.images || [];
+    const selectedImage = images[selectedImageIndex];
+    const sizes = ["S", "M", "L", "XL"];
 
     function addToCart() {
         addItem({
@@ -26,6 +31,7 @@ export default function ProductCard({ product }: { product: PType }) {
             name: product.name,
             price: product.price,
             colorId: selectedColor,
+            size: selectedSize,
             quantity,
             image: selectedImage
         });
@@ -51,9 +57,70 @@ export default function ProductCard({ product }: { product: PType }) {
     }
 
     function openModal() {
-        setSelectedImage(product.images?.[0]);
+        setSelectedImageIndex(0);
         setOpen(true);
     }
+
+    function nextImage() {
+        if (images.length > 0) {
+            setSelectedImageIndex((prev) => (prev + 1) % images.length);
+        }
+    }
+
+    function prevImage() {
+        if (images.length > 0) {
+            setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+        }
+    }
+
+    // Reset to first image when modal opens
+    useEffect(() => {
+        if (open) {
+            setSelectedImageIndex(0);
+        }
+    }, [open]);
+
+    // Keyboard navigation
+    useEffect(() => {
+        if (!open || images.length <= 1) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === "ArrowLeft") {
+                setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+            } else if (e.key === "ArrowRight") {
+                setSelectedImageIndex((prev) => (prev + 1) % images.length);
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [open, images.length]);
+
+    // Touch swipe support
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd || images.length <= 1) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe) {
+            setSelectedImageIndex((prev) => (prev + 1) % images.length);
+        }
+        if (isRightSwipe) {
+            setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+        }
+    };
 
     return (
         <>
@@ -136,11 +203,10 @@ export default function ProductCard({ product }: { product: PType }) {
                                             e.stopPropagation();
                                             setSelectedColor(color.id);
                                         }}
-                                        className={`h-4 w-4 rounded-full border-2 transition-all ${
-                                            selectedColor === color.id
-                                                ? "border-[var(--brand-red)] scale-110 ring-1 ring-[var(--brand-red)]/20"
-                                                : "border-zinc-300 hover:border-zinc-400"
-                                        }`}
+                                        className={`h-4 w-4 rounded-full border-2 transition-all ${selectedColor === color.id
+                                            ? "border-[var(--brand-red)] scale-110 ring-1 ring-[var(--brand-red)]/20"
+                                            : "border-zinc-300 hover:border-zinc-400"
+                                            }`}
                                         style={{ backgroundColor: color.hex }}
                                         aria-label={color.name}
                                     />
@@ -187,29 +253,74 @@ export default function ProductCard({ product }: { product: PType }) {
             </article>
             <Modal open={open} onClose={() => setOpen(false)}>
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-                    {/* Image Gallery */}
+                    {/* Image Gallery Slider */}
                     <div>
-                        <div className="overflow-hidden rounded-xl bg-zinc-50">
-                            <img 
-                                src={selectedImage} 
-                                alt={product.name} 
-                                className="aspect-[3/4] w-full object-cover" 
-                            />
+                        <div
+                            className="relative overflow-hidden rounded-xl bg-zinc-50 group"
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                        >
+                            {images.length > 0 && (
+                                <>
+                                    <img
+                                        src={selectedImage}
+                                        alt={product.name}
+                                        className="aspect-[3/4] w-full object-cover transition-opacity duration-300 select-none"
+                                        draggable={false}
+                                    />
+
+                                    {/* Navigation Arrows */}
+                                    {images.length > 1 && (
+                                        <>
+                                            <button
+                                                onClick={prevImage}
+                                                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg opacity-0 transition-opacity hover:bg-white hover:shadow-xl group-hover:opacity-100"
+                                                aria-label="Previous image"
+                                            >
+                                                <ChevronLeft className="h-5 w-5 text-zinc-900" />
+                                            </button>
+                                            <button
+                                                onClick={nextImage}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg opacity-0 transition-opacity hover:bg-white hover:shadow-xl group-hover:opacity-100"
+                                                aria-label="Next image"
+                                            >
+                                                <ChevronRight className="h-5 w-5 text-zinc-900" />
+                                            </button>
+
+                                            {/* Image Indicators */}
+                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                                {images.map((_, index) => (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => setSelectedImageIndex(index)}
+                                                        className={`h-1.5 rounded-full transition-all ${selectedImageIndex === index
+                                                            ? "w-6 bg-white"
+                                                            : "w-1.5 bg-white/50 hover:bg-white/75"
+                                                            }`}
+                                                        aria-label={`Go to image ${index + 1}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </div>
 
-                        {product.images && product.images.length > 1 && (
-                            <div className="mt-4 flex gap-3">
-                                {product.images.map((img) => (
+                        {/* Thumbnail Gallery */}
+                        {images.length > 1 && (
+                            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+                                {images.map((img, index) => (
                                     <button
-                                        key={img}
-                                        onClick={() => setSelectedImage(img)}
-                                        className={`h-20 w-20 overflow-hidden rounded-lg border-2 transition-all ${
-                                            selectedImage === img 
-                                                ? "border-[var(--brand-red)] ring-2 ring-[var(--brand-red)]/20 scale-105" 
-                                                : "border-zinc-200 hover:border-zinc-300"
-                                        }`}
+                                        key={index}
+                                        onClick={() => setSelectedImageIndex(index)}
+                                        className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${selectedImageIndex === index
+                                            ? "border-[var(--brand-red)] ring-2 ring-[var(--brand-red)]/20 scale-105"
+                                            : "border-zinc-200 hover:border-zinc-300"
+                                            }`}
                                     >
-                                        <img src={img} alt="" className="h-full w-full object-cover" />
+                                        <img src={img} alt={`${product.name} view ${index + 1}`} className="h-full w-full object-cover" />
                                     </button>
                                 ))}
                             </div>
@@ -225,6 +336,25 @@ export default function ProductCard({ product }: { product: PType }) {
                             <span className="text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
                         </div>
 
+                        {/* Size Selection */}
+                        <div className="mt-8">
+                            <div className="mb-3 text-sm font-bold text-zinc-900">Select Size</div>
+                            <div className="flex flex-wrap gap-3">
+                                {sizes.map((size) => (
+                                    <button
+                                        key={size}
+                                        onClick={() => setSelectedSize(size)}
+                                        className={`flex h-12 w-12 items-center justify-center rounded-lg border-2 text-sm font-bold transition-all ${selectedSize === size
+                                            ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
+                                            : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                            }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Color Selection */}
                         {product.colors && product.colors.length > 0 && (
                             <div className="mt-8">
@@ -234,15 +364,14 @@ export default function ProductCard({ product }: { product: PType }) {
                                         <button
                                             key={c.id}
                                             onClick={() => setSelectedColor(c.id)}
-                                            className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${
-                                                selectedColor === c.id
-                                                    ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
-                                                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                                            }`}
+                                            className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${selectedColor === c.id
+                                                ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
+                                                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                                }`}
                                         >
-                                            <span 
-                                                className="h-5 w-5 rounded-full border-2 border-white shadow-sm" 
-                                                style={{ backgroundColor: c.hex ?? "#ddd" }} 
+                                            <span
+                                                className="h-5 w-5 rounded-full border-2 border-white shadow-sm"
+                                                style={{ backgroundColor: c.hex ?? "#ddd" }}
                                             />
                                             {c.name}
                                         </button>
@@ -275,17 +404,17 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         {/* Action Buttons */}
                         <div className="mt-8 flex flex-col gap-3">
-                            <Button 
-                                className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl" 
+                            <Button
+                                className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl"
                                 onClick={addToCart}
                             >
                                 <ShoppingBag className="h-5 w-5" />
                                 Add to Cart
                             </Button>
-                            <Button 
-                                as="button" 
-                                variant="outline" 
-                                className="w-full justify-center py-3 text-base font-semibold" 
+                            <Button
+                                as="button"
+                                variant="outline"
+                                className="w-full justify-center py-3 text-base font-semibold"
                                 onClick={() => setOpen(false)}
                             >
                                 Continue Shopping

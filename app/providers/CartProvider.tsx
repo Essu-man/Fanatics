@@ -17,6 +17,7 @@ export type CartItem = {
     name: string;
     price: number;
     colorId?: string | null;
+    size?: string;
     quantity: number;
     image?: string;
 };
@@ -24,8 +25,8 @@ export type CartItem = {
 type CartContextValue = {
     items: CartItem[];
     addItem: (p: CartItem) => void;
-    updateItem: (id: string, colorId: string | null | undefined, quantity: number) => void;
-    removeItem: (id: string, colorId?: string | null) => void;
+    updateItem: (id: string, colorId: string | null | undefined, quantity: number, size?: string) => void;
+    removeItem: (id: string, colorId?: string | null, size?: string) => void;
     clear: () => void;
     syncing: boolean;
 };
@@ -186,17 +187,17 @@ export default function CartProvider({ children }: { children: React.ReactNode }
 
     function addItem(p: CartItem) {
         setItems((prev) => {
-            const found = prev.find((it) => it.id === p.id && it.colorId === p.colorId);
+            const found = prev.find((it) => it.id === p.id && it.colorId === p.colorId && it.size === p.size);
             if (found) {
                 const updated = prev.map((it) =>
-                    it.id === p.id && it.colorId === p.colorId
+                    it.id === p.id && it.colorId === p.colorId && it.size === p.size
                         ? { ...it, quantity: it.quantity + p.quantity }
                         : it
                 );
 
                 // Sync to database immediately if authenticated
                 if (isAuthenticated && user && hasLoadedFromDB) {
-                    const updatedItem = updated.find(it => it.id === p.id && it.colorId === p.colorId);
+                    const updatedItem = updated.find(it => it.id === p.id && it.colorId === p.colorId && it.size === p.size);
                     if (updatedItem) {
                         updateCartItemDB(user.id, p.id, p.colorId, updatedItem.quantity).catch(console.error);
                     }
@@ -223,10 +224,10 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         });
     }
 
-    function updateItem(id: string, colorId: string | null | undefined, quantity: number) {
+    function updateItem(id: string, colorId: string | null | undefined, quantity: number, size?: string) {
         setItems((prev) => {
             const updated = prev.map((it) =>
-                it.id === id && it.colorId === colorId
+                it.id === id && it.colorId === colorId && it.size === size
                     ? { ...it, quantity: Math.max(1, Math.min(10, quantity)) }
                     : it
             );
@@ -240,9 +241,9 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         });
     }
 
-    function removeItem(id: string, colorId?: string | null) {
+    function removeItem(id: string, colorId?: string | null, size?: string) {
         setItems((prev) => {
-            const filtered = prev.filter((it) => !(it.id === id && it.colorId === colorId));
+            const filtered = prev.filter((it) => !(it.id === id && it.colorId === colorId && it.size === size));
 
             // Sync to database immediately if authenticated
             if (isAuthenticated && user && hasLoadedFromDB) {

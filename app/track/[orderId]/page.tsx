@@ -145,7 +145,12 @@ export default function OrderTrackingPage() {
                                 )}
                                 <div className="flex-1">
                                     <p className="font-medium text-zinc-900">{item.name}</p>
-                                    <p className="text-sm text-zinc-500">Qty: {item.quantity}</p>
+                                    <div className="mt-1 flex gap-2 text-sm text-zinc-500">
+                                        {item.size && <span>Size: {item.size}</span>}
+                                        {item.size && item.colorId && <span>•</span>}
+                                        {item.colorId && <span>Color: {item.colorId}</span>}
+                                    </div>
+                                    <p className="mt-1 text-sm text-zinc-500">Qty: {item.quantity}</p>
                                 </div>
                                 <p className="font-semibold text-zinc-900">
                                     ₵{(item.price * item.quantity).toFixed(2)}

@@ -1,23 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, Search, User, LogOut, Settings, Package } from "lucide-react";
+import { ShoppingBag, User, LogOut, Settings, Package } from "lucide-react";
 import { useCart } from "../providers/CartProvider";
 import { useAuth } from "../providers/AuthProvider";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import CartDrawer from "./CartDrawer";
 import SearchAutocomplete from "./SearchAutocomplete";
-import MobileSearchModal from "./MobileSearchModal";
 
 export default function Header() {
     const { items } = useCart();
     const { user, isAdmin, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [cartOpen, setCartOpen] = useState(false);
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+
+    // Don't show header on login page or admin pages
+    if (pathname?.startsWith('/login') || pathname?.startsWith('/admin') || pathname?.startsWith('/delivery')) {
+        return null;
+    }
 
     return (
         <header className="border-b border-zinc-200 bg-white text-zinc-900">
@@ -30,17 +34,8 @@ export default function Header() {
                     />
                 </Link>
 
-                <div className="hidden md:block flex-1 max-w-[560px] mx-4 lg:mx-8">
+                <div className="hidden lg:block flex-1 max-w-[560px] mx-4 lg:mx-8">
                     <SearchAutocomplete />
-                </div>
-                <div className="md:hidden">
-                    <button
-                        onClick={() => setMobileSearchOpen(true)}
-                        className="text-zinc-700 hover:text-zinc-900"
-                        aria-label="Search"
-                    >
-                        <Search className="h-5 w-5" />
-                    </button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -51,7 +46,7 @@ export default function Header() {
                         title="Track Your Order"
                     >
                         <Package className="h-5 w-5" />
-                        <span className="hidden lg:inline">Track Order</span>
+                        <span>Track Order</span>
                     </Link>
 
                     {user ? (
@@ -137,7 +132,7 @@ export default function Header() {
                     )}
                     <button
                         onClick={() => setCartOpen(true)}
-                        className="relative text-[var(--brand-red)] hover:text-[var(--brand-red-dark)]"
+                        className="hidden lg:flex relative text-[var(--brand-red)] hover:text-[var(--brand-red-dark)]"
                         aria-label={`Shopping cart with ${items.reduce((acc, item) => acc + item.quantity, 0)} items`}
                     >
                         <ShoppingBag className="h-6 w-6" />
@@ -153,7 +148,6 @@ export default function Header() {
                 </div>
             </div>
             <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-            <MobileSearchModal open={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} />
         </header>
     );
 }

@@ -9,6 +9,11 @@ export default function MobileBottomNav() {
     const pathname = usePathname();
     const { items } = useCart();
 
+    // Don't show on admin, login, or delivery pages
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/login') || pathname?.startsWith('/delivery')) {
+        return null;
+    }
+
     const navigation = [
         { name: "Home", href: "/", icon: Home },
         { name: "Search", href: "/search", icon: Search },

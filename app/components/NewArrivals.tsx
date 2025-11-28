@@ -171,7 +171,7 @@ export default function NewArrivals() {
                       <p className="text-sm text-white/90">
                         {product.team ? `${product.team} • ` : ""}${product.category || "Jersey"}
                       </p>
-                      <p className="mt-1 text-base font-semibold">${product.price.toFixed(2)}</p>
+                      <p className="mt-1 text-base font-semibold">₵{product.price.toFixed(2)}</p>
                     </div>
                   </div>
                 </Link>

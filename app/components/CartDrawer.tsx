@@ -77,14 +77,15 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 											{it.name}
 										</Link>
 										<div className="mt-0.5 text-xs text-zinc-500">
-											{it.colorId ? `${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
+											{it.size ? `Size: ${it.size}${it.colorId ? " • " : ""}` : ""}
+											{it.colorId ? `Color: ${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
 										</div>
 
 										{/* Quantity Controls */}
 										<div className="mt-2 flex items-center gap-2">
 											<div className="flex items-center rounded border border-zinc-200">
 												<button
-													onClick={() => updateItem(it.id, it.colorId, it.quantity - 1)}
+													onClick={() => updateItem(it.id, it.colorId, it.quantity - 1, it.size)}
 													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
 													aria-label="Decrease quantity"
 												>
@@ -94,7 +95,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 													{it.quantity}
 												</span>
 												<button
-													onClick={() => updateItem(it.id, it.colorId, it.quantity + 1)}
+													onClick={() => updateItem(it.id, it.colorId, it.quantity + 1, it.size)}
 													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
 													aria-label="Increase quantity"
 												>
@@ -110,7 +111,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										<button
 											onClick={() => {
 												saveForLater(it);
-												removeItem(it.id, it.colorId);
+												removeItem(it.id, it.colorId, it.size);
 												showToast("Item saved for later", "success");
 											}}
 											className="rounded-md border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50"
@@ -120,7 +121,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										</button>
 										<button
 											onClick={() => {
-												removeItem(it.id, it.colorId);
+												removeItem(it.id, it.colorId, it.size);
 												showToast("Item removed from cart", "info");
 											}}
 											className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50"

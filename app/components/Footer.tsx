@@ -10,9 +10,9 @@ export default function Footer() {
     return (
         <footer className="mt-16 border-t border-zinc-200 bg-zinc-50 py-12">
             <div className="mx-auto max-w-7xl px-6">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-5 mb-8">
+                <div className="flex flex-wrap gap-8 lg:gap-12 mb-8">
                     {/* Cediman Column */}
-                    <div>
+                    <div className="flex-shrink-0">
                         <div className="flex items-center gap-2 mb-4">
                             <img
                                 src="/cediman.png"
@@ -26,7 +26,7 @@ export default function Footer() {
                     </div>
 
                     {/* Shop Column */}
-                    <div>
+                    <div className="flex-shrink-0">
                         <h3 className="font-semibold text-zinc-900 mb-4">Shop</h3>
                         <ul className="space-y-2 text-sm text-zinc-700">
                             <li>
@@ -45,7 +45,7 @@ export default function Footer() {
                     </div>
 
                     {/* Customer Service Column */}
-                    <div>
+                    <div className="flex-shrink-0">
                         <h3 className="font-semibold text-zinc-900 mb-4">Customer Service</h3>
                         <ul className="space-y-2 text-sm text-zinc-700">
                             <li>
@@ -64,7 +64,7 @@ export default function Footer() {
                     </div>
 
                     {/* Company Column */}
-                    <div>
+                    <div className="flex-shrink-0">
                         <h3 className="font-semibold text-zinc-900 mb-4">Company</h3>
                         <ul className="space-y-2 text-sm text-zinc-700">
                             <li>
@@ -80,7 +80,7 @@ export default function Footer() {
                     </div>
 
                     {/* Newsletter Column */}
-                    <div>
+                    <div className="flex-shrink-0">
                         <h3 className="font-semibold text-zinc-900 mb-4">Newsletter</h3>
                         <p className="text-sm text-zinc-700 mb-4">
                             Sign up for special offers and new arrivals.
