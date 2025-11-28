@@ -27,7 +27,6 @@ export default function CheckoutPage() {
         address: "",
         city: "",
         state: "",
-        zipCode: "",
         country: "Ghana",
     });
 
@@ -42,7 +41,7 @@ export default function CheckoutPage() {
 
     const validateForm = () => {
         if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone ||
-            !shipping.address || !shipping.city || !shipping.state || !shipping.zipCode) {
+            !shipping.address || !shipping.city || !shipping.state || !shipping.country) {
             showToast("Please fill in all shipping details", "error");
             return false;
         }
@@ -74,6 +73,7 @@ export default function CheckoutPage() {
                     metadata: {
                         customerName: `${shipping.firstName} ${shipping.lastName}`,
                         phone: shipping.phone,
+                        shipping: JSON.stringify(shipping), // Store full shipping info as backup
                         custom_fields: [
                             {
                                 display_name: "Customer Name",
@@ -99,9 +99,14 @@ export default function CheckoutPage() {
             }
 
             // Store shipping info, cart items, and payment reference for callback page
+            // Use both sessionStorage and localStorage as backup
             sessionStorage.setItem("checkoutShipping", JSON.stringify(shipping));
             sessionStorage.setItem("checkoutItems", JSON.stringify(items));
             sessionStorage.setItem("paymentReference", paymentData.data.reference);
+            // Also store in localStorage as backup (more persistent across redirects)
+            localStorage.setItem("checkoutShipping", JSON.stringify(shipping));
+            localStorage.setItem("checkoutItems", JSON.stringify(items));
+            localStorage.setItem("paymentReference", paymentData.data.reference);
 
             // Redirect to Paystack's hosted checkout page
             window.location.href = paymentData.data.authorization_url;
@@ -171,7 +176,7 @@ export default function CheckoutPage() {
                                         required
                                     />
                                 </div>
-                                <div className="sm:col-span-2">
+                                <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Email *
                                     </label>
@@ -183,7 +188,7 @@ export default function CheckoutPage() {
                                         required
                                     />
                                 </div>
-                                <div className="sm:col-span-2">
+                                <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Phone Number *
                                     </label>
@@ -195,7 +200,7 @@ export default function CheckoutPage() {
                                         required
                                     />
                                 </div>
-                                <div className="sm:col-span-2">
+                                <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Address *
                                     </label>
@@ -219,7 +224,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        State/Region *
+                                        Region *
                                     </label>
                                     <Input
                                         value={shipping.state}
@@ -230,22 +235,12 @@ export default function CheckoutPage() {
                                 </div>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        ZIP/Postal Code *
-                                    </label>
-                                    <Input
-                                        value={shipping.zipCode}
-                                        onChange={(e) => handleShippingChange("zipCode", e.target.value)}
-                                        placeholder="00233"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Country *
                                     </label>
                                     <Input
                                         value={shipping.country}
                                         onChange={(e) => handleShippingChange("country", e.target.value)}
+                                        placeholder="Ghana"
                                         required
                                     />
                                 </div>

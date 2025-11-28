@@ -68,16 +68,27 @@ function PaymentCallbackContent() {
                     return;
                 }
 
-                // Get shipping info from sessionStorage
-                const shippingInfo = sessionStorage.getItem("checkoutShipping");
+                // Get shipping info from sessionStorage, localStorage, or metadata (fallback)
+                let shippingInfo = sessionStorage.getItem("checkoutShipping") || localStorage.getItem("checkoutShipping");
+
+                // If both storage methods are missing, try to get from payment metadata
+                if (!shippingInfo && verifyResult.data?.metadata) {
+                    const metadata = verifyResult.data.metadata;
+                    // Check if shipping info is in metadata
+                    if (metadata.shipping) {
+                        shippingInfo = metadata.shipping;
+                        console.log("Retrieved shipping info from payment metadata");
+                    }
+                }
+
                 if (!shippingInfo) {
                     setStatus("error");
                     setMessage("Shipping information not found");
                     return;
                 }
 
-                // Get cart items from sessionStorage (fallback if cart context is empty)
-                const storedItems = sessionStorage.getItem("checkoutItems");
+                // Get cart items from sessionStorage or localStorage (fallback if cart context is empty)
+                const storedItems = sessionStorage.getItem("checkoutItems") || localStorage.getItem("checkoutItems");
                 const orderItems = storedItems ? JSON.parse(storedItems) : items;
 
                 if (!orderItems || orderItems.length === 0) {
@@ -105,6 +116,10 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("checkoutItems");
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
+                    // Also clear localStorage
+                    localStorage.removeItem("checkoutShipping");
+                    localStorage.removeItem("checkoutItems");
+                    localStorage.removeItem("paymentReference");
                     setTimeout(() => {
                         router.push(`/checkout/success?orderId=${checkData.orderId}`);
                     }, 2000);
@@ -147,6 +162,8 @@ function PaymentCallbackContent() {
                             price: item.price,
                             quantity: item.quantity,
                             image: item.image,
+                            size: item.size || null,
+                            colorId: item.colorId || null,
                         })),
                         shipping,
                         payment: {
@@ -184,6 +201,10 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("checkoutItems");
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
+                    // Also clear localStorage
+                    localStorage.removeItem("checkoutShipping");
+                    localStorage.removeItem("checkoutItems");
+                    localStorage.removeItem("paymentReference");
 
                     // Redirect to success page
                     setTimeout(() => {

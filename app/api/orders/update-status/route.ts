@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus, getOrder } from "@/lib/firestore";
-import {
-    getOrderStatusEmail,
-    getOrderStatusSMS,
-    sendEmail,
-    sendSMS,
-} from "@/lib/frogwigal";
+import { sendEmail, getOrderStatusEmail } from "@/lib/sendgrid";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
     try {
@@ -30,37 +27,39 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate tracking link
-        const trackingLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/track/${orderId}`;
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com";
+        const trackingLink = `${appUrl}/track/${orderId}`;
 
-        // Send email notification (non-blocking - don't fail status update if email fails)
+        // Get order details for email
+        const order = await getOrder(orderId);
+
+        // Send email notification via SendGrid (non-blocking - don't fail status update if email fails)
         if (customerEmail) {
             try {
                 const emailHtml = getOrderStatusEmail(
                     customerName || "Customer",
                     orderId,
                     status,
-                    trackingLink
+                    trackingLink,
+                    order?.orderDate ? (typeof order.orderDate === 'string' ? order.orderDate : order.orderDate.toISOString()) : new Date().toISOString(),
+                    order?.total,
+                    order?.items
                 );
 
-                await sendEmail(
+                const emailResult = await sendEmail(
                     customerEmail,
                     `Order Update - ${orderId}`,
                     emailHtml
                 );
+
+                if (emailResult.success) {
+                    console.log("Order status update email sent successfully");
+                } else {
+                    console.error("Failed to send email notification:", emailResult.error);
+                }
             } catch (emailError) {
                 console.error("Failed to send email notification:", emailError);
                 // Don't fail the status update if email fails
-            }
-        }
-
-        // Send SMS notification (non-blocking - don't fail status update if SMS fails)
-        if (customerPhone) {
-            try {
-                const smsMessage = getOrderStatusSMS(orderId, status, trackingLink);
-                await sendSMS(customerPhone, smsMessage);
-            } catch (smsError) {
-                console.error("Failed to send SMS notification:", smsError);
-                // Don't fail the status update if SMS fails
             }
         }
 

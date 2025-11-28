@@ -53,7 +53,7 @@ export const signUp = async (
         // Send email verification with custom action handler
         try {
             await sendEmailVerification(firebaseUser, {
-                url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+                url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/auth/action`,
                 handleCodeInApp: false,
             });
         } catch (emailError) {
@@ -289,7 +289,7 @@ export const onAuthStateChange = (callback: (user: AuthUser | null) => void) => 
 export const sendPasswordReset = async (email: string, redirectUrl?: string) => {
     try {
         const actionCodeSettings = {
-            url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/auth/action`,
             handleCodeInApp: false,
         };
 
@@ -336,7 +336,7 @@ export const resendEmailVerification = async () => {
         }
 
         await sendEmailVerification(firebaseUser, {
-            url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/action`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/auth/action`,
             handleCodeInApp: false,
         });
 

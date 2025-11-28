@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
+import Input from "../../components/ui/input";
 
 interface ShippingFormData {
     firstName: string;
@@ -15,7 +16,7 @@ interface ShippingFormData {
     address: string;
     city: string;
     state: string;
-    zipCode: string;
+    country: string;
 }
 
 export default function CheckoutShippingPage() {
@@ -30,7 +31,7 @@ export default function CheckoutShippingPage() {
         address: "",
         city: "",
         state: "",
-        zipCode: "",
+        country: "Ghana",
     });
 
     useEffect(() => {
@@ -95,53 +96,49 @@ export default function CheckoutShippingPage() {
                             <h2 className="mb-4 text-lg font-semibold text-zinc-900">Contact Information</h2>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         First Name *
                                     </label>
-                                    <input
+                                    <Input
                                         type="text"
                                         value={formData.firstName}
                                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Last Name *
                                     </label>
-                                    <input
+                                    <Input
                                         type="text"
                                         value={formData.lastName}
                                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Email Address *
                                     </label>
-                                    <input
+                                    <Input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Phone Number *
                                     </label>
-                                    <input
+                                    <Input
                                         type="tel"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                         placeholder="+233 XX XXX XXXX"
                                         required
                                     />
@@ -153,56 +150,58 @@ export default function CheckoutShippingPage() {
                         <div>
                             <h2 className="mb-4 text-lg font-semibold text-zinc-900">Delivery Address</h2>
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-2">
-                                        Street Address *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.address}
-                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                        placeholder="House number and street name"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-3">
+                                <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-2">
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                            Street Address *
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={formData.address}
+                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                            placeholder="House number and street name"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                             City *
                                         </label>
-                                        <input
+                                        <Input
                                             type="text"
                                             value={formData.city}
                                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                            placeholder="Accra"
                                             required
                                         />
                                     </div>
+                                </div>
 
+                                <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-2">
-                                            State/Region *
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                            Region *
                                         </label>
-                                        <input
+                                        <Input
                                             type="text"
                                             value={formData.state}
                                             onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                            className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                            placeholder="Greater Accra"
                                             required
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-2">
-                                            Postal Code
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                            Country *
                                         </label>
-                                        <input
+                                        <Input
                                             type="text"
-                                            value={formData.zipCode}
-                                            onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                                            className="w-full rounded-lg border border-zinc-200 px-4 py-2 focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                            value={formData.country}
+                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                            placeholder="Ghana"
+                                            required
                                         />
                                     </div>
                                 </div>

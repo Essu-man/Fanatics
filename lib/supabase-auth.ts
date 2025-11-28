@@ -315,9 +315,9 @@ export const updateUserProfile = async (updates: Partial<AuthUser>) => {
  */
 export const resetPassword = async (email: string) => {
     try {
-        // Get the base URL (use localhost for development, or env variable)
+        // Get the base URL (use domain for production, or env variable)
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-            (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+            (typeof window !== 'undefined' ? window.location.origin : 'https://www.cediman.com');
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${baseUrl}/reset-password`,

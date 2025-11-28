@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, getProduct, updateProduct } from "@/lib/firestore";
-import {
-    getOrderConfirmationEmail,
-    getOrderConfirmationSMS,
-    sendEmail,
-    sendSMS,
-} from "@/lib/frogwigal";
+import { sendEmail, getOrderConfirmationEmail } from "@/lib/sendgrid";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
     try {
@@ -131,10 +128,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate tracking link
-        const trackingLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/track/${orderId}`;
+        // Generate order page link (for button) and tracking link
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com";
+        const orderPageLink = `${appUrl}/orders/${orderId}`;
+        const trackingLink = `${appUrl}/track/${orderId}`;
 
-        // Send email notification (non-blocking - don't fail order if email fails)
+        // Send email notification via SendGrid (non-blocking - don't fail order if email fails)
         const emailRecipient = guestEmail || shipping?.email;
         if (emailRecipient) {
             try {
@@ -142,30 +141,26 @@ export async function POST(request: NextRequest) {
                     customerName || shipping?.firstName || "Customer",
                     orderId,
                     total,
-                    trackingLink,
-                    items
+                    orderPageLink, // Use order page link for the button
+                    items,
+                    shippingCost,
+                    new Date().toISOString()
                 );
 
-                await sendEmail(
+                const emailResult = await sendEmail(
                     emailRecipient,
                     `Order Confirmation - ${orderId}`,
                     emailHtml
                 );
+
+                if (emailResult.success) {
+                    console.log("Order confirmation email sent successfully");
+                } else {
+                    console.error("Failed to send email notification:", emailResult.error);
+                }
             } catch (emailError) {
                 console.error("Failed to send email notification:", emailError);
                 // Don't fail the order if email fails
-            }
-        }
-
-        // Send SMS notification (non-blocking - don't fail order if SMS fails)
-        const phoneNumber = guestPhone || shipping?.phone;
-        if (phoneNumber) {
-            try {
-                const smsMessage = getOrderConfirmationSMS(orderId, trackingLink);
-                await sendSMS(phoneNumber, smsMessage);
-            } catch (smsError) {
-                console.error("Failed to send SMS notification:", smsError);
-                // Don't fail the order if SMS fails
             }
         }
 

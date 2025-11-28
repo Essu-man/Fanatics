@@ -14,7 +14,21 @@ export async function POST(request: NextRequest) {
         }
 
         const secretKey = process.env.PAYSTACK_SECRET_KEY;
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+        // Detect the correct app URL based on environment
+        // Priority: 1) Request origin (for localhost), 2) NEXT_PUBLIC_APP_URL, 3) Default based on NODE_ENV
+        const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/");
+        let appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+        // If no explicit URL set, or if origin contains localhost, use origin or localhost
+        if (!appUrl || (origin && origin.includes("localhost"))) {
+            appUrl = origin || (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.cediman.com");
+        }
+
+        // Ensure we don't use production URL in development
+        if (process.env.NODE_ENV === "development" && appUrl?.includes("cediman.com")) {
+            appUrl = "http://localhost:3000";
+        }
 
         if (!secretKey) {
             return NextResponse.json(
