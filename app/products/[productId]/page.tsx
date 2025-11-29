@@ -25,7 +25,7 @@ export default function ProductDetailPage() {
     const { addItem } = useCart();
     const { toggle, isSaved } = useWishlist();
     const { showToast } = useToast();
-    
+
     const [product, setProduct] = useState<Product | null>(null);
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -34,36 +34,79 @@ export default function ProductDetailPage() {
     const [imageZoom, setImageZoom] = useState(false);
 
     useEffect(() => {
-        // Find product in products array
+        // First try to find product in local products array
         const foundProduct = products.find((p) => p.id === productId);
-        
+
         if (foundProduct) {
             setProduct(foundProduct);
             setSelectedImage(foundProduct.images?.[0] || "");
             setSelectedColor(foundProduct.colors?.[0]?.id || null);
-        } else {
-            // Try to fetch from team products API
-            const teamId = productId.split("-").slice(0, -2).join("-");
-            if (teamId) {
-                fetch(`/api/teams/${teamId}`)
-                    .then((res) => res.json())
-                    .then((data) => {
-                        if (data.products) {
-                            const teamProduct = data.products.find((p: Product) => p.id === productId);
-                            if (teamProduct) {
-                                setProduct(teamProduct);
-                                setSelectedImage(teamProduct.images?.[0] || "");
-                                setSelectedColor(teamProduct.colors?.[0]?.id || null);
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        setProduct(null);
-                    });
-            } else {
-                setProduct(null);
-            }
+            return;
         }
+
+        // Try to fetch from database via API
+        fetch(`/api/products/${productId}`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success && data.product) {
+                    setProduct(data.product);
+                    setSelectedImage(data.product.images?.[0] || "");
+                    setSelectedColor(data.product.colors?.[0]?.id || null);
+                } else {
+                    // Fallback: Try to fetch from team products API
+                    const teamId = productId.split("-").slice(0, -2).join("-");
+                    if (teamId) {
+                        fetch(`/api/teams/${teamId}`)
+                            .then((res) => res.json())
+                            .then((teamData) => {
+                                if (teamData.products) {
+                                    const teamProduct = teamData.products.find((p: Product) => p.id === productId);
+                                    if (teamProduct) {
+                                        setProduct(teamProduct);
+                                        setSelectedImage(teamProduct.images?.[0] || "");
+                                        setSelectedColor(teamProduct.colors?.[0]?.id || null);
+                                    } else {
+                                        setProduct(null);
+                                    }
+                                } else {
+                                    setProduct(null);
+                                }
+                            })
+                            .catch(() => {
+                                setProduct(null);
+                            });
+                    } else {
+                        setProduct(null);
+                    }
+                }
+            })
+            .catch(() => {
+                // If API fails, try team products as fallback
+                const teamId = productId.split("-").slice(0, -2).join("-");
+                if (teamId) {
+                    fetch(`/api/teams/${teamId}`)
+                        .then((res) => res.json())
+                        .then((teamData) => {
+                            if (teamData.products) {
+                                const teamProduct = teamData.products.find((p: Product) => p.id === productId);
+                                if (teamProduct) {
+                                    setProduct(teamProduct);
+                                    setSelectedImage(teamProduct.images?.[0] || "");
+                                    setSelectedColor(teamProduct.colors?.[0]?.id || null);
+                                } else {
+                                    setProduct(null);
+                                }
+                            } else {
+                                setProduct(null);
+                            }
+                        })
+                        .catch(() => {
+                            setProduct(null);
+                        });
+                } else {
+                    setProduct(null);
+                }
+            });
     }, [productId]);
 
     useEffect(() => {
@@ -102,6 +145,7 @@ export default function ProductDetailPage() {
             name: product.name,
             price: product.price,
             colorId: selectedColor,
+            size: selectedSize,
             quantity,
             image: selectedImage,
         });
@@ -172,7 +216,7 @@ export default function ProductDetailPage() {
                                 <Heart className={`h-5 w-5 ${isSaved(product.id) ? "fill-[var(--brand-red)] text-[var(--brand-red)]" : "text-zinc-700"}`} />
                             </button>
                         </div>
-                        
+
                         {/* Thumbnail Gallery */}
                         {product.images && product.images.length > 1 && (
                             <div className="mt-4 flex gap-2 overflow-x-auto">
@@ -180,11 +224,10 @@ export default function ProductDetailPage() {
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedImage(img)}
-                                        className={`flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${
-                                            selectedImage === img || (!selectedImage && idx === 0)
-                                                ? "border-[var(--brand-red)]"
-                                                : "border-zinc-200 hover:border-zinc-300"
-                                        }`}
+                                        className={`flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${selectedImage === img || (!selectedImage && idx === 0)
+                                            ? "border-[var(--brand-red)]"
+                                            : "border-zinc-200 hover:border-zinc-300"
+                                            }`}
                                     >
                                         <img
                                             src={img}
@@ -232,11 +275,10 @@ export default function ProductDetailPage() {
                                         <button
                                             key={color.id}
                                             onClick={() => setSelectedColor(color.id)}
-                                            className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 text-sm transition-all ${
-                                                selectedColor === color.id
-                                                    ? "border-[var(--brand-red)] bg-red-50"
-                                                    : "border-zinc-200 hover:border-zinc-300"
-                                            }`}
+                                            className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 text-sm transition-all ${selectedColor === color.id
+                                                ? "border-[var(--brand-red)] bg-red-50"
+                                                : "border-zinc-200 hover:border-zinc-300"
+                                                }`}
                                         >
                                             <span
                                                 className="h-5 w-5 rounded-full border border-zinc-300"
@@ -259,11 +301,10 @@ export default function ProductDetailPage() {
                                     <button
                                         key={size}
                                         onClick={() => setSelectedSize(size)}
-                                        className={`h-10 w-10 rounded-md border-2 text-sm font-medium transition-all ${
-                                            selectedSize === size
-                                                ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
-                                                : "border-zinc-200 hover:border-zinc-300"
-                                        }`}
+                                        className={`h-10 w-10 rounded-md border-2 text-sm font-medium transition-all ${selectedSize === size
+                                            ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
+                                            : "border-zinc-200 hover:border-zinc-300"
+                                            }`}
                                     >
                                         {size}
                                     </button>

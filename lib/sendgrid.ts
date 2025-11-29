@@ -8,118 +8,137 @@ import sgMail from '@sendgrid/mail';
 
 // Set API key from environment variable
 if (process.env.SENDGRID_API_KEY) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
 const stripHtml = (html: string): string => {
-    return html.replace(/<[^>]*>/g, "");
+  return html.replace(/<[^>]*>/g, "");
 };
 
 export const sendEmail = async (
-    to: string,
-    subject: string,
-    htmlBody: string,
-    textBody?: string
+  to: string,
+  subject: string,
+  htmlBody: string,
+  textBody?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> => {
-    try {
-        const apiKey = process.env.SENDGRID_API_KEY;
-        const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_SENDER_EMAIL || "noreply@cediman.com";
-        const fromName = process.env.SENDGRID_FROM_NAME || process.env.SENDGRID_SENDER_NAME || "Cediman";
+  try {
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_SENDER_EMAIL || "noreply@cediman.com";
+    const fromName = process.env.SENDGRID_FROM_NAME || process.env.SENDGRID_SENDER_NAME || "Cediman";
 
-        if (!apiKey) {
-            throw new Error("SendGrid API key not configured");
-        }
-
-        // Ensure API key is set (in case it wasn't set at module load)
-        sgMail.setApiKey(apiKey);
-
-        // Prepare email message with proper headers to reduce spam score
-        const msg: any = {
-            to: to,
-            from: {
-                email: fromEmail,
-                name: fromName,
-            },
-            replyTo: fromEmail, // Add reply-to header
-            subject: subject,
-            html: htmlBody,
-            text: textBody || stripHtml(htmlBody),
-            // Add headers to improve deliverability
-            headers: {
-                'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-                'List-Unsubscribe': `<mailto:${fromEmail}?subject=unsubscribe>`,
-                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            },
-            // Add categories for tracking (helps with reputation)
-            categories: ['order-confirmation', 'transactional'],
-        };
-
-        console.log("Sending email via SendGrid:", {
-            to: to ? `${to.substring(0, 3)}***@${to.split('@')[1] || '***'}` : 'N/A',
-            subject,
-        });
-
-        // Send email using SendGrid SDK
-        await sgMail.send(msg);
-
-        console.log("SendGrid email sent successfully");
-        return { success: true, message: "Email sent successfully" };
-    } catch (error: any) {
-        console.error("SendGrid Email error:", error.message || "Unknown error");
-
-        // Handle SendGrid-specific error responses
-        if (error.response) {
-            const errorBody = error.response.body;
-            const errorMessage = errorBody?.errors?.[0]?.message || errorBody?.message || "Failed to send email";
-            return {
-                success: false,
-                error: errorMessage
-            };
-        }
-
-        return {
-            success: false,
-            error: error.message || "Unknown error"
-        };
+    if (!apiKey) {
+      throw new Error("SendGrid API key not configured");
     }
+
+    // Ensure API key is set (in case it wasn't set at module load)
+    sgMail.setApiKey(apiKey);
+
+    // Prepare email message with proper headers to reduce spam score
+    const msg: any = {
+      to: to,
+      from: {
+        email: fromEmail,
+        name: fromName,
+      },
+      replyTo: fromEmail, // Add reply-to header
+      subject: subject,
+      html: htmlBody,
+      text: textBody || stripHtml(htmlBody),
+      // Add headers to improve deliverability and reduce spam score
+      headers: {
+        'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        'List-Unsubscribe': `<mailto:${fromEmail}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'Precedence': 'bulk', // Indicates transactional/bulk email
+        'X-Auto-Response-Suppress': 'All', // Suppress auto-replies
+        'Auto-Submitted': 'auto-generated', // Mark as automated transactional email
+      },
+      // Add categories for tracking (helps with reputation)
+      categories: ['order-confirmation', 'transactional'],
+      // Add mail settings to improve deliverability
+      mailSettings: {
+        // Enable click tracking (helps with engagement)
+        clickTracking: {
+          enable: true,
+          enableText: true,
+        },
+        // Enable open tracking (helps with reputation)
+        openTracking: {
+          enable: true,
+        },
+        // Enable subscription tracking
+        subscriptionTracking: {
+          enable: false, // Disable SendGrid's default footer, we have our own
+        },
+      },
+    };
+
+    console.log("Sending email via SendGrid:", {
+      to: to ? `${to.substring(0, 3)}***@${to.split('@')[1] || '***'}` : 'N/A',
+      subject,
+    });
+
+    // Send email using SendGrid SDK
+    await sgMail.send(msg);
+
+    console.log("SendGrid email sent successfully");
+    return { success: true, message: "Email sent successfully" };
+  } catch (error: any) {
+    console.error("SendGrid Email error:", error.message || "Unknown error");
+
+    // Handle SendGrid-specific error responses
+    if (error.response) {
+      const errorBody = error.response.body;
+      const errorMessage = errorBody?.errors?.[0]?.message || errorBody?.message || "Failed to send email";
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+
+    return {
+      success: false,
+      error: error.message || "Unknown error"
+    };
+  }
 };
 
 // Email template functions
 export const getOrderConfirmationEmail = (
-    customerName: string,
-    orderId: string,
-    orderTotal: number,
-    trackingLink: string,
-    items: any[],
-    shippingCost: number = 0,
-    orderDate?: string
+  customerName: string,
+  orderId: string,
+  orderTotal: number,
+  trackingLink: string,
+  items: any[],
+  shippingCost: number = 0,
+  orderDate?: string
 ): string => {
-    // Escape HTML to prevent XSS
-    const escapeHtml = (text: string) => {
-        const map: Record<string, string> = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
+  // Escape HTML to prevent XSS
+  const escapeHtml = (text: string) => {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
     };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  };
 
-    const safeName = escapeHtml(customerName);
-    const safeOrderId = escapeHtml(orderId);
-    const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }) : new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const safeName = escapeHtml(customerName);
+  const safeOrderId = escapeHtml(orderId);
+  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -334,55 +353,55 @@ export const getOrderConfirmationEmail = (
 };
 
 export const getOrderStatusEmail = (
-    customerName: string,
-    orderId: string,
-    status: string,
-    trackingLink: string,
-    orderDate?: string,
-    orderTotal?: number,
-    items?: any[]
+  customerName: string,
+  orderId: string,
+  status: string,
+  trackingLink: string,
+  orderDate?: string,
+  orderTotal?: number,
+  items?: any[]
 ): string => {
-    const statusTitles: Record<string, string> = {
-        processing: "Order is Being Processed",
-        in_transit: "Order is On the Way",
-        out_for_delivery: "Order Out for Delivery",
-        delivered: "Order Delivered",
+  const statusTitles: Record<string, string> = {
+    processing: "Order is Being Processed",
+    in_transit: "Order is On the Way",
+    out_for_delivery: "Order Out for Delivery",
+    delivered: "Order Delivered",
+  };
+
+  const statusMessages: Record<string, string> = {
+    processing: "We're carefully preparing your items for shipment.",
+    in_transit: "Your order is on its way to you!",
+    out_for_delivery: "Your order is out for delivery and will arrive today.",
+    delivered: "Your order has been successfully delivered. Thank you for shopping with us!",
+  };
+
+  // Escape HTML to prevent XSS
+  const escapeHtml = (text: string) => {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
     };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  };
 
-    const statusMessages: Record<string, string> = {
-        processing: "We're carefully preparing your items for shipment.",
-        in_transit: "Your order is on its way to you!",
-        out_for_delivery: "Your order is out for delivery and will arrive today.",
-        delivered: "Your order has been successfully delivered. Thank you for shopping with us!",
-    };
+  const safeName = escapeHtml(customerName);
+  const safeOrderId = escapeHtml(orderId);
+  const safeTitle = escapeHtml(statusTitles[status] || "Order Update");
+  const safeMessage = escapeHtml(statusMessages[status] || "Your order status has been updated.");
+  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
-    // Escape HTML to prevent XSS
-    const escapeHtml = (text: string) => {
-        const map: Record<string, string> = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
-    };
-
-    const safeName = escapeHtml(customerName);
-    const safeOrderId = escapeHtml(orderId);
-    const safeTitle = escapeHtml(statusTitles[status] || "Order Update");
-    const safeMessage = escapeHtml(statusMessages[status] || "Your order status has been updated.");
-    const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }) : new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
