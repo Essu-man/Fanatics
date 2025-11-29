@@ -1,12 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, TrendingUp, DollarSign, ShoppingCart, Package } from "lucide-react";
+import { TrendingUp, DollarSign, ShoppingCart, Package } from "lucide-react";
+import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from "recharts";
 
 interface TopProduct {
     name: string;
     sales: number;
     revenue: string;
+}
+
+interface RevenueDataPoint {
+    date: string;
+    revenue: number;
+    orders: number;
 }
 
 interface DashboardData {
@@ -17,6 +35,7 @@ interface DashboardData {
         customers: string;
     };
     topProducts: TopProduct[];
+    revenueOverTime: RevenueDataPoint[];
 }
 
 export default function AdminAnalyticsPage() {
@@ -40,6 +59,7 @@ export default function AdminAnalyticsPage() {
             setData({
                 stats: result.stats,
                 topProducts: result.topProducts || [],
+                revenueOverTime: result.revenueOverTime || [],
             });
         } catch (error) {
             console.error("Error fetching analytics:", error);
@@ -94,17 +114,120 @@ export default function AdminAnalyticsPage() {
                 </div>
             </div>
 
-            {/* Revenue Chart Placeholder */}
+            {/* Revenue Chart */}
             <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                <h2 className="mb-4 text-lg font-bold text-zinc-900">Revenue Overview</h2>
-                <div className="flex h-64 items-center justify-center rounded-lg bg-zinc-50">
-                    <div className="text-center">
-                        <BarChart3 className="mx-auto h-12 w-12 text-zinc-400" />
-                        <p className="mt-2 text-sm text-zinc-600">Chart visualization coming soon</p>
-                        <p className="text-xs text-zinc-500">Integrate with Chart.js or Recharts</p>
+                <h2 className="mb-4 text-lg font-bold text-zinc-900">Revenue Overview (Last 30 Days)</h2>
+                {data?.revenueOverTime && data.revenueOverTime.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={data.revenueOverTime}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                            <XAxis
+                                dataKey="date"
+                                stroke="#71717a"
+                                style={{ fontSize: "12px" }}
+                                tickFormatter={(value) => {
+                                    const date = new Date(value);
+                                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                                }}
+                            />
+                            <YAxis
+                                stroke="#71717a"
+                                style={{ fontSize: "12px" }}
+                                tickFormatter={(value) => `₵${value}`}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "#fff",
+                                    border: "1px solid #e4e4e7",
+                                    borderRadius: "8px",
+                                }}
+                                labelFormatter={(value) => {
+                                    const date = new Date(value);
+                                    return date.toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                    });
+                                }}
+                                formatter={(value: number, name: string) => {
+                                    if (name === "revenue") {
+                                        return [`₵${value.toFixed(2)}`, "Revenue"];
+                                    }
+                                    return [value, "Orders"];
+                                }}
+                            />
+                            <Legend />
+                            <Line
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="#dc2626"
+                                strokeWidth={2}
+                                dot={{ fill: "#dc2626", r: 4 }}
+                                activeDot={{ r: 6 }}
+                                name="Revenue"
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="orders"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                dot={{ fill: "#3b82f6", r: 4 }}
+                                activeDot={{ r: 6 }}
+                                name="Orders"
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="flex h-64 items-center justify-center rounded-lg bg-zinc-50">
+                        <div className="text-center">
+                            <Package className="mx-auto h-12 w-12 text-zinc-400" />
+                            <p className="mt-2 text-sm text-zinc-500">No revenue data available</p>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
+
+            {/* Top Products Chart */}
+            {data?.topProducts && data.topProducts.length > 0 && (
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+                    <h2 className="mb-4 text-lg font-bold text-zinc-900">Top Products by Sales</h2>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart
+                            data={data.topProducts.map((product) => ({
+                                name: product.name.length > 20 ? product.name.substring(0, 20) + "..." : product.name,
+                                sales: product.sales,
+                                revenue: parseFloat(product.revenue.replace("₵", "").replace(",", "")),
+                            }))}
+                            layout="vertical"
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                            <XAxis type="number" stroke="#71717a" style={{ fontSize: "12px" }} />
+                            <YAxis
+                                dataKey="name"
+                                type="category"
+                                stroke="#71717a"
+                                style={{ fontSize: "12px" }}
+                                width={150}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "#fff",
+                                    border: "1px solid #e4e4e7",
+                                    borderRadius: "8px",
+                                }}
+                                formatter={(value: number, name: string) => {
+                                    if (name === "revenue") {
+                                        return [`₵${value.toFixed(2)}`, "Revenue"];
+                                    }
+                                    return [value, "Sales"];
+                                }}
+                            />
+                            <Legend />
+                            <Bar dataKey="sales" fill="#dc2626" name="Sales" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
 
             {/* Performance Metrics */}
             <div className="grid gap-6 md:grid-cols-2">

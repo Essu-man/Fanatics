@@ -140,6 +140,36 @@ export async function GET(request: Request) {
         }).length;
         const customersChangeText = `+${newCustomersThisMonth} new this month`;
 
+        // Calculate revenue over time (last 30 days)
+        const revenueOverTime: { date: string; revenue: number; orders: number }[] = [];
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Initialize all days with 0 revenue
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            revenueOverTime.push({
+                date: dateStr,
+                revenue: 0,
+                orders: 0,
+            });
+        }
+
+        // Fill in actual revenue and orders for each day
+        orders.forEach((order) => {
+            const orderDate = order.orderDate instanceof Date ? order.orderDate : new Date(order.orderDate);
+            if (orderDate >= thirtyDaysAgo) {
+                const dateStr = orderDate.toISOString().split('T')[0];
+                const dayData = revenueOverTime.find((d) => d.date === dateStr);
+                if (dayData) {
+                    dayData.revenue += order.total || 0;
+                    dayData.orders += 1;
+                }
+            }
+        });
+
         return NextResponse.json({
             success: true,
             stats: {
@@ -154,6 +184,7 @@ export async function GET(request: Request) {
             },
             recentOrders,
             topProducts,
+            revenueOverTime,
         });
     } catch (error: any) {
         console.error("Failed to load dashboard stats:", error);
