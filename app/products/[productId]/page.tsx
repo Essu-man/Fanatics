@@ -326,9 +326,8 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Jersey Customization */}
-                        {(product.category?.toLowerCase().includes('jersey') ||
-                            product.name.toLowerCase().includes('jersey')) && (
-                                <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
+                        {product.name.toLowerCase().includes('jersey') && (
+                            <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
                                     <h3 className="mb-3 text-sm font-semibold text-zinc-900 flex items-center gap-2">
                                         <span>⚽</span>
                                         <span>Customize Your Jersey (Optional)</span>
