@@ -31,6 +31,10 @@ interface OrderItem {
     image?: string;
     colorId?: string;
     size?: string;
+    customization?: {
+        playerName?: string;
+        playerNumber?: string;
+    };
 }
 
 interface Order {
