@@ -20,6 +20,10 @@ export type CartItem = {
     size?: string;
     quantity: number;
     image?: string;
+    customization?: {
+        playerName?: string;
+        playerNumber?: string;
+    };
 };
 
 type CartContextValue = {

@@ -73,6 +73,11 @@ export default function CheckoutCartPage() {
                                         <div className="flex justify-between">
                                             <div>
                                                 <h3 className="font-semibold text-zinc-900">{item.name}</h3>
+                                                {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
+                                                    <p className="mt-1 text-sm font-medium text-[var(--brand-red)]">
+                                                        ⚽ Custom: {item.customization.playerName} {item.customization.playerNumber && `#${item.customization.playerNumber}`}
+                                                    </p>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => removeItem(item.id, item.colorId)}

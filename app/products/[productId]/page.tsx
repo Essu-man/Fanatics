@@ -32,6 +32,10 @@ export default function ProductDetailPage() {
     const [selectedSize, setSelectedSize] = useState<string>("M");
     const [quantity, setQuantity] = useState(1);
     const [imageZoom, setImageZoom] = useState(false);
+    const [customization, setCustomization] = useState({
+        playerName: "",
+        playerNumber: "",
+    });
 
     useEffect(() => {
         // First try to find product in local products array
@@ -148,8 +152,17 @@ export default function ProductDetailPage() {
             size: selectedSize,
             quantity,
             image: selectedImage,
+            customization: customization.playerName || customization.playerNumber
+                ? {
+                    playerName: customization.playerName,
+                    playerNumber: customization.playerNumber,
+                }
+                : undefined,
         });
-        showToast(`${product.name} added to cart!`, "success");
+        const customText = customization.playerName || customization.playerNumber
+            ? ` with ${[customization.playerName, customization.playerNumber].filter(Boolean).join(' #')}`
+            : '';
+        showToast(`${product.name}${customText} added to cart!`, "success");
     };
 
     return (
@@ -311,6 +324,71 @@ export default function ProductDetailPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Jersey Customization */}
+                        {(product.category?.toLowerCase().includes('jersey') ||
+                            product.name.toLowerCase().includes('jersey')) && (
+                                <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
+                                    <h3 className="mb-3 text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                        <span>⚽</span>
+                                        <span>Customize Your Jersey (Optional)</span>
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label htmlFor="playerName" className="mb-1 block text-xs font-medium text-zinc-700">
+                                                Player Name
+                                            </label>
+                                            <input
+                                                id="playerName"
+                                                type="text"
+                                                maxLength={20}
+                                                value={customization.playerName}
+                                                onChange={(e) => setCustomization(prev => ({
+                                                    ...prev,
+                                                    playerName: e.target.value.toUpperCase()
+                                                }))}
+                                                placeholder="e.g., RONALDO"
+                                                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                            />
+                                            <p className="mt-1 text-xs text-zinc-500">
+                                                {customization.playerName.length}/20 characters
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="playerNumber" className="mb-1 block text-xs font-medium text-zinc-700">
+                                                Player Number
+                                            </label>
+                                            <input
+                                                id="playerNumber"
+                                                type="text"
+                                                maxLength={2}
+                                                value={customization.playerNumber}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/[^0-9]/g, '');
+                                                    setCustomization(prev => ({
+                                                        ...prev,
+                                                        playerNumber: value
+                                                    }));
+                                                }}
+                                                placeholder="e.g., 7"
+                                                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                            />
+                                            <p className="mt-1 text-xs text-zinc-500">Numbers 0-99</p>
+                                        </div>
+                                        {(customization.playerName || customization.playerNumber) && (
+                                            <div className="mt-3 rounded-md bg-blue-50 border border-blue-200 p-3">
+                                                <p className="text-xs font-medium text-blue-900 mb-1">Preview:</p>
+                                                <p className="text-sm font-bold text-blue-800">
+                                                    {customization.playerName} {customization.playerNumber && `#${customization.playerNumber}`}
+                                                </p>
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-zinc-500 italic">
+                                            💡 Add your favorite player's name or your own!
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                         {/* Quantity */}
                         <div className="mb-6">

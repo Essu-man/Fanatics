@@ -80,6 +80,11 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 											{it.size ? `Size: ${it.size}${it.colorId ? " • " : ""}` : ""}
 											{it.colorId ? `Color: ${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
 										</div>
+										{it.customization && (it.customization.playerName || it.customization.playerNumber) && (
+											<div className="mt-1 text-xs font-medium text-[var(--brand-red)]">
+												⚽ {it.customization.playerName} {it.customization.playerNumber && `#${it.customization.playerNumber}`}
+											</div>
+										)}
 
 										{/* Quantity Controls */}
 										<div className="mt-2 flex items-center gap-2">
