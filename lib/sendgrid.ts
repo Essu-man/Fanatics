@@ -47,28 +47,52 @@ export const sendEmail = async (
       // Add headers to improve deliverability and reduce spam score
       headers: {
         'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        'List-Unsubscribe': `<mailto:${fromEmail}?subject=unsubscribe>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         'Precedence': 'bulk', // Indicates transactional/bulk email
-        'X-Auto-Response-Suppress': 'All', // Suppress auto-replies
-        'Auto-Submitted': 'auto-generated', // Mark as automated transactional email
+        'X-Priority': '3', // Normal priority
+        'Importance': 'normal',
       },
       // Add categories for tracking (helps with reputation)
-      categories: ['order-confirmation', 'transactional'],
+      categories: ['transactional', 'order-notification'],
+      // Custom args for tracking
+      customArgs: {
+        order_type: 'confirmation',
+        environment: process.env.NODE_ENV || 'production',
+      },
       // Add mail settings to improve deliverability
       mailSettings: {
-        // Enable click tracking (helps with engagement)
+        // Disable click tracking to avoid spam triggers
         clickTracking: {
-          enable: true,
-          enableText: true,
+          enable: false,
+          enableText: false,
         },
-        // Enable open tracking (helps with reputation)
+        // Disable open tracking
         openTracking: {
-          enable: true,
+          enable: false,
         },
-        // Enable subscription tracking
+        // Disable subscription tracking
         subscriptionTracking: {
-          enable: false, // Disable SendGrid's default footer, we have our own
+          enable: false,
+        },
+        // Add footer
+        footer: {
+          enable: false,
+        },
+        // Sandbox mode for testing (disable in production)
+        sandboxMode: {
+          enable: false,
+        },
+      },
+      // Add tracking settings
+      trackingSettings: {
+        clickTracking: {
+          enable: false,
+          enableText: false,
+        },
+        openTracking: {
+          enable: false,
+        },
+        subscriptionTracking: {
+          enable: false,
         },
       },
     };

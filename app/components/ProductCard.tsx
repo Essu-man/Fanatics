@@ -20,6 +20,10 @@ export default function ProductCard({ product }: { product: PType }) {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
     const [selectedSize, setSelectedSize] = useState<string>("M");
+    const [customization, setCustomization] = useState({
+        playerName: "",
+        playerNumber: "",
+    });
 
     const images = product.images || [];
     const selectedImage = images[selectedImageIndex];
@@ -33,7 +37,13 @@ export default function ProductCard({ product }: { product: PType }) {
             colorId: selectedColor,
             size: selectedSize,
             quantity,
-            image: selectedImage
+            image: selectedImage,
+            customization: customization.playerName || customization.playerNumber
+                ? {
+                    playerName: customization.playerName,
+                    playerNumber: customization.playerNumber,
+                }
+                : undefined,
         });
 
         // Close modal if it's open
@@ -41,8 +51,9 @@ export default function ProductCard({ product }: { product: PType }) {
             setOpen(false);
         }
 
-        // Reset quantity
+        // Reset quantity and customization
         setQuantity(1);
+        setCustomization({ playerName: "", playerNumber: "" });
 
         // Show toast notification
         showToast(`${product.name} added to cart!`, "success");
@@ -241,12 +252,12 @@ export default function ProductCard({ product }: { product: PType }) {
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                addToCart();
+                                openModal();
                             }}
-                            aria-label={`Add ${product.name} to cart`}
+                            aria-label={`View ${product.name}`}
                         >
                             <ShoppingBag className="h-3.5 w-3.5" />
-                            Add to Cart
+                            View
                         </Button>
                     </div>
                 </div>
@@ -379,6 +390,65 @@ export default function ProductCard({ product }: { product: PType }) {
                                 </div>
                             </div>
                         )}
+
+                        {/* Jersey Customization - Show for all products that could be jerseys */}
+                        <div className="mt-8 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
+                            <h3 className="mb-3 text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                <span>⚽</span>
+                                <span>Customize Jersey (Optional)</span>
+                            </h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label htmlFor="modal-playerName" className="mb-1 block text-xs font-medium text-zinc-700">
+                                        Player Name
+                                    </label>
+                                    <input
+                                        id="modal-playerName"
+                                        type="text"
+                                        maxLength={20}
+                                        value={customization.playerName}
+                                        onChange={(e) => setCustomization(prev => ({
+                                            ...prev,
+                                            playerName: e.target.value.toUpperCase()
+                                        }))}
+                                        placeholder="e.g., RONALDO"
+                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                    />
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                        {customization.playerName.length}/20 characters
+                                    </p>
+                                </div>
+                                <div>
+                                    <label htmlFor="modal-playerNumber" className="mb-1 block text-xs font-medium text-zinc-700">
+                                        Player Number
+                                    </label>
+                                    <input
+                                        id="modal-playerNumber"
+                                        type="text"
+                                        maxLength={2}
+                                        value={customization.playerNumber}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9]/g, '');
+                                            setCustomization(prev => ({
+                                                ...prev,
+                                                playerNumber: value
+                                            }));
+                                        }}
+                                        placeholder="e.g., 7"
+                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                    />
+                                    <p className="mt-1 text-xs text-zinc-500">Numbers 0-99</p>
+                                </div>
+                                {(customization.playerName || customization.playerNumber) && (
+                                    <div className="mt-3 rounded-md bg-blue-50 border border-blue-200 p-3">
+                                        <p className="text-xs font-medium text-blue-900 mb-1">Preview:</p>
+                                        <p className="text-sm font-bold text-blue-800">
+                                            {customization.playerName} {customization.playerNumber && `#${customization.playerNumber}`}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Quantity Selector */}
                         <div className="mt-8">

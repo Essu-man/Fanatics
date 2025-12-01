@@ -326,6 +326,14 @@ export default function OrderDetailsPage() {
                                                 {item.size && item.colorId && <span>•</span>}
                                                 {item.colorId && <span>Color: {item.colorId}</span>}
                                             </div>
+                                            {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
+                                                <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--brand-red)]">
+                                                    <span>⚽</span>
+                                                    <span>
+                                                        Custom: {item.customization.playerName} {item.customization.playerNumber && `#${item.customization.playerNumber}`}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="flex items-center justify-between">
                                                 <p className="text-sm text-zinc-600">Quantity: {item.quantity}</p>
                                                 <p className="font-semibold text-zinc-900">

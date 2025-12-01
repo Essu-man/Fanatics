@@ -220,6 +220,14 @@ export default function AdminOrderDetailPage() {
                                             {item.size && item.colorId && <span>•</span>}
                                             {item.colorId && <span>Color: {item.colorId}</span>}
                                         </div>
+                                        {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
+                                            <div className="mt-1 flex items-center gap-1.5 text-sm font-medium text-[var(--brand-red)]">
+                                                <span>⚽</span>
+                                                <span>
+                                                    Custom: {item.customization.playerName} {item.customization.playerNumber && `#${item.customization.playerNumber}`}
+                                                </span>
+                                            </div>
+                                        )}
                                         <p className="mt-1 text-sm text-zinc-500">Qty: {item.quantity}</p>
                                     </div>
                                     <p className="font-semibold text-zinc-900">
