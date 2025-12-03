@@ -13,8 +13,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 	const { saveItem: saveForLater, items: savedItems } = useSavedForLater();
 	const { showToast } = useToast();
 	const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
-	const estimatedShipping = subtotal > 200 ? 0 : 20;
-	const total = subtotal + estimatedShipping;
+	const total = subtotal;
 
 	// body scroll lock when open
 	useEffect(() => {
@@ -178,21 +177,6 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 							<span className="text-zinc-600">Subtotal</span>
 							<span className="font-semibold text-zinc-900">₵{subtotal.toFixed(2)}</span>
 						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-zinc-600">Shipping</span>
-							<span className="font-semibold text-zinc-900">
-								{subtotal > 200 ? (
-									<span className="text-green-600">FREE</span>
-								) : (
-									`₵${estimatedShipping.toFixed(2)}`
-								)}
-							</span>
-						</div>
-						{subtotal < 200 && (
-							<p className="text-xs text-green-600">
-								Add ₵{(200 - subtotal).toFixed(2)} more for free shipping!
-							</p>
-						)}
 						<div className="border-t border-zinc-200 pt-2 flex items-center justify-between font-semibold text-zinc-900">
 							<span>Total</span>
 							<span>₵{total.toFixed(2)}</span>
