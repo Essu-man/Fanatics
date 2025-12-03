@@ -11,6 +11,7 @@ export default function CheckoutPaymentPage() {
     const router = useRouter();
     const { items } = useCart();
     const [shippingInfo, setShippingInfo] = useState<any>(null);
+    const [deliveryPrice, setDeliveryPrice] = useState(0);
 
     const getCartTotal = () => {
         return items.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -31,6 +32,13 @@ export default function CheckoutPaymentPage() {
         }
 
         setShippingInfo(JSON.parse(saved));
+
+        // Load delivery price from sessionStorage
+        const savedDeliveryPrice = sessionStorage.getItem("deliveryPrice");
+        if (savedDeliveryPrice) {
+            const priceData = JSON.parse(savedDeliveryPrice);
+            setDeliveryPrice(priceData.price || 0);
+        }
     }, [items, router]);
 
     const handleBack = () => {
@@ -42,7 +50,7 @@ export default function CheckoutPaymentPage() {
     }
 
     const subtotal = getCartTotal();
-    const shipping = 0; // Free shipping
+    const shipping = deliveryPrice;
     const total = subtotal + shipping;
 
     return (
@@ -80,9 +88,12 @@ export default function CheckoutPaymentPage() {
                                     {shippingInfo.firstName} {shippingInfo.lastName}
                                 </p>
                                 <p>{shippingInfo.address}</p>
+                                {shippingInfo.landmark && <p>Landmark: {shippingInfo.landmark}</p>}
                                 <p>
-                                    {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
+                                    {shippingInfo.town}, {shippingInfo.city}
                                 </p>
+                                <p>{shippingInfo.region}</p>
+                                {shippingInfo.digitalAddress && <p>Digital Address: {shippingInfo.digitalAddress}</p>}
                                 <p className="mt-2">{shippingInfo.email}</p>
                                 <p>{shippingInfo.phone}</p>
                             </div>
@@ -129,18 +140,20 @@ export default function CheckoutPaymentPage() {
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-zinc-600">Subtotal</span>
-                                    <span className="font-medium text-zinc-900">₵{subtotal.toFixed(2)}</span>
+                                    <span className="font-medium text-zinc-900">GH₵ {subtotal.toFixed(2)}</span>
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-zinc-600">Shipping</span>
-                                    <span className="font-medium text-green-600">FREE</span>
+                                    <span className="text-zinc-600">Delivery Fee</span>
+                                    <span className="font-medium text-zinc-900">
+                                        {shipping > 0 ? `GH₵ ${shipping.toFixed(2)}` : 'FREE'}
+                                    </span>
                                 </div>
 
                                 <div className="border-t border-zinc-200 pt-3">
                                     <div className="flex justify-between">
                                         <span className="font-semibold text-zinc-900">Total</span>
-                                        <span className="text-xl font-bold text-zinc-900">₵{total.toFixed(2)}</span>
+                                        <span className="text-xl font-bold text-zinc-900">GH₵ {total.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>

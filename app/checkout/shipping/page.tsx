@@ -7,6 +7,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
 import Input from "../../components/ui/input";
+import { getRegions, getTownsByRegion } from "../../../lib/ghanaLocations";
 
 interface ShippingFormData {
     firstName: string;
@@ -14,9 +15,18 @@ interface ShippingFormData {
     email: string;
     phone: string;
     address: string;
+    digitalAddress: string;
+    landmark: string;
+    town: string;
     city: string;
-    state: string;
+    region: string;
     country: string;
+}
+
+interface DeliveryPrice {
+    price: number;
+    location: string;
+    found: boolean;
 }
 
 export default function CheckoutShippingPage() {
@@ -29,10 +39,17 @@ export default function CheckoutShippingPage() {
         email: "",
         phone: "",
         address: "",
+        digitalAddress: "",
+        landmark: "",
+        town: "",
         city: "",
-        state: "",
+        region: "",
         country: "Ghana",
     });
+    const [regions, setRegions] = useState<string[]>([]);
+    const [towns, setTowns] = useState<string[]>([]);
+    const [deliveryPrice, setDeliveryPrice] = useState<DeliveryPrice | null>(null);
+    const [loadingPrice, setLoadingPrice] = useState(false);
 
     useEffect(() => {
         // Redirect if cart is empty
@@ -40,6 +57,9 @@ export default function CheckoutShippingPage() {
             router.push("/");
             return;
         }
+
+        // Load regions
+        setRegions(getRegions());
 
         // Pre-fill form for logged-in users
         if (user) {
@@ -53,11 +73,56 @@ export default function CheckoutShippingPage() {
         }
     }, [user, items, router]);
 
+    // Fetch delivery price when town changes
+    useEffect(() => {
+        if (formData.town) {
+            fetchDeliveryPrice(formData.town);
+        }
+    }, [formData.town]);
+
+    // Update towns when region changes
+    useEffect(() => {
+        if (formData.region) {
+            const availableTowns = getTownsByRegion(formData.region);
+            setTowns(availableTowns);
+            // Reset town if it's not in the new region
+            if (formData.town && !availableTowns.includes(formData.town)) {
+                setFormData(prev => ({ ...prev, town: "" }));
+            }
+        } else {
+            setTowns([]);
+        }
+    }, [formData.region]);
+
+    const fetchDeliveryPrice = async (location: string) => {
+        setLoadingPrice(true);
+        try {
+            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setDeliveryPrice({
+                    price: data.price,
+                    location: data.location,
+                    found: data.found,
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching delivery price:", error);
+        } finally {
+            setLoadingPrice(false);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Store shipping info in sessionStorage
+        // Store shipping info and delivery price in sessionStorage
         sessionStorage.setItem("checkoutShipping", JSON.stringify(formData));
+        sessionStorage.setItem("deliveryPrice", JSON.stringify({
+            price: deliveryPrice?.price || 0,
+            location: formData.town,
+        }));
 
         // Continue to payment
         router.push("/checkout/payment");
@@ -166,14 +231,13 @@ export default function CheckoutShippingPage() {
 
                                     <div>
                                         <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            City *
+                                            Landmark
                                         </label>
                                         <Input
                                             type="text"
-                                            value={formData.city}
-                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            placeholder="Accra"
-                                            required
+                                            value={formData.landmark}
+                                            onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
+                                            placeholder="Near mall, school, etc."
                                         />
                                     </div>
                                 </div>
@@ -181,29 +245,107 @@ export default function CheckoutShippingPage() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Region *
+                                            City *
                                         </label>
                                         <Input
                                             type="text"
-                                            value={formData.state}
-                                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                            placeholder="Greater Accra"
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                            placeholder="e.g., Accra"
                                             required
                                         />
                                     </div>
 
                                     <div>
                                         <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Country *
+                                            Region *
                                         </label>
-                                        <Input
-                                            type="text"
-                                            value={formData.country}
-                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                                            placeholder="Ghana"
+                                        <select
+                                            value={formData.region}
+                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
                                             required
-                                        />
+                                        >
+                                            <option value="">Select Region</option>
+                                            {regions.map((region) => (
+                                                <option key={region} value={region}>
+                                                    {region}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
+                                </div>
+
+                                {formData.region && (
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                            Town/Area * {!formData.region && <span className="text-xs text-zinc-500">(Select region first)</span>}
+                                        </label>
+                                        <select
+                                            value={formData.town}
+                                            onChange={(e) => setFormData({ ...formData, town: e.target.value })}
+                                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                            required
+                                            disabled={!formData.region}
+                                        >
+                                            <option value="">Select Town/Area</option>
+                                            {towns.map((town) => (
+                                                <option key={town} value={town}>
+                                                    {town}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {!formData.region && (
+                                            <p className="mt-1 text-xs text-zinc-500">
+                                                Please select a region first to see available towns
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {deliveryPrice && formData.town && (
+                                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                        <div className="flex items-start gap-3">
+                                            <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-sm font-semibold text-green-900">
+                                                    Delivery Fee: GH₵ {deliveryPrice.price.toFixed(2)}
+                                                </p>
+                                                <p className="mt-1 text-xs text-green-700">
+                                                    {deliveryPrice.found
+                                                        ? `Delivery to ${formData.town}`
+                                                        : 'Standard delivery fee. Actual cost may vary.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        Digital Address (Ghana Post GPS)
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={formData.digitalAddress}
+                                        onChange={(e) => setFormData({ ...formData, digitalAddress: e.target.value })}
+                                        placeholder="e.g., GA-123-4567"
+                                    />
+                                    <p className="mt-1 text-xs text-zinc-500">Optional but helps with faster delivery</p>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        Country *
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={formData.country}
+                                        disabled
+                                        className="bg-zinc-100 cursor-not-allowed"
+                                    />
                                 </div>
                             </div>
                         </div>

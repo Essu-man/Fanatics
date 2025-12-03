@@ -23,14 +23,14 @@ export default function Modal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-            <div className="relative z-10 max-w-4xl rounded-lg bg-white p-6 shadow-xl">
+            <div className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-4 sm:p-6 shadow-xl">
                 <button
                     aria-label="Close"
                     onClick={onClose}
-                    className="absolute right-3 top-3 rounded-md bg-zinc-50 px-2 py-1 text-xs hover:bg-zinc-100"
+                    className="absolute right-2 top-2 sm:right-3 sm:top-3 z-20 rounded-md bg-zinc-50 px-2 py-1 text-xs hover:bg-zinc-100"
                 >
                     ✕
                 </button>

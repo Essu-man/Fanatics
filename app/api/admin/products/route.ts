@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, price, stock, available = true, category, teamId, description, images, colors } = body;
+        const { name, price, stock, available = true, category, teamId, customTeam, description, images, colors } = body;
 
         if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0) {
             return NextResponse.json(
@@ -38,12 +38,27 @@ export async function POST(request: Request) {
             );
         }
 
-        const team = allTeams.find((t) => t.id === teamId);
-        if (!team) {
-            return NextResponse.json(
-                { success: false, error: "Selected team is not recognized" },
-                { status: 400 }
-            );
+        let teamName: string;
+        let league: string;
+        let actualTeamId: string;
+
+        // Handle custom team
+        if (customTeam && customTeam.name && customTeam.league) {
+            teamName = customTeam.name.trim();
+            league = customTeam.league.trim();
+            actualTeamId = teamId; // Already formatted as kebab-case from frontend
+        } else {
+            // Handle predefined team
+            const team = allTeams.find((t) => t.id === teamId);
+            if (!team) {
+                return NextResponse.json(
+                    { success: false, error: "Selected team is not recognized" },
+                    { status: 400 }
+                );
+            }
+            teamName = team.name;
+            league = team.league;
+            actualTeamId = team.id;
         }
 
         const payload = {
@@ -52,10 +67,10 @@ export async function POST(request: Request) {
             stock: Number(stock ?? 0),
             available: Boolean(available),
             category: category || "Jersey",
-            team: team.name,
-            teamId: team.id,
-            league: team.league,
-            description: description?.trim() || `${team.name} official merchandise`,
+            team: teamName,
+            teamId: actualTeamId,
+            league: league,
+            description: description?.trim() || `${teamName} official merchandise`,
             images,
             colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
         };

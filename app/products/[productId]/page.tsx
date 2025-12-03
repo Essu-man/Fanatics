@@ -325,17 +325,20 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        {/* Jersey Customization */}
-                        {product.name.toLowerCase().includes('jersey') && (
-                            <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
-                                <h3 className="mb-3 text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                                    <span>⚽</span>
-                                    <span>Customize Your Jersey (Optional)</span>
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label htmlFor="playerName" className="mb-1 block text-xs font-medium text-zinc-700">
-                                            Player Name
+                        {/* Jersey Customization - Show for all products */}
+                        <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-4 sm:p-5">
+                            <h3 className="mb-4 text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                <span className="text-lg">⚽</span>
+                                <span>Customize Your Jersey</span>
+                                <span className="ml-auto text-xs font-normal text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">Optional</span>
+                            </h3>
+                            <div className="space-y-4">
+                                {/* Name and Number Side by Side */}
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                    {/* Player Name - Takes more space */}
+                                    <div className="flex-1">
+                                        <label htmlFor="playerName" className="mb-1.5 block text-xs font-semibold text-zinc-700 uppercase tracking-wide">
+                                            Name
                                         </label>
                                         <input
                                             id="playerName"
@@ -346,16 +349,18 @@ export default function ProductDetailPage() {
                                                 ...prev,
                                                 playerName: e.target.value.toUpperCase()
                                             }))}
-                                            placeholder="e.g., RONALDO"
-                                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                            placeholder="RONALDO"
+                                            className="w-full rounded-lg border-2 border-zinc-300 bg-white px-3 sm:px-4 py-2.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
                                         />
                                         <p className="mt-1 text-xs text-zinc-500">
-                                            {customization.playerName.length}/20 characters
+                                            {customization.playerName.length}/20 chars
                                         </p>
                                     </div>
-                                    <div>
-                                        <label htmlFor="playerNumber" className="mb-1 block text-xs font-medium text-zinc-700">
-                                            Player Number
+
+                                    {/* Player Number - Smaller */}
+                                    <div className="w-full sm:w-24">
+                                        <label htmlFor="playerNumber" className="mb-1.5 block text-xs font-semibold text-zinc-700 uppercase tracking-wide">
+                                            #
                                         </label>
                                         <input
                                             id="playerNumber"
@@ -369,25 +374,46 @@ export default function ProductDetailPage() {
                                                     playerNumber: value
                                                 }));
                                             }}
-                                            placeholder="e.g., 7"
-                                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
+                                            placeholder="7"
+                                            className="w-full text-center rounded-lg border-2 border-zinc-300 bg-white px-3 py-2.5 text-lg font-bold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
                                         />
-                                        <p className="mt-1 text-xs text-zinc-500">Numbers 0-99</p>
+                                        <p className="mt-1 text-xs text-zinc-500 text-center">0-99</p>
                                     </div>
-                                    {(customization.playerName || customization.playerNumber) && (
-                                        <div className="mt-3 rounded-md bg-blue-50 border border-blue-200 p-3">
-                                            <p className="text-xs font-medium text-blue-900 mb-1">Preview:</p>
-                                            <p className="text-sm font-bold text-blue-800">
-                                                {customization.playerName} {customization.playerNumber && `#${customization.playerNumber}`}
-                                            </p>
+                                </div>
+
+                                {/* Preview */}
+                                {(customization.playerName || customization.playerNumber) && (
+                                    <div className="rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">Preview</p>
+                                            <span className="text-xs text-blue-700">✓ Customization Active</span>
                                         </div>
-                                    )}
-                                    <p className="text-xs text-zinc-500 italic">
-                                        💡 Add your favorite player's name or your own!
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-white rounded-md px-3 py-2 border border-blue-300">
+                                                <p className="text-base sm:text-lg font-black text-zinc-900 tracking-wide">
+                                                    {customization.playerName || <span className="text-zinc-400">NAME</span>}
+                                                </p>
+                                            </div>
+                                            {customization.playerNumber && (
+                                                <div className="bg-white rounded-md px-3 py-2 border border-blue-300 min-w-[60px] text-center">
+                                                    <p className="text-xl sm:text-2xl font-black text-[var(--brand-red)]">
+                                                        #{customization.playerNumber}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Info Tip */}
+                                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                    <span className="text-base">💡</span>
+                                    <p className="text-xs text-amber-900 leading-relaxed">
+                                        <span className="font-semibold">Pro Tip:</span> Add your favorite player's name or personalize it with your own!
                                     </p>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Quantity */}
                         <div className="mb-6">
@@ -492,7 +518,6 @@ export default function ProductDetailPage() {
                 {product && <ProductRecommendations currentProduct={product} />}
             </div>
             <Footer />
-        </div>
+        </div >
     );
 }
-

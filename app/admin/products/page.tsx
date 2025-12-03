@@ -202,13 +202,22 @@ export default function AdminProductsPage() {
                     <h1 className="text-3xl font-bold text-zinc-900">Products</h1>
                     <p className="mt-1 text-sm text-zinc-600">Manage your product inventory</p>
                 </div>
-                <button
-                    onClick={() => router.push("/admin/products/new")}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-4 py-2 font-semibold text-white hover:bg-[var(--brand-red-dark)]"
-                >
-                    <Plus className="h-5 w-5" />
-                    Add Product
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.push("/admin/teams")}
+                        className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 font-semibold text-zinc-700 hover:bg-zinc-50"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Manage Teams
+                    </button>
+                    <button
+                        onClick={() => router.push("/admin/products/new")}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-4 py-2 font-semibold text-white hover:bg-[var(--brand-red-dark)]"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Add Product
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}

@@ -263,7 +263,7 @@ export default function ProductCard({ product }: { product: PType }) {
                 </div>
             </article>
             <Modal open={open} onClose={() => setOpen(false)}>
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                     {/* Image Gallery Slider */}
                     <div>
                         <div
@@ -340,22 +340,22 @@ export default function ProductCard({ product }: { product: PType }) {
 
                     {/* Product Details */}
                     <div className="flex flex-col">
-                        <h3 className="text-2xl font-black text-zinc-900">{product.name}</h3>
-                        <p className="mt-2 text-base text-zinc-500">{product.team}</p>
+                        <h3 className="text-xl sm:text-2xl font-black text-zinc-900">{product.name}</h3>
+                        <p className="mt-2 text-sm sm:text-base text-zinc-500">{product.team}</p>
 
-                        <div className="mt-6">
-                            <span className="text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
+                        <div className="mt-4 sm:mt-6">
+                            <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
                         </div>
 
                         {/* Size Selection */}
-                        <div className="mt-8">
-                            <div className="mb-3 text-sm font-bold text-zinc-900">Select Size</div>
-                            <div className="flex flex-wrap gap-3">
+                        <div className="mt-4 sm:mt-8">
+                            <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Select Size</div>
+                            <div className="flex flex-wrap gap-2 sm:gap-3">
                                 {sizes.map((size) => (
                                     <button
                                         key={size}
                                         onClick={() => setSelectedSize(size)}
-                                        className={`flex h-12 w-12 items-center justify-center rounded-lg border-2 text-sm font-bold transition-all ${selectedSize === size
+                                        className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg border-2 text-xs sm:text-sm font-bold transition-all ${selectedSize === size
                                             ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
                                             : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                             }`}
@@ -368,20 +368,20 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         {/* Color Selection */}
                         {product.colors && product.colors.length > 0 && (
-                            <div className="mt-8">
-                                <div className="mb-3 text-sm font-bold text-zinc-900">Select Color</div>
-                                <div className="flex flex-wrap gap-3">
+                            <div className="mt-4 sm:mt-8">
+                                <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Select Color</div>
+                                <div className="flex flex-wrap gap-2 sm:gap-3">
                                     {product.colors.map((c) => (
                                         <button
                                             key={c.id}
                                             onClick={() => setSelectedColor(c.id)}
-                                            className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${selectedColor === c.id
+                                            className={`flex items-center gap-1.5 sm:gap-2 rounded-full border-2 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-all ${selectedColor === c.id
                                                 ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
                                                 : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                                 }`}
                                         >
                                             <span
-                                                className="h-5 w-5 rounded-full border-2 border-white shadow-sm"
+                                                className="h-4 w-4 sm:h-5 sm:w-5 rounded-full border-2 border-white shadow-sm"
                                                 style={{ backgroundColor: c.hex ?? "#ddd" }}
                                             />
                                             {c.name}
@@ -392,99 +392,130 @@ export default function ProductCard({ product }: { product: PType }) {
                         )}
 
                         {/* Jersey Customization - Show for all products that could be jerseys */}
-                        <div className="mt-8 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-4">
-                            <h3 className="mb-3 text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                                <span>⚽</span>
-                                <span>Customize Jersey (Optional)</span>
+                        <div className="mt-4 sm:mt-8 rounded-lg border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-3 sm:p-5">
+                            <h3 className="mb-3 sm:mb-4 text-xs sm:text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                                <span className="text-base sm:text-lg">⚽</span>
+                                <span>Customize Your Jersey</span>
+                                <span className="ml-auto text-[10px] sm:text-xs font-normal text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">Optional</span>
                             </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <label htmlFor="modal-playerName" className="mb-1 block text-xs font-medium text-zinc-700">
-                                        Player Name
-                                    </label>
-                                    <input
-                                        id="modal-playerName"
-                                        type="text"
-                                        maxLength={20}
-                                        value={customization.playerName}
-                                        onChange={(e) => setCustomization(prev => ({
-                                            ...prev,
-                                            playerName: e.target.value.toUpperCase()
-                                        }))}
-                                        placeholder="e.g., RONALDO"
-                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
-                                    />
-                                    <p className="mt-1 text-xs text-zinc-500">
-                                        {customization.playerName.length}/20 characters
-                                    </p>
-                                </div>
-                                <div>
-                                    <label htmlFor="modal-playerNumber" className="mb-1 block text-xs font-medium text-zinc-700">
-                                        Player Number
-                                    </label>
-                                    <input
-                                        id="modal-playerNumber"
-                                        type="text"
-                                        maxLength={2}
-                                        value={customization.playerNumber}
-                                        onChange={(e) => {
-                                            const value = e.target.value.replace(/[^0-9]/g, '');
-                                            setCustomization(prev => ({
+                            <div className="space-y-3 sm:space-y-4">
+                                {/* Name and Number Side by Side */}
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                    {/* Player Name - Takes more space */}
+                                    <div className="flex-1">
+                                        <label htmlFor="modal-playerName" className="mb-1.5 block text-[10px] sm:text-xs font-semibold text-zinc-700 uppercase tracking-wide">
+                                            Name
+                                        </label>
+                                        <input
+                                            id="modal-playerName"
+                                            type="text"
+                                            maxLength={20}
+                                            value={customization.playerName}
+                                            onChange={(e) => setCustomization(prev => ({
                                                 ...prev,
-                                                playerNumber: value
-                                            }));
-                                        }}
-                                        placeholder="e.g., 7"
-                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-red)]"
-                                    />
-                                    <p className="mt-1 text-xs text-zinc-500">Numbers 0-99</p>
-                                </div>
-                                {(customization.playerName || customization.playerNumber) && (
-                                    <div className="mt-3 rounded-md bg-blue-50 border border-blue-200 p-3">
-                                        <p className="text-xs font-medium text-blue-900 mb-1">Preview:</p>
-                                        <p className="text-sm font-bold text-blue-800">
-                                            {customization.playerName} {customization.playerNumber && `#${customization.playerNumber}`}
+                                                playerName: e.target.value.toUpperCase()
+                                            }))}
+                                            placeholder="RONALDO"
+                                            className="w-full rounded-lg border-2 border-zinc-300 bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
+                                        />
+                                        <p className="mt-1 text-[10px] sm:text-xs text-zinc-500">
+                                            {customization.playerName.length}/20 chars
                                         </p>
                                     </div>
+
+                                    {/* Player Number - Smaller */}
+                                    <div className="w-full sm:w-24">
+                                        <label htmlFor="modal-playerNumber" className="mb-1.5 block text-[10px] sm:text-xs font-semibold text-zinc-700 uppercase tracking-wide">
+                                            #
+                                        </label>
+                                        <input
+                                            id="modal-playerNumber"
+                                            type="text"
+                                            maxLength={2}
+                                            value={customization.playerNumber}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                                setCustomization(prev => ({
+                                                    ...prev,
+                                                    playerNumber: value
+                                                }));
+                                            }}
+                                            placeholder="7"
+                                            className="w-full text-center rounded-lg border-2 border-zinc-300 bg-white px-3 py-2 sm:py-2.5 text-base sm:text-lg font-bold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
+                                        />
+                                        <p className="mt-1 text-[10px] sm:text-xs text-zinc-500 text-center">0-99</p>
+                                    </div>
+                                </div>
+
+                                {/* Preview */}
+                                {(customization.playerName || customization.playerNumber) && (
+                                    <div className="rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 p-3 sm:p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[10px] sm:text-xs font-semibold text-blue-900 uppercase tracking-wide">Preview</p>
+                                            <span className="text-[10px] sm:text-xs text-blue-700">✓ Customization Active</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 border border-blue-300">
+                                                <p className="text-sm sm:text-base lg:text-lg font-black text-zinc-900 tracking-wide">
+                                                    {customization.playerName || <span className="text-zinc-400">NAME</span>}
+                                                </p>
+                                            </div>
+                                            {customization.playerNumber && (
+                                                <div className="bg-white rounded-md px-2 sm:px-3 py-1.5 sm:py-2 border border-blue-300 min-w-[50px] sm:min-w-[60px] text-center">
+                                                    <p className="text-lg sm:text-xl lg:text-2xl font-black text-[var(--brand-red)]">
+                                                        #{customization.playerNumber}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
+
+                                {/* Info Tip */}
+                                <div className="flex items-start gap-2 p-2 sm:p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                    <span className="text-sm sm:text-base">💡</span>
+                                    <p className="text-[10px] sm:text-xs text-amber-900 leading-relaxed">
+                                        <span className="font-semibold">Pro Tip:</span> Add your favorite player's name or personalize it with your own!
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
                         {/* Quantity Selector */}
-                        <div className="mt-8">
-                            <div className="mb-3 text-sm font-bold text-zinc-900">Quantity</div>
-                            <div className="flex w-40 items-center rounded-xl border-2 border-zinc-200 bg-zinc-50">
+                        <div className="mt-4 sm:mt-8">
+                            <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Quantity</div>
+                            <div className="flex w-32 sm:w-40 items-center rounded-xl border-2 border-zinc-200 bg-zinc-50">
                                 <button
                                     onClick={decrementQuantity}
-                                    className="flex h-12 w-12 items-center justify-center rounded-l-xl border-r-2 border-zinc-200 transition-colors hover:bg-white hover:text-[var(--brand-red)]"
+                                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-l-xl border-r-2 border-zinc-200 transition-colors hover:bg-white hover:text-[var(--brand-red)]"
                                 >
-                                    <MinusIcon className="h-5 w-5" />
+                                    <MinusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </button>
-                                <span className="flex h-12 flex-1 items-center justify-center text-base font-bold text-zinc-900">
+                                <span className="flex h-10 sm:h-12 flex-1 items-center justify-center text-sm sm:text-base font-bold text-zinc-900">
                                     {quantity}
                                 </span>
                                 <button
                                     onClick={incrementQuantity}
-                                    className="flex h-12 w-12 items-center justify-center rounded-r-xl border-l-2 border-zinc-200 transition-colors hover:bg-white hover:text-[var(--brand-red)]"
+                                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-r-xl border-l-2 border-zinc-200 transition-colors hover:bg-white hover:text-[var(--brand-red)]"
                                 >
-                                    <PlusIcon className="h-5 w-5" />
+                                    <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </button>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="mt-8 flex flex-col gap-3">
+                        <div className="mt-4 sm:mt-8 flex flex-col gap-2 sm:gap-3">
                             <Button
-                                className="w-full justify-center gap-2 py-3 text-base font-bold shadow-lg transition-all hover:shadow-xl"
+                                className="w-full justify-center gap-2 py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
                                 onClick={addToCart}
                             >
-                                <ShoppingBag className="h-5 w-5" />
+                                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
                                 Add to Cart
                             </Button>
                             <Button
                                 as="button"
                                 variant="outline"
-                                className="w-full justify-center py-3 text-base font-semibold"
+                                className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
                                 onClick={() => setOpen(false)}
                             >
                                 Continue Shopping

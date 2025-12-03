@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../providers/CartProvider";
@@ -10,6 +10,20 @@ import Input from "../components/ui/input";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Shield, Truck, ArrowLeft } from "lucide-react";
+import { getRegions, getTownsByRegion } from "../../lib/ghanaLocations";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/ui/select";
+
+interface DeliveryPrice {
+    price: number;
+    location: string;
+    found: boolean;
+}
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -17,6 +31,10 @@ export default function CheckoutPage() {
     const { showToast } = useToast();
 
     const [processing, setProcessing] = useState(false);
+    const [regions, setRegions] = useState<string[]>([]);
+    const [towns, setTowns] = useState<string[]>([]);
+    const [deliveryPrice, setDeliveryPrice] = useState<DeliveryPrice | null>(null);
+    const [loadingPrice, setLoadingPrice] = useState(false);
 
     // Shipping form state
     const [shipping, setShipping] = useState({
@@ -24,14 +42,60 @@ export default function CheckoutPage() {
         lastName: "",
         email: "",
         phone: "",
-        address: "",
-        city: "",
-        state: "",
+        landmark: "",
+        region: "",
+        town: "",
+        digitalAddress: "",
         country: "Ghana",
     });
 
+    useEffect(() => {
+        setRegions(getRegions());
+    }, []);
+
+    // Update towns when region changes
+    useEffect(() => {
+        if (shipping.region) {
+            const availableTowns = getTownsByRegion(shipping.region);
+            setTowns(availableTowns);
+            // Reset town if it's not in the new region
+            if (shipping.town && !availableTowns.includes(shipping.town)) {
+                setShipping(prev => ({ ...prev, town: "" }));
+            }
+        } else {
+            setTowns([]);
+        }
+    }, [shipping.region]);
+
+    // Fetch delivery price when town changes
+    useEffect(() => {
+        if (shipping.town) {
+            fetchDeliveryPrice(shipping.town);
+        }
+    }, [shipping.town]);
+
+    const fetchDeliveryPrice = async (location: string) => {
+        setLoadingPrice(true);
+        try {
+            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setDeliveryPrice({
+                    price: data.price,
+                    location: data.location,
+                    found: data.found,
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching delivery price:", error);
+        } finally {
+            setLoadingPrice(false);
+        }
+    };
+
     const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
-    const estimatedShipping = 0; // Free shipping
+    const estimatedShipping = deliveryPrice?.price || 0;
     const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
 
@@ -41,8 +105,8 @@ export default function CheckoutPage() {
 
     const validateForm = () => {
         if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone ||
-            !shipping.address || !shipping.city || !shipping.state || !shipping.country) {
-            showToast("Please fill in all shipping details", "error");
+            !shipping.region || !shipping.town || !shipping.country) {
+            showToast("Please fill in all required shipping details", "error");
             return false;
         }
 
@@ -202,36 +266,93 @@ export default function CheckoutPage() {
                                 </div>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        Address *
-                                    </label>
-                                    <Input
-                                        value={shipping.address}
-                                        onChange={(e) => handleShippingChange("address", e.target.value)}
-                                        placeholder="Street address"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        City *
-                                    </label>
-                                    <Input
-                                        value={shipping.city}
-                                        onChange={(e) => handleShippingChange("city", e.target.value)}
-                                        placeholder="Accra"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Region *
                                     </label>
+                                    <Select
+                                        value={shipping.region}
+                                        onValueChange={(value) => handleShippingChange("region", value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select Region" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {regions.map((region) => (
+                                                <SelectItem key={region} value={region}>
+                                                    {region}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        Landmark
+                                    </label>
                                     <Input
-                                        value={shipping.state}
-                                        onChange={(e) => handleShippingChange("state", e.target.value)}
-                                        placeholder="Greater Accra"
-                                        required
+                                        value={shipping.landmark}
+                                        onChange={(e) => handleShippingChange("landmark", e.target.value)}
+                                        placeholder="Near mall, school, etc."
                                     />
+                                </div>
+                                {shipping.region && (
+                                    <div className="sm:col-span-2">
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                            Town/Area *
+                                        </label>
+                                        <Select
+                                            value={shipping.town}
+                                            onValueChange={(value) => handleShippingChange("town", value)}
+                                            disabled={!shipping.region}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select Town/Area" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {towns.map((town) => (
+                                                    <SelectItem key={town} value={town}>
+                                                        {town}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {!shipping.region && (
+                                            <p className="mt-1 text-xs text-zinc-500">
+                                                Please select a region first to see available towns
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {deliveryPrice && shipping.town && (
+                                    <div className="sm:col-span-2">
+                                        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                            <div className="flex items-start gap-3">
+                                                <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-green-900">
+                                                        Delivery Fee: GH₵ {deliveryPrice.price.toFixed(2)}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-green-700">
+                                                        {deliveryPrice.found
+                                                            ? `Delivery to ${shipping.town}`
+                                                            : 'Standard delivery fee. Actual cost may vary.'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="sm:col-span-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        Digital Address (Ghana Post GPS)
+                                    </label>
+                                    <Input
+                                        value={shipping.digitalAddress}
+                                        onChange={(e) => handleShippingChange("digitalAddress", e.target.value)}
+                                        placeholder="e.g., GA-123-4567"
+                                    />
+                                    <p className="mt-1 text-xs text-zinc-500">Optional but helps with faster delivery</p>
                                 </div>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
@@ -239,9 +360,8 @@ export default function CheckoutPage() {
                                     </label>
                                     <Input
                                         value={shipping.country}
-                                        onChange={(e) => handleShippingChange("country", e.target.value)}
-                                        placeholder="Ghana"
-                                        required
+                                        disabled
+                                        className="bg-zinc-100 cursor-not-allowed"
                                     />
                                 </div>
                             </div>
@@ -275,15 +395,17 @@ export default function CheckoutPage() {
                             <div className="space-y-2 border-t border-zinc-200 pt-4">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Subtotal</span>
-                                    <span className="font-semibold text-zinc-900">₵{subtotal.toFixed(2)}</span>
+                                    <span className="font-semibold text-zinc-900">GH₵ {subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-600">Shipping</span>
-                                    <span className="font-semibold text-green-600">FREE</span>
+                                    <span className="text-zinc-600">Delivery Fee</span>
+                                    <span className="font-semibold text-zinc-900">
+                                        {estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : 'FREE'}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">
                                     <span>Total</span>
-                                    <span>₵{total.toFixed(2)}</span>
+                                    <span>GH₵ {total.toFixed(2)}</span>
                                 </div>
                             </div>
 

@@ -101,7 +101,7 @@ export default function Footer() {
                 </div>
 
                 <div className="pt-8 border-t border-zinc-200 text-center text-xs text-zinc-500">
-                    © 2024 Cediman. All rights reserved.
+                    © {new Date().getFullYear()} Cediman. All rights reserved.
                 </div>
             </div>
         </footer>

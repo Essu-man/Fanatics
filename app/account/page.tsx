@@ -215,93 +215,142 @@ export default function AccountPage() {
     const quickLinks = [
         {
             icon: Package,
-            title: "My Orders",
+            title: "Orders",
             description: "Track and manage your orders",
             href: "/account/orders",
-            color: "text-blue-600",
-            bg: "bg-blue-50",
         },
         {
             icon: MapPin,
-            title: "Addresses",
+            title: "Address Book",
             description: "Manage shipping addresses",
             href: "/account/addresses",
-            color: "text-green-600",
-            bg: "bg-green-50",
         },
         {
             icon: MessageSquare,
-            title: "Complaints",
-            description: "Submit and track issues",
+            title: "Inbox",
+            description: "Messages and notifications",
             href: "/account/complaints",
-            color: "text-orange-600",
-            bg: "bg-orange-50",
         },
         {
             icon: Star,
-            title: "Reviews",
-            description: "Your product reviews",
-            href: "/account/reviews",
-            color: "text-purple-600",
-            bg: "bg-purple-50",
+            title: "Saved Items",
+            description: "Your wishlist products",
+            href: "/wishlist",
         },
     ];
 
     return (
         <div className="min-h-screen bg-zinc-50">
-            <div className="mx-auto max-w-7xl px-6 py-12">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-zinc-900">My Account</h1>
-                    <p className="mt-2 text-zinc-600">
-                        Welcome back, {user.email}!
-                    </p>
+            <div className="mx-auto max-w-6xl px-4 py-8">
+                {/* Welcome Banner */}
+                <div className="mb-6 rounded-lg bg-gradient-to-r from-[var(--brand-red)] to-red-600 p-6 text-white shadow-md">
+                    <h1 className="text-2xl font-bold">Hi {user.firstName || user.email}!</h1>
+                    <p className="mt-1 text-sm text-red-50">Welcome to your account</p>
                 </div>
 
-                {/* Quick Links */}
-                <div className="mb-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {quickLinks.map((link) => {
-                        const Icon = link.icon;
-                        return (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className="group flex items-start gap-4 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
-                            >
-                                <div className={`rounded-lg ${link.bg} p-3`}>
-                                    <Icon className={`h-6 w-6 ${link.color}`} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="mb-1 font-semibold text-zinc-900">{link.title}</h3>
-                                    <p className="text-sm text-zinc-600">{link.description}</p>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-zinc-400 transition-transform group-hover:translate-x-1" />
-                            </Link>
-                        );
-                    })}
-                </div>
-
-                {/* Personalized Recommendations */}
-                <div className="mb-12">
-                    <RecommendedProducts
-                        title="Recommended For You"
-                        products={recommendations}
-                        loading={loadingRecs}
-                    />
-                </div>
-
-                {/* Account Info */}
-                <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-xl font-bold text-zinc-900">Account Information</h2>
-                    <div className="space-y-3 text-sm">
-                        <div>
-                            <p className="text-zinc-500">Email</p>
-                            <p className="font-medium text-zinc-900">{user.email}</p>
+                {/* Main Content Grid */}
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Left Column - Quick Links */}
+                    <div className="lg:col-span-1 space-y-4">
+                        {/* Account Overview */}
+                        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+                            <div className="border-b border-zinc-200 p-4">
+                                <h2 className="font-bold text-zinc-900">MY ACCOUNT</h2>
+                            </div>
+                            <div className="divide-y divide-zinc-100">
+                                {quickLinks.map((link) => {
+                                    const Icon = link.icon;
+                                    return (
+                                        <Link
+                                            key={link.href}
+                                            href={link.href}
+                                            className="flex items-center gap-3 p-4 transition-colors hover:bg-zinc-50"
+                                        >
+                                            <Icon className="h-5 w-5 text-zinc-600" />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-zinc-900">{link.title}</p>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-zinc-400" />
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-zinc-500">Account Type</p>
-                            <p className="font-medium text-zinc-900 capitalize">{user.role || "Customer"}</p>
+
+                        {/* Account Information */}
+                        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+                            <div className="border-b border-zinc-200 p-4">
+                                <h2 className="font-bold text-zinc-900">ACCOUNT DETAILS</h2>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div>
+                                    <p className="text-xs text-zinc-500 uppercase">Full Name</p>
+                                    <p className="text-sm font-medium text-zinc-900">
+                                        {user.firstName} {user.lastName}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-zinc-500 uppercase">Email</p>
+                                    <p className="text-sm font-medium text-zinc-900">{user.email}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-zinc-500 uppercase">Phone</p>
+                                    <p className="text-sm font-medium text-zinc-900">{user.phone || "Not provided"}</p>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+                    {/* Right Column - Recent Orders & Recommendations */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Recent Orders */}
+                        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-zinc-200 p-4">
+                                <h2 className="font-bold text-zinc-900">RECENT ORDERS</h2>
+                                <Link href="/account/orders" className="text-sm text-[var(--brand-red)] hover:underline">
+                                    View All
+                                </Link>
+                            </div>
+                            <div className="p-4">
+                                <p className="text-center text-sm text-zinc-500 py-8">
+                                    You haven't placed any orders yet
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Recommendations */}
+                        {!loadingRecs && recommendations.length > 0 && (
+                            <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+                                <div className="border-b border-zinc-200 p-4">
+                                    <h2 className="font-bold text-zinc-900">RECOMMENDED FOR YOU</h2>
+                                </div>
+                                <div className="p-4">
+                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                                        {recommendations.slice(0, 6).map((product) => (
+                                            <Link
+                                                key={product.id}
+                                                href={`/products/${product.id}`}
+                                                className="group"
+                                            >
+                                                <div className="aspect-square overflow-hidden rounded-lg bg-zinc-50">
+                                                    <img
+                                                        src={product.images?.[0]}
+                                                        alt={product.name}
+                                                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                </div>
+                                                <p className="mt-2 text-sm font-medium text-zinc-900 line-clamp-1">
+                                                    {product.name}
+                                                </p>
+                                                <p className="text-sm font-bold text-zinc-900">
+                                                    ₵{product.price.toFixed(2)}
+                                                </p>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
