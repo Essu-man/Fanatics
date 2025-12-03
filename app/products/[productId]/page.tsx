@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Heart, Share2, ZoomIn, Plus, Minus } from "lucide-react";
+import { ChevronLeft, Heart, Share2, ZoomIn, Plus, Minus, ChevronRight, X } from "lucide-react";
 import Header from "../../components/Header";
 import SportsNav from "../../components/SportsNav";
 import Footer from "../../components/Footer";
@@ -27,9 +27,12 @@ export default function ProductDetailPage() {
     const { showToast } = useToast();
 
     const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
     const [selectedImage, setSelectedImage] = useState<string>("");
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedSize, setSelectedSize] = useState<string>("M");
+    const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [quantity, setQuantity] = useState(1);
     const [imageZoom, setImageZoom] = useState(false);
     const [customization, setCustomization] = useState({
@@ -38,13 +41,16 @@ export default function ProductDetailPage() {
     });
 
     useEffect(() => {
+        setLoading(true);
         // First try to find product in local products array
         const foundProduct = products.find((p) => p.id === productId);
 
         if (foundProduct) {
             setProduct(foundProduct);
             setSelectedImage(foundProduct.images?.[0] || "");
+            setSelectedImageIndex(0);
             setSelectedColor(foundProduct.colors?.[0]?.id || null);
+            setLoading(false);
             return;
         }
 
@@ -55,7 +61,9 @@ export default function ProductDetailPage() {
                 if (data.success && data.product) {
                     setProduct(data.product);
                     setSelectedImage(data.product.images?.[0] || "");
+                    setSelectedImageIndex(0);
                     setSelectedColor(data.product.colors?.[0]?.id || null);
+                    setLoading(false);
                 } else {
                     // Fallback: Try to fetch from team products API
                     const teamId = productId.split("-").slice(0, -2).join("-");
@@ -68,19 +76,25 @@ export default function ProductDetailPage() {
                                     if (teamProduct) {
                                         setProduct(teamProduct);
                                         setSelectedImage(teamProduct.images?.[0] || "");
+                                        setSelectedImageIndex(0);
                                         setSelectedColor(teamProduct.colors?.[0]?.id || null);
+                                        setLoading(false);
                                     } else {
                                         setProduct(null);
+                                        setLoading(false);
                                     }
                                 } else {
                                     setProduct(null);
+                                    setLoading(false);
                                 }
                             })
                             .catch(() => {
                                 setProduct(null);
+                                setLoading(false);
                             });
                     } else {
                         setProduct(null);
+                        setLoading(false);
                     }
                 }
             })
@@ -96,19 +110,25 @@ export default function ProductDetailPage() {
                                 if (teamProduct) {
                                     setProduct(teamProduct);
                                     setSelectedImage(teamProduct.images?.[0] || "");
+                                    setSelectedImageIndex(0);
                                     setSelectedColor(teamProduct.colors?.[0]?.id || null);
+                                    setLoading(false);
                                 } else {
                                     setProduct(null);
+                                    setLoading(false);
                                 }
                             } else {
                                 setProduct(null);
+                                setLoading(false);
                             }
                         })
                         .catch(() => {
                             setProduct(null);
+                            setLoading(false);
                         });
                 } else {
                     setProduct(null);
+                    setLoading(false);
                 }
             });
     }, [productId]);
@@ -121,6 +141,29 @@ export default function ProductDetailPage() {
             localStorage.setItem("cediman:recentlyViewed", JSON.stringify(updated));
         }
     }, [product]);
+
+    // Keep main selected image in sync with current index
+    useEffect(() => {
+        if (product?.images?.length) {
+            const img = product.images[selectedImageIndex] || product.images[0];
+            setSelectedImage(img);
+        }
+    }, [selectedImageIndex, product]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white text-zinc-900">
+                <Header />
+                <SportsNav />
+                <div className="mx-auto max-w-7xl px-6 py-12">
+                    <div className="flex items-center justify-center py-16">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-[var(--brand-red)]" aria-label="Loading" />
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        );
+    }
 
     if (!product) {
         return (
@@ -150,6 +193,7 @@ export default function ProductDetailPage() {
             price: product.price,
             colorId: selectedColor,
             size: selectedSize,
+            jerseyType,
             quantity,
             image: selectedImage,
             customization: customization.playerName || customization.playerNumber
@@ -228,6 +272,26 @@ export default function ProductDetailPage() {
                             >
                                 <Heart className={`h-5 w-5 ${isSaved(product.id) ? "fill-[var(--brand-red)] text-[var(--brand-red)]" : "text-zinc-700"}`} />
                             </button>
+
+                            {/* Navigation Arrows on main image */}
+                            {product.images && product.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={() => setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length)}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
+                                        aria-label="Previous image"
+                                    >
+                                        <ChevronLeft className="h-5 w-5 text-zinc-900" />
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedImageIndex((prev) => (prev + 1) % product.images.length)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
+                                        aria-label="Next image"
+                                    >
+                                        <ChevronRight className="h-5 w-5 text-zinc-900" />
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         {/* Thumbnail Gallery */}
@@ -236,7 +300,7 @@ export default function ProductDetailPage() {
                                 {product.images.map((img, idx) => (
                                     <button
                                         key={idx}
-                                        onClick={() => setSelectedImage(img)}
+                                        onClick={() => { setSelectedImage(img); setSelectedImageIndex(idx); }}
                                         className={`flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${selectedImage === img || (!selectedImage && idx === 0)
                                             ? "border-[var(--brand-red)]"
                                             : "border-zinc-200 hover:border-zinc-300"
@@ -304,6 +368,29 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
+                        {/* Jersey Type */}
+                        <div className="mb-6">
+                            <label className="mb-2 block text-sm font-medium text-zinc-900">
+                                Jersey Type
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === 'fan' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
+                                    onClick={() => setJerseyType('fan')}
+                                    type="button"
+                                >
+                                    Fan Version
+                                </button>
+                                <button
+                                    className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === 'player' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
+                                    onClick={() => setJerseyType('player')}
+                                    type="button"
+                                >
+                                    Player Version
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Size Selection */}
                         <div className="mb-6">
                             <label className="mb-2 block text-sm font-medium text-zinc-900">
@@ -343,7 +430,7 @@ export default function ProductDetailPage() {
                                         <input
                                             id="playerName"
                                             type="text"
-                                            maxLength={20}
+                                            maxLength={12}
                                             value={customization.playerName}
                                             onChange={(e) => setCustomization(prev => ({
                                                 ...prev,
@@ -353,7 +440,7 @@ export default function ProductDetailPage() {
                                             className="w-full rounded-lg border-2 border-zinc-300 bg-white px-3 sm:px-4 py-2.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
                                         />
                                         <p className="mt-1 text-xs text-zinc-500">
-                                            {customization.playerName.length}/20 chars
+                                            {customization.playerName.length}/12 chars
                                         </p>
                                     </div>
 
@@ -507,7 +594,7 @@ export default function ProductDetailPage() {
                                 </li>
                                 <li className="flex justify-between">
                                     <span>Origin:</span>
-                                    <span>Official Licensed Product</span>
+                                    <span>Quality Products</span>
                                 </li>
                             </ul>
                         </div>
@@ -518,6 +605,52 @@ export default function ProductDetailPage() {
                 {product && <ProductRecommendations currentProduct={product} />}
             </div>
             <Footer />
+            {/* Image Zoom Modal */}
+            {imageZoom && product.images && product.images.length > 0 && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => setImageZoom(false)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={product.images[selectedImageIndex]}
+                            alt={`${product.name} large view`}
+                            className="w-full max-h-[80vh] object-contain select-none"
+                            draggable={false}
+                        />
+                        {product.images.length > 1 && (
+                            <>
+                                <button
+                                    onClick={() => setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length)}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
+                                    aria-label="Previous image"
+                                >
+                                    <ChevronLeft className="h-6 w-6 text-zinc-900" />
+                                </button>
+                                <button
+                                    onClick={() => setSelectedImageIndex((prev) => (prev + 1) % product.images.length)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
+                                    aria-label="Next image"
+                                >
+                                    <ChevronRight className="h-6 w-6 text-zinc-900" />
+                                </button>
+                            </>
+                        )}
+                        <button
+                            onClick={() => setImageZoom(false)}
+                            className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-sm font-medium text-zinc-900 shadow hover:bg-white"
+                            aria-label="Close"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

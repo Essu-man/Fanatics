@@ -7,7 +7,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
 import Input from "../../components/ui/input";
-import { getRegions, getTownsByRegion } from "../../../lib/ghanaLocations";
+import { getRegions, getTownsByRegion, getCuratedAccraTowns } from "../../../lib/ghanaLocations";
 
 interface ShippingFormData {
     firstName: string;
@@ -43,7 +43,7 @@ export default function CheckoutShippingPage() {
         landmark: "",
         town: "",
         city: "",
-        region: "",
+        region: "Greater Accra",
         country: "Ghana",
     });
     const [regions, setRegions] = useState<string[]>([]);
@@ -58,8 +58,9 @@ export default function CheckoutShippingPage() {
             return;
         }
 
-        // Load regions
+        // Load regions (not used for selection now) and set curated towns for Greater Accra delivery
         setRegions(getRegions());
+        setTowns(getCuratedAccraTowns());
 
         // Pre-fill form for logged-in users
         if (user) {
@@ -155,6 +156,11 @@ export default function CheckoutShippingPage() {
 
                 {/* Shipping Form */}
                 <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+                    <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                        <p className="text-sm text-blue-900">
+                            📦 <strong>Delivery Notice:</strong> Currently delivering within Greater Accra only.
+                        </p>
+                    </div>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Contact Information */}
                         <div>
@@ -260,48 +266,33 @@ export default function CheckoutShippingPage() {
                                         <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                             Region *
                                         </label>
-                                        <select
+                                        <Input
+                                            type="text"
                                             value={formData.region}
-                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                            required
-                                        >
-                                            <option value="">Select Region</option>
-                                            {regions.map((region) => (
-                                                <option key={region} value={region}>
-                                                    {region}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            disabled
+                                            className="bg-zinc-100 cursor-not-allowed"
+                                        />
                                     </div>
                                 </div>
 
-                                {formData.region && (
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Town/Area * {!formData.region && <span className="text-xs text-zinc-500">(Select region first)</span>}
-                                        </label>
-                                        <select
-                                            value={formData.town}
-                                            onChange={(e) => setFormData({ ...formData, town: e.target.value })}
-                                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                            required
-                                            disabled={!formData.region}
-                                        >
-                                            <option value="">Select Town/Area</option>
-                                            {towns.map((town) => (
-                                                <option key={town} value={town}>
-                                                    {town}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {!formData.region && (
-                                            <p className="mt-1 text-xs text-zinc-500">
-                                                Please select a region first to see available towns
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        City/Area *
+                                    </label>
+                                    <select
+                                        value={formData.town}
+                                        onChange={(e) => setFormData({ ...formData, town: e.target.value })}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                        required
+                                    >
+                                        <option value="">Select City/Area</option>
+                                        {towns.map((town) => (
+                                            <option key={town} value={town}>
+                                                {town}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 {deliveryPrice && formData.town && (
                                     <div className="rounded-lg border border-green-200 bg-green-50 p-4">

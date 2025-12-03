@@ -5,6 +5,13 @@ import { ArrowLeft, Plus, Edit, Trash2, Folder, Upload, Image as ImageIcon } fro
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/ui/ToastContainer";
 import Modal from "../../components/ui/modal";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../components/ui/select";
 
 interface CustomLeague {
     id: string;
@@ -342,24 +349,26 @@ export default function AdminLeaguesPage() {
                             <label className="block text-sm font-medium text-zinc-700 mb-1">
                                 Sport *
                             </label>
-                            <select
+                            <Select
                                 value={formData.sport}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, sport: e.target.value })
+                                onValueChange={(value) =>
+                                    setFormData({ ...formData, sport: value })
                                 }
-                                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                required
                             >
-                                <option value="">Select a sport</option>
-                                <option value="football">Football (Soccer)</option>
-                                <option value="basketball">Basketball</option>
-                                <option value="baseball">Baseball</option>
-                                <option value="american-football">American Football</option>
-                                <option value="hockey">Hockey</option>
-                                <option value="rugby">Rugby</option>
-                                <option value="cricket">Cricket</option>
-                                <option value="other">Other</option>
-                            </select>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a sport" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="football">Football (Soccer)</SelectItem>
+                                    <SelectItem value="basketball">Basketball</SelectItem>
+                                    <SelectItem value="baseball">Baseball</SelectItem>
+                                    <SelectItem value="american-football">American Football</SelectItem>
+                                    <SelectItem value="hockey">Hockey</SelectItem>
+                                    <SelectItem value="rugby">Rugby</SelectItem>
+                                    <SelectItem value="cricket">Cricket</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

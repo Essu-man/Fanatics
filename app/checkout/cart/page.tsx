@@ -54,7 +54,7 @@ export default function CheckoutCartPage() {
                         <div className="space-y-4">
                             {items.map((item: any, index: number) => (
                                 <div
-                                    key={`${item.id}-${item.colorId || 'default'}-${index}`}
+                                    key={`${item.id}-${item.colorId || 'default'}-${item.size || 'nosize'}-${item.jerseyType || 'fan'}-${index}`}
                                     className="flex gap-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm"
                                 >
                                     {/* Product Image */}
@@ -73,6 +73,11 @@ export default function CheckoutCartPage() {
                                         <div className="flex justify-between">
                                             <div>
                                                 <h3 className="font-semibold text-zinc-900">{item.name}</h3>
+                                                {item.jerseyType && (
+                                                    <p className="mt-1 text-sm text-zinc-600">
+                                                        Type: {item.jerseyType === 'player' ? 'Player Version' : 'Fan Version'}
+                                                    </p>
+                                                )}
                                                 {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
                                                     <p className="mt-1 text-sm font-medium text-[var(--brand-red)]">
                                                         ⚽ Custom: {item.customization.playerName} {item.customization.playerNumber && `#${item.customization.playerNumber}`}
@@ -80,7 +85,7 @@ export default function CheckoutCartPage() {
                                                 )}
                                             </div>
                                             <button
-                                                onClick={() => removeItem(item.id, item.colorId)}
+                                                onClick={() => removeItem(item.id, item.colorId, item.size, item.jerseyType)}
                                                 className="text-red-600 hover:text-red-700"
                                                 title="Remove item"
                                             >
@@ -92,7 +97,7 @@ export default function CheckoutCartPage() {
                                             {/* Quantity Controls */}
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => updateItem(item.id, item.colorId, Math.max(1, item.quantity - 1))}
+                                                    onClick={() => updateItem(item.id, item.colorId, Math.max(1, item.quantity - 1), item.size, item.jerseyType)}
                                                     className="rounded-lg border border-zinc-200 p-1 hover:bg-zinc-50"
                                                     disabled={item.quantity <= 1}
                                                 >
@@ -100,7 +105,7 @@ export default function CheckoutCartPage() {
                                                 </button>
                                                 <span className="w-12 text-center font-medium">{item.quantity}</span>
                                                 <button
-                                                    onClick={() => updateItem(item.id, item.colorId, item.quantity + 1)}
+                                                    onClick={() => updateItem(item.id, item.colorId, item.quantity + 1, item.size, item.jerseyType)}
                                                     className="rounded-lg border border-zinc-200 p-1 hover:bg-zinc-50"
                                                 >
                                                     <Plus className="h-4 w-4" />

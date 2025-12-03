@@ -20,6 +20,7 @@ export default function ProductCard({ product }: { product: PType }) {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
     const [selectedSize, setSelectedSize] = useState<string>("M");
+    const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [customization, setCustomization] = useState({
         playerName: "",
         playerNumber: "",
@@ -36,6 +37,7 @@ export default function ProductCard({ product }: { product: PType }) {
             price: product.price,
             colorId: selectedColor,
             size: selectedSize,
+            jerseyType,
             quantity,
             image: selectedImage,
             customization: customization.playerName || customization.playerNumber
@@ -347,6 +349,25 @@ export default function ProductCard({ product }: { product: PType }) {
                             <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
                         </div>
 
+                        {/* Jersey Type */}
+                        <div className="mt-4 sm:mt-6">
+                            <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Jersey Type</div>
+                            <div className="flex gap-2">
+                                <button
+                                    className={`px-3 py-2 rounded-md border-2 text-xs sm:text-sm font-semibold transition-all ${jerseyType === 'fan' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
+                                    onClick={() => setJerseyType('fan')}
+                                >
+                                    Fan Version
+                                </button>
+                                <button
+                                    className={`px-3 py-2 rounded-md border-2 text-xs sm:text-sm font-semibold transition-all ${jerseyType === 'player' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
+                                    onClick={() => setJerseyType('player')}
+                                >
+                                    Player Version
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Size Selection */}
                         <div className="mt-4 sm:mt-8">
                             <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Select Size</div>
@@ -409,7 +430,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                         <input
                                             id="modal-playerName"
                                             type="text"
-                                            maxLength={20}
+                                            maxLength={12}
                                             value={customization.playerName}
                                             onChange={(e) => setCustomization(prev => ({
                                                 ...prev,
@@ -419,7 +440,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                             className="w-full rounded-lg border-2 border-zinc-300 bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 placeholder:font-normal focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 transition-all"
                                         />
                                         <p className="mt-1 text-[10px] sm:text-xs text-zinc-500">
-                                            {customization.playerName.length}/20 chars
+                                            {customization.playerName.length}/12 chars
                                         </p>
                                     </div>
 

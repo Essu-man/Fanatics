@@ -1,6 +1,6 @@
-import { Check, Package, Truck, MapPin, Home } from "lucide-react";
+import { Check, Package, MapPin, Home } from "lucide-react";
 
-type OrderStage = "submitted" | "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
+type OrderStage = "submitted" | "confirmed" | "processing" | "out_for_delivery" | "delivered" | "cancelled" | string;
 
 interface OrderProgressTrackerProps {
     currentStage: OrderStage;
@@ -26,12 +26,6 @@ const stages = [
         label: "Processing",
         icon: Package,
         description: "We're preparing your items",
-    },
-    {
-        id: "in_transit" as OrderStage,
-        label: "In Transit",
-        icon: Truck,
-        description: "Your order is on the way",
     },
     {
         id: "out_for_delivery" as OrderStage,
@@ -80,7 +74,16 @@ export default function OrderProgressTracker({
         );
     }
 
-    const currentIndex = stages.findIndex((stage) => stage.id === currentStage);
+    let currentIndex = stages.findIndex((stage) => stage.id === currentStage);
+
+    // Fallback mapping if a removed/unknown stage is provided (e.g., "in_transit")
+    if (currentIndex === -1) {
+        if (currentStage === "in_transit") {
+            currentIndex = stages.findIndex((s) => s.id === "out_for_delivery");
+        } else {
+            currentIndex = 0;
+        }
+    }
 
     return (
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
@@ -167,15 +170,13 @@ export default function OrderProgressTracker({
                         ? "🎉 Your order has been delivered! Thank you for shopping with us."
                         : currentStage === "out_for_delivery"
                             ? "📦 Your order is out for delivery and will arrive today!"
-                            : currentStage === "in_transit"
-                                ? "🚚 Your order is on its way to you."
-                                : currentStage === "processing"
-                                    ? "⏳ We're carefully preparing your items for shipment."
-                                    : currentStage === "confirmed"
-                                        ? "✅ Your order has been confirmed and will be processed soon."
-                                        : currentStage === "submitted"
-                                            ? "📝 Your order has been submitted and is awaiting confirmation."
-                                            : "✅ Your order has been confirmed and will be processed soon."}
+                            : currentStage === "processing"
+                                ? "⏳ We're carefully preparing your items for shipment."
+                                : currentStage === "confirmed"
+                                    ? "✅ Your order has been confirmed and will be processed soon."
+                                    : currentStage === "submitted"
+                                        ? "📝 Your order has been submitted and is awaiting confirmation."
+                                        : "✅ Your order has been confirmed and will be processed soon."}
                 </p>
             </div>
         </div>

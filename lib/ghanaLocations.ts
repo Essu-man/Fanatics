@@ -324,3 +324,32 @@ export const getTownsByRegion = (region: string): string[] => {
     const location = ghanaRegions.find((loc) => loc.region === region);
     return location ? location.towns.sort() : [];
 };
+
+// Curated list of delivery locations for Greater Accra (primary delivery zones)
+export const getCuratedAccraTowns = (): string[] => {
+    return [
+        "Accra Central",
+        "Achimota",
+        "Adabraka",
+        "Adenta",
+        "Airport Residential Area",
+        "Ashiaman",
+        "Ashaley Botwe",
+        "Cantonment",
+        "Dansoman",
+        "East Legon",
+        "Haatso",
+        "Kaneshie",
+        "Labadi",
+        "Labone",
+        "Legon",
+        "Madina",
+        "Nungua",
+        "Osu",
+        "Spintex",
+        "Tema",
+        "Teshie",
+        "Tesano",
+        "Weija",
+    ].sort();
+};

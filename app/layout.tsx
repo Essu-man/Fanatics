@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "./providers/AuthProvider";
 import CartProvider from "./providers/CartProvider";
@@ -8,15 +7,8 @@ import SavedForLaterProvider from "./providers/SavedForLaterProvider";
 import { ToastProvider } from "./components/ui/ToastContainer";
 import MobileBottomNav from "./components/MobileBottomNav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Removed Google Fonts during build to avoid external fetch errors.
+// Use system fonts via CSS in globals.css.
 
 export const metadata: Metadata = {
   title: "Cediman - Premium Football Jerseys",
@@ -30,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`antialiased`}>
         <a href="#main-content" className="skip-to-main">
           Skip to main content
         </a>

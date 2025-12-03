@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Package, MapPin, MessageSquare, Star, ChevronRight } from "lucide-react";
+import { Package, MapPin, MessageSquare, Star, ChevronRight, Truck } from "lucide-react";
 import RecommendedProducts from "../components/RecommendedProducts";
+import OrderActivityCard from "../components/OrderActivityCard";
 import type { Product } from "@/lib/database";
 import { signUp } from "@/lib/firebase-auth";
 import { useToast } from "../components/ui/ToastContainer";
@@ -16,6 +17,8 @@ export default function AccountPage() {
     const { showToast } = useToast();
     const [recommendations, setRecommendations] = useState<Product[]>([]);
     const [loadingRecs, setLoadingRecs] = useState(true);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loadingOrders, setLoadingOrders] = useState(true);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: "",
@@ -28,6 +31,7 @@ export default function AccountPage() {
     useEffect(() => {
         if (user && user.id) {
             fetchRecommendations();
+            fetchOrders();
         }
     }, [user]);
 
@@ -41,6 +45,28 @@ export default function AccountPage() {
             console.error("Error fetching recommendations:", error);
         } finally {
             setLoadingRecs(false);
+        }
+    };
+
+    const fetchOrders = async () => {
+        try {
+            setLoadingOrders(true);
+            const response = await fetch(`/api/orders/user?userId=${user!.id}`, { cache: "no-store" });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Show only active orders (not delivered or cancelled)
+                const activeOrders = data.orders
+                    .filter((order: any) =>
+                        order.status !== "delivered" && order.status !== "cancelled"
+                    )
+                    .slice(0, 3); // Show max 3 active orders
+                setOrders(activeOrders);
+            }
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+        } finally {
+            setLoadingOrders(false);
         }
     };
 
@@ -301,20 +327,53 @@ export default function AccountPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Recent Orders & Recommendations */}
+                    {/* Right Column - Order Activity & Recommendations */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Recent Orders */}
+                        {/* Order Activity */}
                         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
                             <div className="flex items-center justify-between border-b border-zinc-200 p-4">
-                                <h2 className="font-bold text-zinc-900">RECENT ORDERS</h2>
+                                <div className="flex items-center gap-2">
+                                    <Truck className="h-5 w-5 text-[var(--brand-red)]" />
+                                    <h2 className="font-bold text-zinc-900">ORDER ACTIVITY</h2>
+                                </div>
                                 <Link href="/account/orders" className="text-sm text-[var(--brand-red)] hover:underline">
-                                    View All
+                                    View All Orders
                                 </Link>
                             </div>
                             <div className="p-4">
-                                <p className="text-center text-sm text-zinc-500 py-8">
-                                    You haven't placed any orders yet
-                                </p>
+                                {loadingOrders ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--brand-red)] border-t-transparent"></div>
+                                    </div>
+                                ) : orders.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {orders.map((order) => (
+                                            <OrderActivityCard key={order.id} order={order} />
+                                        ))}
+                                        {orders.length >= 3 && (
+                                            <Link
+                                                href="/account/orders"
+                                                className="block text-center text-sm font-medium text-[var(--brand-red)] hover:underline py-2"
+                                            >
+                                                View all your orders →
+                                            </Link>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <Package className="mx-auto h-12 w-12 text-zinc-300 mb-3" />
+                                        <p className="text-sm font-medium text-zinc-600">No active orders</p>
+                                        <p className="text-xs text-zinc-500 mt-1">
+                                            Your current orders will appear here
+                                        </p>
+                                        <Link
+                                            href="/"
+                                            className="mt-4 inline-block rounded-lg bg-[var(--brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--brand-red-dark)]"
+                                        >
+                                            Start Shopping
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

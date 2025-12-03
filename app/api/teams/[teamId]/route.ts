@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { footballTeams, basketballTeams } from "../../../../lib/teams";
 import { generateTeamProducts } from "../../../../lib/teamProducts";
 import { getProductsByTeam } from "@/lib/firestore";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export async function GET(
     request: Request,
@@ -11,7 +13,25 @@ export async function GET(
 
     // Find team in football or basketball teams
     const allTeams = [...footballTeams, ...basketballTeams];
-    const team = allTeams.find((t) => t.id === teamId);
+    let team = allTeams.find((t) => t.id === teamId);
+
+    // If not found in hardcoded teams, check custom teams
+    if (!team) {
+        try {
+            const teamDoc = await getDoc(doc(db, "custom_teams", teamId));
+            if (teamDoc.exists()) {
+                const teamData = teamDoc.data();
+                team = {
+                    id: teamDoc.id,
+                    name: teamData.name,
+                    league: teamData.league,
+                    logo: teamData.logoUrl,
+                };
+            }
+        } catch (error) {
+            console.error("Error fetching custom team:", error);
+        }
+    }
 
     if (!team) {
         return NextResponse.json({ error: "Team not found" }, { status: 404 });

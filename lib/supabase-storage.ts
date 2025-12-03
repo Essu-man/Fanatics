@@ -3,9 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 // Supabase Storage configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-// Create Supabase client for storage operations
+// Create Supabase client for storage operations (client-side)
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Create Supabase client with service role for server-side operations
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
 
 // Storage bucket name
 const STORAGE_BUCKET = 'product-images';
@@ -32,8 +36,11 @@ export const uploadImage = async (
             return { success: false, error: 'File size must be less than 5MB' };
         }
 
+        // Use admin client for server-side uploads (bypasses RLS)
+        const client = supabaseServiceKey ? supabaseAdmin : supabase;
+
         // Upload file to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { data, error } = await client.storage
             .from(STORAGE_BUCKET)
             .upload(path, file, {
                 cacheControl: '3600',
@@ -46,7 +53,7 @@ export const uploadImage = async (
         }
 
         // Get public URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = client.storage
             .from(STORAGE_BUCKET)
             .getPublicUrl(data.path);
 
@@ -114,7 +121,10 @@ export const deleteImage = async (
     path: string
 ): Promise<{ success: boolean; error?: string }> => {
     try {
-        const { error } = await supabase.storage
+        // Use admin client for server-side deletes (bypasses RLS)
+        const client = supabaseServiceKey ? supabaseAdmin : supabase;
+
+        const { error } = await client.storage
             .from(STORAGE_BUCKET)
             .remove([path]);
 
@@ -141,8 +151,11 @@ export const deleteProductImages = async (
     productId: string
 ): Promise<{ success: boolean; error?: string }> => {
     try {
+        // Use admin client for server-side operations (bypasses RLS)
+        const client = supabaseServiceKey ? supabaseAdmin : supabase;
+
         // List all files in the product folder
-        const { data: files, error: listError } = await supabase.storage
+        const { data: files, error: listError } = await client.storage
             .from(STORAGE_BUCKET)
             .list(`products/${productId}`);
 
@@ -157,7 +170,7 @@ export const deleteProductImages = async (
 
         // Delete all files
         const paths = files.map((file) => `products/${productId}/${file.name}`);
-        const { error } = await supabase.storage
+        const { error } = await client.storage
             .from(STORAGE_BUCKET)
             .remove(paths);
 

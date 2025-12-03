@@ -3,7 +3,7 @@
 import { Settings, Truck, Lock, Headphones } from "lucide-react";
 
 const features = [
-    { icon: Settings, text: "Official Licensed Products" },
+    { icon: Settings, text: "Quality Products" },
     { icon: Truck, text: "Fast Shipping" },
     { icon: Lock, text: "Secure Checkout" },
     { icon: Headphones, text: "24/7 Support" },

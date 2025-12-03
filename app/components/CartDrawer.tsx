@@ -12,7 +12,11 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 	const { items, removeItem, clear, updateItem } = useCart();
 	const { saveItem: saveForLater, items: savedItems } = useSavedForLater();
 	const { showToast } = useToast();
-	const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+	const CUSTOMIZATION_FEE = 35;
+	const subtotal = items.reduce((sum, it) => {
+		const perItem = it.price + ((it.customization && (it.customization.playerName || it.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+		return sum + perItem * it.quantity;
+	}, 0);
 	const total = subtotal;
 
 	// body scroll lock when open
@@ -57,7 +61,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 					) : (
 						<ul className="space-y-4">
 							{items.map((it, index) => (
-								<li key={`${it.id}-${it.colorId || "default"}-${index}`} className="flex gap-3">
+								<li key={`${it.id}-${it.colorId || "default"}-${it.size || 'nosize'}-${it.jerseyType || 'fan'}-${index}`} className="flex gap-3">
 									<Link
 										href={`/products/${it.id}`}
 										onClick={onClose}
@@ -77,11 +81,16 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										</Link>
 										<div className="mt-0.5 text-xs text-zinc-500">
 											{it.size ? `Size: ${it.size}${it.colorId ? " • " : ""}` : ""}
-											{it.colorId ? `Color: ${it.colorId} • ` : ""}₵{it.price.toFixed(2)} each
+											{it.colorId ? `Color: ${it.colorId} • ` : ""}
+											{it.jerseyType ? `Type: ${it.jerseyType === 'player' ? 'Player' : 'Fan'} • ` : ''}
+											₵{it.price.toFixed(2)} each
 										</div>
 										{it.customization && (it.customization.playerName || it.customization.playerNumber) && (
-											<div className="mt-1 text-xs font-medium text-[var(--brand-red)]">
-												⚽ {it.customization.playerName} {it.customization.playerNumber && `#${it.customization.playerNumber}`}
+											<div className="mt-1 text-xs">
+												<div className="font-medium text-[var(--brand-red)]">
+													⚽ {it.customization.playerName} {it.customization.playerNumber && `#${it.customization.playerNumber}`}
+												</div>
+												<div className="text-zinc-500">Customization: +₵{CUSTOMIZATION_FEE.toFixed(2)} per item</div>
 											</div>
 										)}
 
@@ -89,7 +98,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										<div className="mt-2 flex items-center gap-2">
 											<div className="flex items-center rounded border border-zinc-200">
 												<button
-													onClick={() => updateItem(it.id, it.colorId, it.quantity - 1, it.size)}
+													onClick={() => updateItem(it.id, it.colorId, it.quantity - 1, it.size, it.jerseyType)}
 													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
 													aria-label="Decrease quantity"
 												>
@@ -99,7 +108,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 													{it.quantity}
 												</span>
 												<button
-													onClick={() => updateItem(it.id, it.colorId, it.quantity + 1, it.size)}
+													onClick={() => updateItem(it.id, it.colorId, it.quantity + 1, it.size, it.jerseyType)}
 													className="flex h-7 w-7 items-center justify-center hover:bg-zinc-50"
 													aria-label="Increase quantity"
 												>
@@ -107,7 +116,10 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 												</button>
 											</div>
 											<div className="text-sm font-semibold text-zinc-900">
-												₵{(it.price * it.quantity).toFixed(2)}
+												{(() => {
+													const perItem = it.price + ((it.customization && (it.customization.playerName || it.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+													return `₵${(perItem * it.quantity).toFixed(2)}`;
+												})()}
 											</div>
 										</div>
 									</div>
@@ -115,7 +127,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										<button
 											onClick={() => {
 												saveForLater(it);
-												removeItem(it.id, it.colorId, it.size);
+												removeItem(it.id, it.colorId, it.size, it.jerseyType);
 												showToast("Item saved for later", "success");
 											}}
 											className="rounded-md border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50"
@@ -125,7 +137,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 										</button>
 										<button
 											onClick={() => {
-												removeItem(it.id, it.colorId, it.size);
+												removeItem(it.id, it.colorId, it.size, it.jerseyType);
 												showToast("Item removed from cart", "info");
 											}}
 											className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50"

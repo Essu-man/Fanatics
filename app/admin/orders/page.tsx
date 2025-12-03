@@ -17,6 +17,7 @@ import {
     Trash2,
 } from "lucide-react";
 import { useToast } from "../../components/ui/ToastContainer";
+import DeliveryPersonModal, { type DeliveryPersonInfo } from "../../components/DeliveryPersonModal";
 import {
     Select,
     SelectContent,
@@ -48,6 +49,12 @@ type AdminOrder = {
     tax: number;
     total: number;
     statusHistory?: any[];
+    deliveryPersonInfo?: {
+        name: string;
+        phone: string;
+        vehicleInfo?: string;
+        assignedAt?: string;
+    };
 };
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
@@ -67,9 +74,12 @@ export default function AdminOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatus, setSelectedStatus] = useState<OrderStatus | "all">("all");
+    const [showDelivered, setShowDelivered] = useState(false); // Toggle for delivered orders
     const [statusDraft, setStatusDraft] = useState<Record<string, OrderStatus>>({});
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [fixingOrders, setFixingOrders] = useState(false);
+    const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+    const [selectedOrderForDelivery, setSelectedOrderForDelivery] = useState<AdminOrder | null>(null);
 
     useEffect(() => {
         fetchOrders();
@@ -121,7 +131,13 @@ export default function AdminOrdersPage() {
     };
 
     const filteredOrders = useMemo(() => {
-        return orders.filter((order) => {
+        // First filter: Show only delivered OR non-delivered based on toggle
+        let baseOrders = showDelivered
+            ? orders.filter(order => order.status === "delivered")
+            : orders.filter(order => order.status !== "delivered");
+
+        // Then apply search and status filters
+        return baseOrders.filter((order) => {
             const query = searchQuery.toLowerCase();
             const matchesSearch =
                 order.id.toLowerCase().includes(query) ||
@@ -131,10 +147,10 @@ export default function AdminOrdersPage() {
             const matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
             return matchesSearch && matchesStatus;
         });
-    }, [orders, searchQuery, selectedStatus]);
+    }, [orders, searchQuery, selectedStatus, showDelivered]);
 
     const statusCounts = {
-        all: orders.length,
+        all: orders.filter(o => o.status !== "delivered").length, // Active orders only
         submitted: orders.filter((o) => o.status === "submitted").length,
         confirmed: orders.filter((o) => o.status === "confirmed").length,
         processing: orders.filter((o) => o.status === "processing").length,
@@ -155,6 +171,7 @@ export default function AdminOrdersPage() {
     const pendingOrders = orders.filter((o) =>
         ["submitted", "confirmed", "processing", "in_transit", "out_for_delivery"].includes(o.status)
     ).length;
+    const deliveredCount = orders.filter(o => o.status === "delivered").length;
 
     const handleFixUserOrders = async () => {
         if (!confirm("This will match all orders with userId: null to users by email and update them. Continue?")) {
@@ -221,20 +238,54 @@ export default function AdminOrdersPage() {
             return;
         }
 
+        // If updating to "out_for_delivery", show delivery person modal
+        if (nextStatus === "out_for_delivery") {
+            setSelectedOrderForDelivery(order);
+            setShowDeliveryModal(true);
+            return;
+        }
+
+        // For other status updates, proceed normally
+        await updateOrderStatus(order, nextStatus, null);
+    };
+
+    const handleDeliveryPersonAssignment = async (deliveryInfo: DeliveryPersonInfo) => {
+        if (!selectedOrderForDelivery) return;
+        await updateOrderStatus(selectedOrderForDelivery, "out_for_delivery", deliveryInfo);
+        setShowDeliveryModal(false);
+        setSelectedOrderForDelivery(null);
+    };
+
+    const updateOrderStatus = async (
+        order: AdminOrder,
+        nextStatus: OrderStatus,
+        deliveryInfo: DeliveryPersonInfo | null
+    ) => {
         try {
             setUpdatingId(order.id);
+
+            const requestBody: any = {
+                orderId: order.id,
+                status: nextStatus,
+                customerEmail: order.guestEmail || order.shipping?.email,
+                customerPhone: order.guestPhone || order.shipping?.phone,
+                customerName: order.shipping
+                    ? `${order.shipping.firstName || ""} ${order.shipping.lastName || ""}`.trim() || "Customer"
+                    : "Customer",
+            };
+
+            // Add delivery person info if provided
+            if (deliveryInfo) {
+                requestBody.deliveryPersonInfo = {
+                    ...deliveryInfo,
+                    assignedAt: new Date().toISOString(),
+                };
+            }
+
             const response = await fetch("/api/orders/update-status", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    status: nextStatus,
-                    customerEmail: order.guestEmail || order.shipping?.email,
-                    customerPhone: order.guestPhone || order.shipping?.phone,
-                    customerName: order.shipping
-                        ? `${order.shipping.firstName || ""} ${order.shipping.lastName || ""}`.trim() || "Customer"
-                        : "Customer",
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();
@@ -242,10 +293,15 @@ export default function AdminOrdersPage() {
                 throw new Error(data.error || "Failed to update status");
             }
 
-            showToast("Order status updated", "success");
+            showToast(
+                deliveryInfo
+                    ? "Order assigned to delivery person successfully"
+                    : "Order status updated",
+                "success"
+            );
             await fetchOrders();
         } catch (error) {
-            console.error("Inline status update error:", error);
+            console.error("Status update error:", error);
             showToast(error instanceof Error ? error.message : "Failed to update status", "error");
         } finally {
             setUpdatingId(null);
@@ -267,28 +323,50 @@ export default function AdminOrdersPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900">Orders Management</h1>
-                    <p className="mt-1 text-sm text-zinc-600">Manage and track all customer orders in real-time</p>
+                    <h1 className="text-3xl font-bold text-zinc-900">
+                        {showDelivered ? "Delivered Orders" : "Orders Management"}
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-600">
+                        {showDelivered
+                            ? `Viewing ${deliveredCount} completed deliveries`
+                            : "Manage and track all active customer orders in real-time"
+                        }
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={handleFixUserOrders}
-                        disabled={fixingOrders}
-                        className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Fix User Orders - Match orders to users by email"
+                        onClick={() => setShowDelivered(!showDelivered)}
+                        className={`flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${showDelivered
+                            ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                        title={showDelivered ? "View Active Orders" : "View Delivered Orders"}
                     >
-                        {fixingOrders ? (
-                            <>
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                <span className="hidden sm:inline">Fixing...</span>
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="h-4 w-4" />
-                                <span className="hidden sm:inline">Fix User Orders</span>
-                            </>
-                        )}
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">
+                            {showDelivered ? "Back to Active" : `Delivered (${deliveredCount})`}
+                        </span>
                     </button>
+                    {!showDelivered && (
+                        <button
+                            onClick={handleFixUserOrders}
+                            disabled={fixingOrders}
+                            className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Fix User Orders - Match orders to users by email"
+                        >
+                            {fixingOrders ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    <span className="hidden sm:inline">Fixing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Fix User Orders</span>
+                                </>
+                            )}
+                        </button>
+                    )}
                     <button
                         onClick={fetchOrders}
                         className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
@@ -340,9 +418,18 @@ export default function AdminOrdersPage() {
                 <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-gradient-to-br from-purple-50 to-pink-50 p-6 shadow-sm transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-zinc-600">Total Orders</p>
-                            <p className="mt-2 text-3xl font-bold text-purple-700">{statusCounts.all}</p>
-                            <p className="mt-1 text-xs text-zinc-500">{pendingOrders} pending</p>
+                            <p className="text-sm font-medium text-zinc-600">
+                                {showDelivered ? "Delivered Orders" : "Active Orders"}
+                            </p>
+                            <p className="mt-2 text-3xl font-bold text-purple-700">
+                                {showDelivered ? deliveredCount : statusCounts.all}
+                            </p>
+                            <p className="mt-1 text-xs text-zinc-500">
+                                {showDelivered
+                                    ? "Completed deliveries"
+                                    : `${pendingOrders} pending`
+                                }
+                            </p>
                         </div>
                         <div className="rounded-full bg-purple-100 p-3">
                             <Package className="h-6 w-6 text-purple-600" />
@@ -369,39 +456,51 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                <button
-                    onClick={() => setSelectedStatus("all")}
-                    className={`rounded-lg border-2 p-3 text-center transition-all ${selectedStatus === "all"
-                        ? "border-[var(--brand-red)] bg-red-50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300"
-                        }`}
-                >
-                    <p className="text-2xl font-bold text-zinc-900">{statusCounts.all}</p>
-                    <p className="mt-1 text-xs font-medium text-zinc-600">All Orders</p>
-                </button>
-                {Object.entries(statusConfig).map(([status, config]) => {
-                    const Icon = config.icon;
-                    return (
-                        <button
-                            key={status}
-                            onClick={() => setSelectedStatus(status as OrderStatus)}
-                            className={`rounded-lg border-2 p-3 text-center transition-all ${selectedStatus === status
-                                ? "border-[var(--brand-red)] bg-red-50"
-                                : "border-zinc-200 bg-white hover:border-zinc-300"
-                                }`}
-                        >
-                            <Icon
-                                className={`mx-auto h-5 w-5 ${config.color
-                                    .replace("bg-", "text-")
-                                    .replace("-100", "-600")}`}
-                            />
-                            <p className="mt-1 text-xl font-bold text-zinc-900">
-                                {statusCounts[status as keyof typeof statusCounts]}
-                            </p>
-                            <p className="mt-0.5 text-xs font-medium text-zinc-600">{config.label}</p>
-                        </button>
-                    );
-                })}
+                {!showDelivered && (
+                    <button
+                        onClick={() => setSelectedStatus("all")}
+                        className={`rounded-lg border-2 p-3 text-center transition-all ${selectedStatus === "all"
+                            ? "border-[var(--brand-red)] bg-red-50"
+                            : "border-zinc-200 bg-white hover:border-zinc-300"
+                            }`}
+                    >
+                        <p className="text-2xl font-bold text-zinc-900">{statusCounts.all}</p>
+                        <p className="mt-1 text-xs font-medium text-zinc-600">All Active</p>
+                    </button>
+                )}
+                {showDelivered && (
+                    <div className="sm:col-span-2 lg:col-span-6 rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4 text-center">
+                        <p className="text-3xl font-bold text-emerald-900">{deliveredCount}</p>
+                        <p className="mt-1 text-sm font-medium text-emerald-700">
+                            Total Delivered Orders
+                        </p>
+                    </div>
+                )}
+                {!showDelivered && Object.entries(statusConfig)
+                    .filter(([status]) => status !== "delivered") // Hide delivered from active view
+                    .map(([status, config]) => {
+                        const Icon = config.icon;
+                        return (
+                            <button
+                                key={status}
+                                onClick={() => setSelectedStatus(status as OrderStatus)}
+                                className={`rounded-lg border-2 p-3 text-center transition-all ${selectedStatus === status
+                                    ? "border-[var(--brand-red)] bg-red-50"
+                                    : "border-zinc-200 bg-white hover:border-zinc-300"
+                                    }`}
+                            >
+                                <Icon
+                                    className={`mx-auto h-5 w-5 ${config.color
+                                        .replace("bg-", "text-")
+                                        .replace("-100", "-600")}`}
+                                />
+                                <p className="mt-1 text-xl font-bold text-zinc-900">
+                                    {statusCounts[status as keyof typeof statusCounts]}
+                                </p>
+                                <p className="mt-0.5 text-xs font-medium text-zinc-600">{config.label}</p>
+                            </button>
+                        );
+                    })}
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -429,16 +528,21 @@ export default function AdminOrdersPage() {
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Statuses ({statusCounts.all})</SelectItem>
-                                <SelectItem value="submitted">Submitted ({statusCounts.submitted})</SelectItem>
-                                <SelectItem value="confirmed">Confirmed ({statusCounts.confirmed})</SelectItem>
-                                <SelectItem value="processing">Processing ({statusCounts.processing})</SelectItem>
-                                <SelectItem value="in_transit">In Transit ({statusCounts.in_transit})</SelectItem>
-                                <SelectItem value="out_for_delivery">
-                                    Out for Delivery ({statusCounts.out_for_delivery})
-                                </SelectItem>
-                                <SelectItem value="delivered">Delivered ({statusCounts.delivered})</SelectItem>
-                                <SelectItem value="cancelled">Cancelled ({statusCounts.cancelled})</SelectItem>
+                                {!showDelivered ? (
+                                    <>
+                                        <SelectItem value="all">All Active ({statusCounts.all})</SelectItem>
+                                        <SelectItem value="submitted">Submitted ({statusCounts.submitted})</SelectItem>
+                                        <SelectItem value="confirmed">Confirmed ({statusCounts.confirmed})</SelectItem>
+                                        <SelectItem value="processing">Processing ({statusCounts.processing})</SelectItem>
+                                        <SelectItem value="in_transit">In Transit ({statusCounts.in_transit})</SelectItem>
+                                        <SelectItem value="out_for_delivery">
+                                            Out for Delivery ({statusCounts.out_for_delivery})
+                                        </SelectItem>
+                                        <SelectItem value="cancelled">Cancelled ({statusCounts.cancelled})</SelectItem>
+                                    </>
+                                ) : (
+                                    <SelectItem value="delivered">Delivered ({statusCounts.delivered})</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -446,7 +550,7 @@ export default function AdminOrdersPage() {
                 {(searchQuery || selectedStatus !== "all") && (
                     <div className="mt-3 flex items-center gap-2">
                         <span className="text-xs text-zinc-500">
-                            Showing {filteredOrders.length} of {orders.length} orders
+                            Showing {filteredOrders.length} of {showDelivered ? deliveredCount : statusCounts.all} orders
                         </span>
                         <button
                             onClick={() => {
@@ -609,15 +713,31 @@ export default function AdminOrdersPage() {
                 {filteredOrders.length === 0 && (
                     <div className="py-12 text-center">
                         <Package className="mx-auto mb-3 h-12 w-12 text-zinc-400" />
-                        <p className="text-sm font-medium text-zinc-900">No orders found</p>
+                        <p className="text-sm font-medium text-zinc-900">
+                            {showDelivered ? "No delivered orders found" : "No orders found"}
+                        </p>
                         <p className="mt-1 text-xs text-zinc-500">
                             {searchQuery || selectedStatus !== "all"
                                 ? "Try adjusting your filters"
-                                : "Orders will appear here once customers make purchases"}
+                                : showDelivered
+                                    ? "Delivered orders will appear here"
+                                    : "Orders will appear here once customers make purchases"}
                         </p>
                     </div>
                 )}
             </div>
+
+            {/* Delivery Person Assignment Modal */}
+            <DeliveryPersonModal
+                isOpen={showDeliveryModal}
+                onClose={() => {
+                    setShowDeliveryModal(false);
+                    setSelectedOrderForDelivery(null);
+                }}
+                onSubmit={handleDeliveryPersonAssignment}
+                orderId={selectedOrderForDelivery?.id || ""}
+                isUpdating={updatingId === selectedOrderForDelivery?.id}
+            />
         </div>
     );
 }

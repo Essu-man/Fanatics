@@ -9,31 +9,8 @@ interface League {
     name: string;
     sport: string;
     teamCount: number;
+    logoUrl?: string;
 }
-
-// Map league names to their actual logo image URLs (using reliable CDN sources)
-const getLeagueLogoUrl = (leagueName: string): string | null => {
-    // Using a reliable sports logo CDN service
-    const logoMap: Record<string, string> = {
-        "Premier League": "https://media.api-sports.io/football/leagues/39.png",
-        "La Liga": "https://media.api-sports.io/football/leagues/140.png",
-        "Serie A": "https://media.api-sports.io/football/leagues/135.png",
-        "Bundesliga": "https://media.api-sports.io/football/leagues/78.png",
-        "Ligue 1": "https://media.api-sports.io/football/leagues/61.png",
-        "UEFA": "https://media.api-sports.io/football/leagues/2.png",
-        "Champions League": "https://media.api-sports.io/football/leagues/2.png",
-        "Eredivisie": "https://media.api-sports.io/football/leagues/88.png",
-        "Primeira Liga": "https://media.api-sports.io/football/leagues/94.png",
-        "Scottish Premiership": "https://media.api-sports.io/football/leagues/179.png",
-        "Süper Lig": "https://media.api-sports.io/football/leagues/203.png",
-        "NFL": "https://a.espncdn.com/i/leaguelogos/nfl/500/nfl.png",
-        "NBA": "https://cdn.nba.com/logos/nba/nba-logoman-75-word.svg",
-        "EuroLeague": "https://www.euroleaguebasketball.net/euroleague/wp-content/uploads/2020/10/el-logo.svg",
-        "WNBA": "https://a.espncdn.com/i/leaguelogos/wnba/500/wnba.png",
-    };
-
-    return logoMap[leagueName] || null;
-};
 
 export default function ShopYourTeams() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,11 +45,10 @@ export default function ShopYourTeams() {
     };
 
     const renderLeagueLogo = (league: League) => {
-        const logoUrl = getLeagueLogoUrl(league.name);
-        if (logoUrl) {
+        if (league.logoUrl) {
             return (
                 <img
-                    src={logoUrl}
+                    src={league.logoUrl}
                     alt={league.name}
                     className="h-full w-full object-contain p-2"
                     loading="lazy"
@@ -81,7 +57,6 @@ export default function ShopYourTeams() {
                         const target = e.target as HTMLImageElement;
                         const parent = target.parentElement;
                         if (parent && !parent.querySelector('span')) {
-                            console.warn(`Failed to load logo for ${league.name} from ${logoUrl}`);
                             target.style.display = 'none';
                             const fallback = document.createElement('span');
                             fallback.className = 'text-lg font-bold text-zinc-700';
@@ -92,8 +67,7 @@ export default function ShopYourTeams() {
                 />
             );
         }
-        // Fallback to initials if no logo URL found
-        console.warn(`No logo URL found for league: ${league.name}`);
+        // Fallback to initials if no logo URL
         return (
             <span className="text-lg font-bold text-zinc-700">
                 {getLeagueInitials(league.name)}

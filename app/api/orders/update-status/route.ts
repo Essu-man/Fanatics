@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { orderId, status, customerEmail, customerPhone, customerName } = body;
+        const { orderId, status, customerEmail, customerPhone, customerName, deliveryPersonInfo } = body;
 
         if (!orderId || !status) {
             return NextResponse.json(
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Update order status in Supabase
-        const result = await updateOrderStatus(orderId, status);
+        // Update order status in Firestore (with delivery person info if provided)
+        const result = await updateOrderStatus(orderId, status, deliveryPersonInfo);
 
         if (!result.success) {
             return NextResponse.json(

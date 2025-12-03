@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db } from "@/lib/firebase";
+import { uploadImage, deleteImage } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
 
@@ -42,23 +42,27 @@ export async function PATCH(
         // Upload new logo if provided
         if (logoFile && logoFile.size > 0) {
             const fileName = `league-logos/${Date.now()}-${logoFile.name}`;
-            const storageRef = ref(storage, fileName);
+            const result = await uploadImage(logoFile, fileName);
 
-            const bytes = await logoFile.arrayBuffer();
-            const buffer = Buffer.from(bytes);
+            if (!result.success || !result.url) {
+                return NextResponse.json(
+                    { success: false, error: result.error || 'Failed to upload logo' },
+                    { status: 500 }
+                );
+            }
 
-            await uploadBytes(storageRef, buffer, {
-                contentType: logoFile.type,
-            });
-
-            updateData.logoUrl = await getDownloadURL(storageRef);
+            updateData.logoUrl = result.url;
 
             // Delete old logo if exists
             const oldLogoUrl = leagueDoc.data().logoUrl;
             if (oldLogoUrl) {
                 try {
-                    const oldRef = ref(storage, oldLogoUrl);
-                    await deleteObject(oldRef);
+                    // Extract path from URL
+                    const urlParts = oldLogoUrl.split('/product-images/');
+                    if (urlParts.length > 1) {
+                        const oldPath = urlParts[1];
+                        await deleteImage(oldPath);
+                    }
                 } catch (error) {
                     console.warn("Could not delete old logo:", error);
                 }
@@ -104,8 +108,12 @@ export async function DELETE(
         const logoUrl = leagueDoc.data().logoUrl;
         if (logoUrl) {
             try {
-                const logoRef = ref(storage, logoUrl);
-                await deleteObject(logoRef);
+                // Extract path from URL
+                const urlParts = logoUrl.split('/product-images/');
+                if (urlParts.length > 1) {
+                    const path = urlParts[1];
+                    await deleteImage(path);
+                }
             } catch (error) {
                 console.warn("Could not delete league logo:", error);
             }

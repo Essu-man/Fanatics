@@ -5,6 +5,15 @@ import { ArrowLeft, Plus, Edit, Trash2, Users, Folder, Upload, Image as ImageIco
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/ui/ToastContainer";
 import Modal from "../../components/ui/modal";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    SelectGroup,
+    SelectLabel,
+} from "../../components/ui/select";
 
 interface CustomTeam {
     id: string;
@@ -453,35 +462,27 @@ export default function AdminTeamsPage() {
                             <label className="block text-sm font-medium text-zinc-700 mb-1">
                                 League/Competition *
                             </label>
-                            <select
+                            <Select
                                 value={isNewLeague ? "new" : formData.leagueId}
-                                onChange={(e) => handleLeagueChange(e.target.value)}
-                                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 mb-2"
+                                onValueChange={(value) => handleLeagueChange(value)}
                             >
-                                <option value="">Select a league</option>
-                                <option value="new">+ Create New League</option>
-                                <optgroup label="Custom Leagues">
-                                    {customLeagues.map((league) => (
-                                        <option key={league.id} value={league.id}>
-                                            {league.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                                <optgroup label="Football Leagues">
-                                    {leagues.filter(l => l.sport === "football").map((league) => (
-                                        <option key={league.id} value={league.id}>
-                                            {league.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                                <optgroup label="Basketball Leagues">
-                                    {leagues.filter(l => l.sport === "basketball").map((league) => (
-                                        <option key={league.id} value={league.id}>
-                                            {league.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                            </select>
+                                <SelectTrigger className="w-full mb-2">
+                                    <SelectValue placeholder="Select a league" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="new">+ Create New League</SelectItem>
+                                    {customLeagues.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Custom Leagues</SelectLabel>
+                                            {customLeagues.map((league) => (
+                                                <SelectItem key={league.id} value={league.id}>
+                                                    {league.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                </SelectContent>
+                            </Select>
 
                             {isNewLeague && (
                                 <input

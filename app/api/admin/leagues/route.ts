@@ -7,8 +7,8 @@ import {
     orderBy,
     query,
 } from "firebase/firestore";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
+import { uploadImage } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
 
@@ -56,19 +56,19 @@ export async function POST(request: Request) {
 
         let logoUrl = "";
 
-        // Upload logo if provided
+        // Upload logo to Supabase Storage if provided
         if (logoFile && logoFile.size > 0) {
             const fileName = `league-logos/${Date.now()}-${logoFile.name}`;
-            const storageRef = ref(storage, fileName);
+            const result = await uploadImage(logoFile, fileName);
 
-            const bytes = await logoFile.arrayBuffer();
-            const buffer = Buffer.from(bytes);
+            if (!result.success || !result.url) {
+                return NextResponse.json(
+                    { success: false, error: result.error || 'Failed to upload logo' },
+                    { status: 500 }
+                );
+            }
 
-            await uploadBytes(storageRef, buffer, {
-                contentType: logoFile.type,
-            });
-
-            logoUrl = await getDownloadURL(storageRef);
+            logoUrl = result.url;
         }
 
         const leagueData = {

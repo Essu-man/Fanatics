@@ -28,7 +28,7 @@ export default function NewArrivals() {
         const data = await response.json();
 
         if (data.success && data.products) {
-          // Filter for available products, sort by newest first (createdAt), and limit to 10
+          // Filter for available products, sort by newest first (createdAt), and limit to 5
           const availableProducts = data.products
             .filter((p: any) => p.available && p.images && p.images.length > 0)
             .sort((a: any, b: any) => {
@@ -39,7 +39,7 @@ export default function NewArrivals() {
                 (b.createdAt ? new Date(b.createdAt).getTime() : 0);
               return dateB - dateA;
             })
-            .slice(0, 10)
+            .slice(0, 5)
             .map((p: any) => ({
               id: p.id,
               name: p.name,

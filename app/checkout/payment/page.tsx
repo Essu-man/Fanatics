@@ -13,8 +13,12 @@ export default function CheckoutPaymentPage() {
     const [shippingInfo, setShippingInfo] = useState<any>(null);
     const [deliveryPrice, setDeliveryPrice] = useState(0);
 
+    const CUSTOMIZATION_FEE = 35;
     const getCartTotal = () => {
-        return items.reduce((total, item) => total + item.price * item.quantity, 0);
+        return items.reduce((total, item) => {
+            const perItem = item.price + ((item.customization && (item.customization.playerName || item.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+            return total + perItem * item.quantity;
+        }, 0);
     };
 
     useEffect(() => {
@@ -121,9 +125,15 @@ export default function CheckoutPaymentPage() {
                                             <div>
                                                 <p className="font-medium text-zinc-900">{item.name}</p>
                                                 <p className="text-sm text-zinc-500">Qty: {item.quantity}</p>
+                                                {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
+                                                    <p className="text-xs text-zinc-600">Customization: +₵{CUSTOMIZATION_FEE.toFixed(2)} per item</p>
+                                                )}
                                             </div>
                                             <p className="font-semibold text-zinc-900">
-                                                ₵{(item.price * item.quantity).toFixed(2)}
+                                                {(() => {
+                                                    const perItem = item.price + ((item.customization && (item.customization.playerName || item.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+                                                    return `₵${(perItem * item.quantity).toFixed(2)}`;
+                                                })()}
                                             </p>
                                         </div>
                                     </div>

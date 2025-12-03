@@ -10,7 +10,7 @@ import Input from "../components/ui/input";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Shield, Truck, ArrowLeft } from "lucide-react";
-import { getRegions, getTownsByRegion } from "../../lib/ghanaLocations";
+import { getRegions, getTownsByRegion, getCuratedAccraTowns } from "../../lib/ghanaLocations";
 import {
     Select,
     SelectContent,
@@ -43,7 +43,7 @@ export default function CheckoutPage() {
         email: "",
         phone: "",
         landmark: "",
-        region: "",
+        region: "Greater Accra",
         town: "",
         digitalAddress: "",
         country: "Ghana",
@@ -51,19 +51,19 @@ export default function CheckoutPage() {
 
     useEffect(() => {
         setRegions(getRegions());
+        // Initialize curated towns for Greater Accra delivery
+        const accraTowns = getCuratedAccraTowns();
+        setTowns(accraTowns);
     }, []);
 
-    // Update towns when region changes
+    // Keep towns synced if region changes programmatically (region is static in UI)
     useEffect(() => {
         if (shipping.region) {
             const availableTowns = getTownsByRegion(shipping.region);
             setTowns(availableTowns);
-            // Reset town if it's not in the new region
             if (shipping.town && !availableTowns.includes(shipping.town)) {
                 setShipping(prev => ({ ...prev, town: "" }));
             }
-        } else {
-            setTowns([]);
         }
     }, [shipping.region]);
 
@@ -94,7 +94,11 @@ export default function CheckoutPage() {
         }
     };
 
-    const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const CUSTOMIZATION_FEE = 35;
+    const subtotal = items.reduce((sum, it) => {
+        const perItem = it.price + ((it.customization && (it.customization.playerName || it.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+        return sum + perItem * it.quantity;
+    }, 0);
     const estimatedShipping = deliveryPrice?.price || 0;
     const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
@@ -268,21 +272,11 @@ export default function CheckoutPage() {
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         Region *
                                     </label>
-                                    <Select
+                                    <Input
                                         value={shipping.region}
-                                        onValueChange={(value) => handleShippingChange("region", value)}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select Region" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {regions.map((region) => (
-                                                <SelectItem key={region} value={region}>
-                                                    {region}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        disabled
+                                        className="bg-zinc-100 cursor-not-allowed"
+                                    />
                                 </div>
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
@@ -294,34 +288,26 @@ export default function CheckoutPage() {
                                         placeholder="Near mall, school, etc."
                                     />
                                 </div>
-                                {shipping.region && (
-                                    <div className="sm:col-span-2">
-                                        <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                            Town/Area *
-                                        </label>
-                                        <Select
-                                            value={shipping.town}
-                                            onValueChange={(value) => handleShippingChange("town", value)}
-                                            disabled={!shipping.region}
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select Town/Area" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {towns.map((town) => (
-                                                    <SelectItem key={town} value={town}>
-                                                        {town}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {!shipping.region && (
-                                            <p className="mt-1 text-xs text-zinc-500">
-                                                Please select a region first to see available towns
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="sm:col-span-2">
+                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                        City/Area *
+                                    </label>
+                                    <Select
+                                        value={shipping.town}
+                                        onValueChange={(value) => handleShippingChange("town", value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select City/Area" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {towns.map((town) => (
+                                                <SelectItem key={town} value={town}>
+                                                    {town}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 {deliveryPrice && shipping.town && (
                                     <div className="sm:col-span-2">
                                         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
@@ -384,8 +370,14 @@ export default function CheckoutPage() {
                                         <div className="flex-1">
                                             <p className="text-sm font-medium text-zinc-900">{item.name}</p>
                                             <p className="text-xs text-zinc-500">Qty: {item.quantity}</p>
+                                            {item.customization && (item.customization.playerName || item.customization.playerNumber) && (
+                                                <p className="text-xs text-zinc-600">Customization: +₵{CUSTOMIZATION_FEE.toFixed(2)} per item</p>
+                                            )}
                                             <p className="text-sm font-semibold text-zinc-900">
-                                                ₵{(item.price * item.quantity).toFixed(2)}
+                                                {(() => {
+                                                    const perItem = item.price + ((item.customization && (item.customization.playerName || item.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+                                                    return `₵${(perItem * item.quantity).toFixed(2)}`;
+                                                })()}
                                             </p>
                                         </div>
                                     </div>

@@ -18,6 +18,7 @@ export type CartItem = {
     price: number;
     colorId?: string | null;
     size?: string;
+    jerseyType?: "fan" | "player";
     quantity: number;
     image?: string;
     customization?: {
@@ -29,8 +30,8 @@ export type CartItem = {
 type CartContextValue = {
     items: CartItem[];
     addItem: (p: CartItem) => void;
-    updateItem: (id: string, colorId: string | null | undefined, quantity: number, size?: string) => void;
-    removeItem: (id: string, colorId?: string | null, size?: string) => void;
+    updateItem: (id: string, colorId: string | null | undefined, quantity: number, size?: string, jerseyType?: "fan" | "player") => void;
+    removeItem: (id: string, colorId?: string | null, size?: string, jerseyType?: "fan" | "player") => void;
     clear: () => void;
     syncing: boolean;
 };
@@ -118,7 +119,7 @@ export default function CartProvider({ children }: { children: React.ReactNode }
             const seen = new Map<string, CartItem>();
 
             for (const item of mergedCart) {
-                const key = `${item.id}-${item.colorId || 'default'}`;
+                const key = `${item.id}-${item.colorId || 'default'}-${item.size || 'nosize'}-${item.jerseyType || 'fan'}`;
                 const existing = seen.get(key);
 
                 if (existing) {
@@ -191,17 +192,17 @@ export default function CartProvider({ children }: { children: React.ReactNode }
 
     function addItem(p: CartItem) {
         setItems((prev) => {
-            const found = prev.find((it) => it.id === p.id && it.colorId === p.colorId && it.size === p.size);
+            const found = prev.find((it) => it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType);
             if (found) {
                 const updated = prev.map((it) =>
-                    it.id === p.id && it.colorId === p.colorId && it.size === p.size
+                    it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType
                         ? { ...it, quantity: it.quantity + p.quantity }
                         : it
                 );
 
                 // Sync to database immediately if authenticated
                 if (isAuthenticated && user && hasLoadedFromDB) {
-                    const updatedItem = updated.find(it => it.id === p.id && it.colorId === p.colorId && it.size === p.size);
+                    const updatedItem = updated.find(it => it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType);
                     if (updatedItem) {
                         updateCartItemDB(user.id, p.id, p.colorId, updatedItem.quantity).catch(console.error);
                     }
@@ -228,10 +229,10 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         });
     }
 
-    function updateItem(id: string, colorId: string | null | undefined, quantity: number, size?: string) {
+    function updateItem(id: string, colorId: string | null | undefined, quantity: number, size?: string, jerseyType?: "fan" | "player") {
         setItems((prev) => {
             const updated = prev.map((it) =>
-                it.id === id && it.colorId === colorId && it.size === size
+                it.id === id && it.colorId === colorId && it.size === size && it.jerseyType === jerseyType
                     ? { ...it, quantity: Math.max(1, Math.min(10, quantity)) }
                     : it
             );
@@ -245,9 +246,9 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         });
     }
 
-    function removeItem(id: string, colorId?: string | null, size?: string) {
+    function removeItem(id: string, colorId?: string | null, size?: string, jerseyType?: "fan" | "player") {
         setItems((prev) => {
-            const filtered = prev.filter((it) => !(it.id === id && it.colorId === colorId && it.size === size));
+            const filtered = prev.filter((it) => !(it.id === id && it.colorId === colorId && it.size === size && it.jerseyType === jerseyType));
 
             // Sync to database immediately if authenticated
             if (isAuthenticated && user && hasLoadedFromDB) {

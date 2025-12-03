@@ -115,6 +115,12 @@ export interface Order {
     assignedDeliveryPerson?: string;
     deliveryProof?: string;
     statusHistory: any[];
+    deliveryPersonInfo?: {
+        name: string;
+        phone: string;
+        vehicleInfo?: string;
+        assignedAt?: string;
+    };
 }
 
 export const createOrder = async (orderId: string, orderData: Omit<Order, "id" | "orderDate" | "statusHistory">) => {
@@ -215,7 +221,17 @@ export const getAllOrders = async (limitCount: number = 50): Promise<Order[]> =>
     }
 };
 
-export const updateOrderStatus = async (orderId: string, status: Order["status"], note?: string) => {
+export const updateOrderStatus = async (
+    orderId: string,
+    status: Order["status"],
+    deliveryPersonInfo?: {
+        name: string;
+        phone: string;
+        vehicleInfo?: string;
+        assignedAt?: string;
+    },
+    note?: string
+) => {
     try {
         // Get current order to append to status history
         const order = await getOrder(orderId);
@@ -229,10 +245,17 @@ export const updateOrderStatus = async (orderId: string, status: Order["status"]
             note: note || `Order status updated to ${status}`,
         };
 
-        await updateDoc(doc(db, "orders", orderId), {
+        const updateData: any = {
             status,
             statusHistory: [...(order.statusHistory || []), newHistoryEntry],
-        });
+        };
+
+        // Add delivery person info if provided (for out_for_delivery status)
+        if (deliveryPersonInfo) {
+            updateData.deliveryPersonInfo = deliveryPersonInfo;
+        }
+
+        await updateDoc(doc(db, "orders", orderId), updateData);
         return { success: true };
     } catch (error: any) {
         console.error("Error updating order status:", error);
