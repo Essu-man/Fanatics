@@ -15,6 +15,9 @@ export type Product = {
         hex: string;
         image?: string;
     }>;
+    // inventory management
+    stock?: number;
+    available?: boolean;
 };
 
 export const products: Product[] = [

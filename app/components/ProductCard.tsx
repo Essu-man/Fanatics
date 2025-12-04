@@ -30,6 +30,9 @@ export default function ProductCard({ product }: { product: PType }) {
     const selectedImage = images[selectedImageIndex];
     const sizes = ["S", "M", "L", "XL"];
 
+    // Check if product is out of stock
+    const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
+
     function addToCart() {
         addItem({
             id: product.id,
@@ -138,7 +141,7 @@ export default function ProductCard({ product }: { product: PType }) {
     return (
         <>
             <article
-                className="group relative flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:shadow-xl"
+                className={`group relative flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:shadow-xl ${isOutOfStock ? 'opacity-60' : ''}`}
                 role="article"
                 aria-label={`Product: ${product.name}`}
             >
@@ -147,18 +150,27 @@ export default function ProductCard({ product }: { product: PType }) {
                         <img
                             src={product.images?.[0] || `https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=500&h=300&fit=crop`}
                             alt={product.name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-110 ${isOutOfStock ? 'grayscale' : ''}`}
                             loading="lazy"
                         />
                         {product.images?.[1] && (
                             <img
                                 src={product.images?.[1]}
                                 alt={`${product.name} alt`}
-                                className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                                className={`absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${isOutOfStock ? 'grayscale' : ''}`}
                                 loading="lazy"
                             />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                        {/* Out of Stock Overlay */}
+                        {isOutOfStock && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                                <div className="rounded-lg bg-white/95 px-4 py-2 shadow-xl">
+                                    <p className="text-sm font-bold text-red-600">OUT OF STOCK</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Wishlist Button */}
                         <button
@@ -230,37 +242,45 @@ export default function ProductCard({ product }: { product: PType }) {
 
                     {/* Quantity and Add to Cart */}
                     <div className="mt-2 space-y-1.5">
-                        <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-0.5">
-                            <button
-                                onClick={decrementQuantity}
-                                className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-white hover:text-[var(--brand-red)]"
-                                aria-label="Decrease quantity"
-                            >
-                                <MinusIcon className="h-3 w-3" />
-                            </button>
-                            <span className="min-w-[1.5rem] text-center text-xs font-semibold text-zinc-900">
-                                {quantity}
-                            </span>
-                            <button
-                                onClick={incrementQuantity}
-                                className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-white hover:text-[var(--brand-red)]"
-                                aria-label="Increase quantity"
-                            >
-                                <PlusIcon className="h-3 w-3" />
-                            </button>
-                        </div>
-                        <Button
-                            className="w-full justify-center gap-1.5 py-1.5 text-xs font-bold shadow-md transition-all hover:shadow-lg"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openModal();
-                            }}
-                            aria-label={`View ${product.name}`}
-                        >
-                            <ShoppingBag className="h-3.5 w-3.5" />
-                            View
-                        </Button>
+                        {isOutOfStock ? (
+                            <div className="rounded-lg border-2 border-red-200 bg-red-50 px-3 py-2 text-center">
+                                <p className="text-xs font-bold text-red-600">OUT OF STOCK</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-0.5">
+                                    <button
+                                        onClick={decrementQuantity}
+                                        className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-white hover:text-[var(--brand-red)]"
+                                        aria-label="Decrease quantity"
+                                    >
+                                        <MinusIcon className="h-3 w-3" />
+                                    </button>
+                                    <span className="min-w-[1.5rem] text-center text-xs font-semibold text-zinc-900">
+                                        {quantity}
+                                    </span>
+                                    <button
+                                        onClick={incrementQuantity}
+                                        className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-white hover:text-[var(--brand-red)]"
+                                        aria-label="Increase quantity"
+                                    >
+                                        <PlusIcon className="h-3 w-3" />
+                                    </button>
+                                </div>
+                                <Button
+                                    className="w-full justify-center gap-1.5 py-1.5 text-xs font-bold shadow-md transition-all hover:shadow-lg"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        openModal();
+                                    }}
+                                    aria-label={`View ${product.name}`}
+                                >
+                                    <ShoppingBag className="h-3.5 w-3.5" />
+                                    View
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </article>
@@ -526,21 +546,30 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         {/* Action Buttons */}
                         <div className="mt-4 sm:mt-8 flex flex-col gap-2 sm:gap-3">
-                            <Button
-                                className="w-full justify-center gap-2 py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
-                                onClick={addToCart}
-                            >
-                                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
-                                Add to Cart
-                            </Button>
-                            <Button
-                                as="button"
-                                variant="outline"
-                                className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
-                                onClick={() => setOpen(false)}
-                            >
-                                Continue Shopping
-                            </Button>
+                            {isOutOfStock ? (
+                                <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4 text-center">
+                                    <p className="text-base font-bold text-red-600">OUT OF STOCK</p>
+                                    <p className="mt-1 text-xs text-red-500">This item is currently unavailable</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <Button
+                                        className="w-full justify-center gap-2 py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
+                                        onClick={addToCart}
+                                    >
+                                        <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        Add to Cart
+                                    </Button>
+                                    <Button
+                                        as="button"
+                                        variant="outline"
+                                        className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        Continue Shopping
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

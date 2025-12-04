@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
@@ -21,6 +21,20 @@ interface ShippingFormData {
     city: string;
     region: string;
     country: string;
+}
+
+interface SavedAddress {
+    id: string;
+    label: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address: string;
+    landmark?: string;
+    region: string;
+    town: string;
+    country: string;
+    isDefault: boolean;
 }
 
 interface DeliveryPrice {
@@ -48,6 +62,9 @@ export default function CheckoutShippingPage() {
     });
     const [regions, setRegions] = useState<string[]>([]);
     const [towns, setTowns] = useState<string[]>([]);
+    const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+    const [showTownInput, setShowTownInput] = useState(false);
+    const [customTown, setCustomTown] = useState("");
     const [deliveryPrice, setDeliveryPrice] = useState<DeliveryPrice | null>(null);
     const [loadingPrice, setLoadingPrice] = useState(false);
 
@@ -58,12 +75,22 @@ export default function CheckoutShippingPage() {
             return;
         }
 
-        // Load regions (not used for selection now) and set curated towns for Greater Accra delivery
+        // Load regions and towns
         setRegions(getRegions());
         setTowns(getCuratedAccraTowns());
 
-        // Pre-fill form for logged-in users
+        // Load saved addresses
         if (user) {
+            try {
+                const saved = localStorage.getItem(`addresses:${user.id}`);
+                if (saved) {
+                    setSavedAddresses(JSON.parse(saved));
+                }
+            } catch (error) {
+                console.error("Error loading saved addresses:", error);
+            }
+
+            // Pre-fill form for logged-in users
             setFormData((prev) => ({
                 ...prev,
                 firstName: user.firstName || "",
@@ -133,6 +160,40 @@ export default function CheckoutShippingPage() {
         router.push("/checkout/cart");
     };
 
+    const loadSavedAddress = (address: SavedAddress) => {
+        setFormData({
+            firstName: address.firstName,
+            lastName: address.lastName,
+            email: formData.email,
+            phone: address.phone,
+            address: address.address,
+            digitalAddress: "",
+            landmark: address.landmark || "",
+            town: address.town,
+            city: address.region,
+            region: address.region,
+            country: address.country,
+        });
+        setCustomTown("");
+        setShowTownInput(false);
+    };
+
+    const handleTownChange = (value: string) => {
+        if (value === "custom") {
+            setShowTownInput(true);
+            setFormData({ ...formData, town: "" });
+        } else {
+            setShowTownInput(false);
+            setFormData({ ...formData, town: value });
+            setCustomTown("");
+        }
+    };
+
+    const handleCustomTownChange = (value: string) => {
+        setCustomTown(value);
+        setFormData({ ...formData, town: value });
+    };
+
     return (
         <div className="min-h-screen bg-zinc-50">
             <div className="mx-auto max-w-4xl px-6 py-8">
@@ -161,6 +222,39 @@ export default function CheckoutShippingPage() {
                             📦 <strong>Delivery Notice:</strong> Currently delivering within Greater Accra only.
                         </p>
                     </div>
+
+                    {/* Saved Addresses Section */}
+                    {savedAddresses.length > 0 && (
+                        <div className="mb-8">
+                            <h2 className="mb-4 text-lg font-semibold text-zinc-900">Use a Saved Address</h2>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                {savedAddresses.map((address) => (
+                                    <button
+                                        key={address.id}
+                                        onClick={() => loadSavedAddress(address)}
+                                        className="relative rounded-lg border-2 border-zinc-200 bg-white p-4 text-left transition-all hover:border-[var(--brand-red)] hover:bg-red-50"
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-zinc-900">{address.label}</p>
+                                                <p className="text-sm text-zinc-600">{address.firstName} {address.lastName}</p>
+                                                <p className="mt-2 text-sm text-zinc-600">{address.address}</p>
+                                                <p className="text-sm text-zinc-600">{address.town}, {address.region}</p>
+                                                <p className="text-xs text-zinc-500 mt-1">{address.phone}</p>
+                                            </div>
+                                            {formData.address === address.address && (
+                                                <div className="flex-shrink-0">
+                                                    <CheckCircle2 className="h-5 w-5 text-[var(--brand-red)]" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-6 h-px bg-zinc-200" />
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Contact Information */}
                         <div>
@@ -279,19 +373,43 @@ export default function CheckoutShippingPage() {
                                     <label className="mb-1.5 block text-sm font-medium text-zinc-700">
                                         City/Area *
                                     </label>
-                                    <select
-                                        value={formData.town}
-                                        onChange={(e) => setFormData({ ...formData, town: e.target.value })}
-                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                        required
-                                    >
-                                        <option value="">Select City/Area</option>
-                                        {towns.map((town) => (
-                                            <option key={town} value={town}>
-                                                {town}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {!showTownInput ? (
+                                        <select
+                                            value={formData.town}
+                                            onChange={(e) => handleTownChange(e.target.value)}
+                                            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                            required
+                                        >
+                                            <option value="">Select City/Area</option>
+                                            {towns.map((town) => (
+                                                <option key={town} value={town}>
+                                                    {town}
+                                                </option>
+                                            ))}
+                                            <option value="custom">Other (Enter custom)</option>
+                                        </select>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="text"
+                                                value={customTown}
+                                                onChange={(e) => handleCustomTownChange(e.target.value)}
+                                                placeholder="Enter your city/area"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowTownInput(false);
+                                                    setCustomTown("");
+                                                    setFormData({ ...formData, town: "" });
+                                                }}
+                                                className="px-3 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 border border-zinc-200 rounded-lg"
+                                            >
+                                                Back
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {deliveryPrice && formData.town && (

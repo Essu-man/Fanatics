@@ -17,6 +17,7 @@ interface OrderStatusUpdaterProps {
     customerPhone?: string;
     customerName?: string;
     onStatusUpdated?: () => void;
+    onStatusUpdateAttempt?: (status: string) => boolean; // Return true to prevent default update
 }
 
 const statusOptions = [
@@ -35,6 +36,7 @@ export default function OrderStatusUpdater({
     customerPhone,
     customerName,
     onStatusUpdated,
+    onStatusUpdateAttempt,
 }: OrderStatusUpdaterProps) {
     const [selectedStatus, setSelectedStatus] = useState(currentStatus);
     const [updating, setUpdating] = useState(false);
@@ -44,6 +46,11 @@ export default function OrderStatusUpdater({
         if (selectedStatus === currentStatus) {
             showToast("Status is already set to this value", "error");
             return;
+        }
+
+        // Check if parent wants to handle this status update
+        if (onStatusUpdateAttempt && onStatusUpdateAttempt(selectedStatus)) {
+            return; // Parent handled it, don't proceed with default update
         }
 
         setUpdating(true);

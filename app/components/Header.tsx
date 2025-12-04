@@ -30,7 +30,7 @@ export default function Header() {
                     <img
                         src="/cediman.png"
                         alt="Cediman"
-                        className="h-8 w-auto"
+                        className="h-14 w-auto sm:h-16 lg:h-20 transition-all"
                     />
                 </Link>
 

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getProducts, getProductsByTeam, createProduct } from "@/lib/firestore";
 import { footballTeams, basketballTeams } from "@/lib/teams";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const allTeams = [...footballTeams, ...basketballTeams];
 
@@ -29,7 +31,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, price, stock, available = true, category, teamId, customTeam, description, images, colors } = body;
+        const { name, price, stock, available = true, category, teamId, description, images, colors } = body;
 
         if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0) {
             return NextResponse.json(
@@ -41,24 +43,76 @@ export async function POST(request: Request) {
         let teamName: string;
         let league: string;
         let actualTeamId: string;
+        let isHardcodedTeam = false;
 
-        // Handle custom team
-        if (customTeam && customTeam.name && customTeam.league) {
-            teamName = customTeam.name.trim();
-            league = customTeam.league.trim();
-            actualTeamId = teamId; // Already formatted as kebab-case from frontend
+        console.log(`[Product Creation] Received teamId: ${teamId}`);
+        console.log(`[Product Creation] Total hardcoded teams available: ${allTeams.length}`);
+
+        let team = allTeams.find((t) => t.id === teamId);
+
+        if (team) {
+            teamName = team.name;
+            league = team.league;
+            actualTeamId = team.id;
+            isHardcodedTeam = true;
+            console.log(`[Product Creation] ✅ Found hardcoded team: ${team.name} (${team.id})`);
         } else {
-            // Handle predefined team
-            const team = allTeams.find((t) => t.id === teamId);
-            if (!team) {
+            console.log(`[Product Creation] Team not in hardcoded list, checking custom_teams collection...`);
+            // Try to find in custom teams (Firestore)
+            let customTeamSnap = await getDoc(doc(db, "custom_teams", teamId));
+
+            if (!customTeamSnap.exists()) {
+                console.error(`[Product Creation] ❌ Team ${teamId} not found in hardcoded or custom teams`);
                 return NextResponse.json(
                     { success: false, error: "Selected team is not recognized" },
                     { status: 400 }
                 );
             }
-            teamName = team.name;
-            league = team.league;
-            actualTeamId = team.id;
+
+            const customTeam = customTeamSnap.data();
+            teamName = customTeam.name;
+            league = customTeam.league;
+            actualTeamId = customTeamSnap.id;
+            console.log(`[Product Creation] ✅ Found custom team: ${customTeam.name} (${actualTeamId})`);
+        }
+
+        // Enable the team when product is created for it
+        try {
+            if (isHardcodedTeam) {
+                // Enable hardcoded team in "teams" collection
+                const teamRef = doc(db, "teams", actualTeamId);
+                const teamSnap = await getDoc(teamRef);
+                if (teamSnap.exists()) {
+                    const currentData = teamSnap.data();
+                    console.log(`[Enable Team] Hardcoded team ${actualTeamId} found. Current enabled: ${currentData.enabled}`);
+                    if (!currentData.enabled) {
+                        await updateDoc(teamRef, { enabled: true });
+                        console.log(`[Enable Team] ✅ Enabled hardcoded team: ${actualTeamId}`);
+                    } else {
+                        console.log(`[Enable Team] Team already enabled: ${actualTeamId}`);
+                    }
+                } else {
+                    console.error(`[Enable Team] ❌ Hardcoded team ${actualTeamId} NOT found in teams collection!`);
+                }
+            } else {
+                // Enable custom team in "custom_teams" collection
+                const teamRef = doc(db, "custom_teams", actualTeamId);
+                const teamSnap = await getDoc(teamRef);
+                if (teamSnap.exists()) {
+                    const currentData = teamSnap.data();
+                    console.log(`[Enable Team] Custom team ${actualTeamId} found. Current enabled: ${currentData.enabled}`);
+                    if (currentData.enabled === false) {
+                        await updateDoc(teamRef, { enabled: true });
+                        console.log(`[Enable Team] ✅ Enabled custom team: ${actualTeamId}`);
+                    } else {
+                        console.log(`[Enable Team] Team already enabled: ${actualTeamId}`);
+                    }
+                } else {
+                    console.error(`[Enable Team] ❌ Custom team ${actualTeamId} NOT found in custom_teams collection!`);
+                }
+            }
+        } catch (error) {
+            console.error("[Enable Team] Error enabling team:", error);
         }
 
         const payload = {
@@ -79,6 +133,8 @@ export async function POST(request: Request) {
         if (!result.success) {
             throw new Error(result.error || "Failed to create product");
         }
+
+        console.log(`[Product Creation] ✅ Successfully created product: ${result.id} for team: ${actualTeamId} (${teamName})`);
 
         return NextResponse.json({
             success: true,

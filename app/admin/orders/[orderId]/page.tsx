@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Package, Mail, Phone, MapPin, CreditCard, Clock, CheckCircle2, History } from "lucide-react";
 import OrderStatusUpdater from "../../../components/admin/OrderStatusUpdater";
 import OrderProgressTracker from "../../../components/OrderProgressTracker";
+import DeliveryPersonModal, { type DeliveryPersonInfo } from "../../../components/DeliveryPersonModal";
 
 type Order = {
     id: string;
@@ -35,6 +36,7 @@ export default function AdminOrderDetailPage() {
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [showDeliveryModal, setShowDeliveryModal] = useState(false);
 
     const fetchOrder = async () => {
         try {
@@ -51,6 +53,36 @@ export default function AdminOrderDetailPage() {
             setError("Failed to load order");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeliveryPersonAssignment = async (deliveryInfo: DeliveryPersonInfo) => {
+        if (!order) return;
+
+        try {
+            const response = await fetch("/api/orders/update-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    status: "out_for_delivery",
+                    customerEmail: order.guestEmail || order.shipping?.email,
+                    customerPhone: order.guestPhone || order.shipping?.phone,
+                    customerName: order.shipping
+                        ? `${order.shipping.firstName} ${order.shipping.lastName}`
+                        : "Customer",
+                    deliveryPersonInfo: deliveryInfo,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setShowDeliveryModal(false);
+                await fetchOrder();
+            }
+        } catch (error) {
+            console.error("Failed to update status:", error);
         }
     };
 
@@ -338,6 +370,14 @@ export default function AdminOrderDetailPage() {
                             customerPhone={customerPhone}
                             customerName={customerName}
                             onStatusUpdated={fetchOrder}
+                            onStatusUpdateAttempt={(status) => {
+                                // Intercept "out_for_delivery" status to show delivery modal
+                                if (status === "out_for_delivery") {
+                                    setShowDeliveryModal(true);
+                                    return true; // Prevent default update
+                                }
+                                return false; // Allow default update for other statuses
+                            }}
                         />
                     </div>
 
@@ -362,6 +402,15 @@ export default function AdminOrderDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Delivery Person Assignment Modal */}
+            <DeliveryPersonModal
+                isOpen={showDeliveryModal}
+                onClose={() => setShowDeliveryModal(false)}
+                onSubmit={handleDeliveryPersonAssignment}
+                orderId={order.id}
+                isUpdating={false}
+            />
         </div>
     );
 }

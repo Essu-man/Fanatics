@@ -15,12 +15,16 @@ import {
     SelectLabel,
 } from "../../components/ui/select";
 
-interface CustomTeam {
+interface Team {
     id: string;
     name: string;
     league: string;
     leagueId?: string;
     logoUrl?: string;
+    logo?: string;
+    sport?: string;
+    enabled?: boolean;
+    isHardcoded?: boolean;
     createdAt?: Date;
 }
 
@@ -35,18 +39,20 @@ interface League {
 export default function AdminTeamsPage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const [teams, setTeams] = useState<CustomTeam[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [customLeagues, setCustomLeagues] = useState<League[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingLeagues, setLoadingLeagues] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [editingTeam, setEditingTeam] = useState<CustomTeam | null>(null);
+    const [editingTeam, setEditingTeam] = useState<Team | null>(null);
     const [formData, setFormData] = useState({ name: "", league: "", leagueId: "" });
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string>("");
     const [submitting, setSubmitting] = useState(false);
     const [isNewLeague, setIsNewLeague] = useState(false);
+    const [sportFilter, setSportFilter] = useState<string>("all");
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -62,7 +68,14 @@ export default function AdminTeamsPage() {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                setTeams(data.teams || []);
+                // Sort teams: enabled first, then by name
+                const sortedTeams = (data.teams || []).sort((a: Team, b: Team) => {
+                    if (a.enabled === b.enabled) {
+                        return a.name.localeCompare(b.name);
+                    }
+                    return a.enabled ? -1 : 1;
+                });
+                setTeams(sortedTeams);
             }
         } catch (error) {
             console.error("Error fetching teams:", error);
@@ -97,11 +110,11 @@ export default function AdminTeamsPage() {
         }
     };
 
-    const handleOpenModal = (team?: CustomTeam) => {
+    const handleOpenModal = (team?: Team) => {
         if (team) {
             setEditingTeam(team);
             setFormData({ name: team.name, league: team.league, leagueId: team.leagueId || "" });
-            setLogoPreview(team.logoUrl || "");
+            setLogoPreview(team.logoUrl || team.logo || "");
             setIsNewLeague(!team.leagueId);
         } else {
             setEditingTeam(null);
@@ -308,13 +321,31 @@ export default function AdminTeamsPage() {
                 )}
             </div>
 
-            {/* Custom Teams Section */}
+            {/* Teams Section */}
             <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-zinc-600" />
-                        <h2 className="text-xl font-bold text-zinc-900">Custom Teams</h2>
+                        <h2 className="text-xl font-bold text-zinc-900">All Teams</h2>
                         <span className="ml-2 text-sm text-zinc-500">({teams.length} teams)</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Search teams..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                        />
+                        <select
+                            value={sportFilter}
+                            onChange={(e) => setSportFilter(e.target.value)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none"
+                        >
+                            <option value="all">All Sports</option>
+                            <option value="football">Football</option>
+                            <option value="basketball">Basketball</option>
+                        </select>
                     </div>
                 </div>
 
@@ -325,63 +356,105 @@ export default function AdminTeamsPage() {
                 ) : teams.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center">
                         <Users className="mx-auto mb-4 h-12 w-12 text-zinc-400" />
-                        <h3 className="mb-2 text-lg font-semibold text-zinc-900">No custom teams yet</h3>
+                        <h3 className="mb-2 text-lg font-semibold text-zinc-900">No teams available</h3>
                         <p className="mb-6 text-sm text-zinc-600">
-                            Add custom teams to organize products that aren't in the predefined lists
+                            Teams will appear here once the system is populated
                         </p>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-6 py-3 font-semibold text-white hover:bg-[var(--brand-red-dark)]"
-                        >
-                            <Plus className="h-5 w-5" />
-                            Add Your First Team
-                        </button>
                     </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {teams.map((team) => (
-                            <div
-                                key={team.id}
-                                className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
-                            >
-                                <div className="mb-4 flex items-start gap-3">
-                                    {team.logoUrl ? (
-                                        <div className="h-12 w-12 rounded-full bg-zinc-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                            <img
-                                                src={team.logoUrl}
-                                                alt={team.name}
-                                                className="h-full w-full object-cover"
-                                            />
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {teams
+                            .filter((team) => {
+                                const matchesSport = sportFilter === "all" || team.sport === sportFilter;
+                                const matchesSearch = team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    team.league.toLowerCase().includes(searchQuery.toLowerCase());
+                                return matchesSport && matchesSearch;
+                            })
+                            .map((team) => (
+                                <div
+                                    key={team.id}
+                                    className={`rounded-lg border p-4 transition-all ${team.enabled
+                                        ? "border-[var(--brand-red)] bg-[var(--brand-red)]/5"
+                                        : "border-zinc-200 bg-zinc-50"
+                                        }`}
+                                >
+                                    <div className="mb-3 flex items-start gap-3">
+                                        {team.logoUrl || team.logo ? (
+                                            <div className="h-10 w-10 rounded-full bg-zinc-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                                <img
+                                                    src={team.logoUrl || team.logo}
+                                                    alt={team.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="h-10 w-10 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                                                <ImageIcon className="h-5 w-5 text-zinc-400" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-zinc-900 truncate">{team.name}</h3>
+                                            <p className="text-xs text-zinc-500 truncate">{team.league}</p>
+                                            <div className="mt-1 flex gap-1">
+                                                {team.enabled && (
+                                                    <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                                        Active
+                                                    </span>
+                                                )}
+                                                {team.isHardcoded && (
+                                                    <span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                                                        Hardcoded
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="h-12 w-12 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
-                                            <ImageIcon className="h-6 w-6 text-zinc-400" />
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="text-lg font-bold text-zinc-900 truncate">{team.name}</h3>
-                                        <p className="text-sm text-zinc-500 truncate">{team.league}</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleOpenModal(team)}
+                                            className="flex-1 rounded-lg border border-zinc-200 px-2 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 flex items-center justify-center gap-1"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            {team.isHardcoded ? "Logo" : "Edit"}
+                                        </button>
+                                        {!team.isHardcoded && (
+                                            <button
+                                                onClick={() => handleDelete(team.id)}
+                                                className="rounded-lg border border-red-200 px-2 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => handleOpenModal(team)}
-                                        className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-                                    >
-                                        <Edit className="inline h-4 w-4 mr-1" />
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(team.id)}
-                                        className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 )}
+
+                {/* Custom Teams Section */}
+                <div className="mt-8 border-t border-zinc-200 pt-6">
+                    <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-zinc-900">Add Custom Team</h3>
+                        <p className="text-sm text-zinc-600">
+                            Create teams that aren't in the predefined lists. They'll be enabled automatically when you upload a product.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setEditingTeam(null);
+                            setFormData({ name: "", league: "", leagueId: "" });
+                            setLogoPreview("");
+                            setIsNewLeague(false);
+                            setLogoFile(null);
+                            setModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-4 py-2 font-semibold text-white hover:bg-[var(--brand-red-dark)]"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Add Custom Team
+                    </button>
+                </div>
             </div>
 
             {/* Add/Edit Team Modal */}
@@ -393,7 +466,9 @@ export default function AdminTeamsPage() {
                         </h2>
                         <p className="mt-1 text-sm text-zinc-600">
                             {editingTeam
-                                ? "Update the team information"
+                                ? editingTeam.isHardcoded
+                                    ? "Update the team logo (hardcoded team details cannot be changed)"
+                                    : "Update the team information"
                                 : "Add a custom team to your catalog"}
                         </p>
                     </div>
@@ -452,8 +527,9 @@ export default function AdminTeamsPage() {
                                     setFormData({ ...formData, name: e.target.value })
                                 }
                                 placeholder="e.g., Ghana Black Stars"
-                                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                required
+                                disabled={editingTeam?.isHardcoded}
+                                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 disabled:bg-zinc-100 disabled:cursor-not-allowed"
+                                required={!editingTeam?.isHardcoded}
                                 autoFocus
                             />
                         </div>
@@ -465,8 +541,9 @@ export default function AdminTeamsPage() {
                             <Select
                                 value={isNewLeague ? "new" : formData.leagueId}
                                 onValueChange={(value) => handleLeagueChange(value)}
+                                disabled={editingTeam?.isHardcoded}
                             >
-                                <SelectTrigger className="w-full mb-2">
+                                <SelectTrigger className="w-full mb-2" disabled={editingTeam?.isHardcoded}>
                                     <SelectValue placeholder="Select a league" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -484,7 +561,7 @@ export default function AdminTeamsPage() {
                                 </SelectContent>
                             </Select>
 
-                            {isNewLeague && (
+                            {isNewLeague && !editingTeam?.isHardcoded && (
                                 <input
                                     type="text"
                                     value={formData.league}

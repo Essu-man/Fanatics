@@ -45,11 +45,16 @@ export async function GET(
         price: product.price,
         images: product.images || [],
         colors: product.colors,
+        stock: product.stock,
+        available: product.available,
     }));
 
-    // Generate default fallback products
-    const generatedProducts = generateTeamProducts(team.id, team.name, team.league);
-    const products = [...formattedCustom, ...generatedProducts];
+    // Only use fallback products if no custom products exist
+    let products: any[] = formattedCustom;
+    if (formattedCustom.length === 0) {
+        const generatedProducts = generateTeamProducts(team.id, team.name, team.league);
+        products = generatedProducts;
+    }
 
     return NextResponse.json({
         team,

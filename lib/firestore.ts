@@ -316,10 +316,10 @@ export const getProductsByTeam = async (teamId: string): Promise<Product[]> => {
     try {
         const q = query(
             collection(db, "products"),
-            where("teamId", "==", teamId),
-            orderBy("createdAt", "desc")
+            where("teamId", "==", teamId)
         );
         const querySnapshot = await getDocs(q);
+
         return querySnapshot.docs.map((docSnap) => {
             const data = docSnap.data();
             return {

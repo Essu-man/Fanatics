@@ -25,9 +25,6 @@ export default function AdminNewProductPage() {
     const [category, setCategory] = useState("Jersey");
     const [price, setPrice] = useState("");
     const [stock, setStock] = useState("25");
-    const [customTeamName, setCustomTeamName] = useState("");
-    const [customLeague, setCustomLeague] = useState("");
-    const [showCustomTeam, setShowCustomTeam] = useState(false);
     const [description, setDescription] = useState("");
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -52,13 +49,7 @@ export default function AdminNewProductPage() {
             const response = await fetch("/api/admin/teams");
             const data = await response.json();
             if (data.success && data.teams) {
-                setCustomTeams(
-                    data.teams.map((team: any) => ({
-                        id: team.name.toLowerCase().replace(/\s+/g, "-"),
-                        name: team.name,
-                        league: team.league,
-                    }))
-                );
+                setCustomTeams(data.teams);
             }
         } catch (error) {
             console.error("Error fetching custom teams:", error);
@@ -67,15 +58,23 @@ export default function AdminNewProductPage() {
 
     const allTeams = useMemo(
         () => {
-            const groups: Array<{ label: string; teams: Team[] }> = [
-                { label: "Football Clubs", teams: footballTeams },
-                { label: "Basketball Teams", teams: basketballTeams },
-            ];
+            // Show both hardcoded teams and custom teams
+            const groups: Array<{ label: string; teams: Team[] }> = [];
 
+            // Add hardcoded football teams
+            if (footballTeams.length > 0) {
+                groups.push({ label: "Football Teams", teams: footballTeams });
+            }
+
+            // Add hardcoded basketball teams
+            if (basketballTeams.length > 0) {
+                groups.push({ label: "Basketball Teams", teams: basketballTeams });
+            }
+
+            // Add custom teams
             if (customTeams.length > 0) {
                 groups.push({ label: "Custom Teams", teams: customTeams });
             }
-
             return groups;
         },
         [customTeams]
@@ -184,11 +183,6 @@ export default function AdminNewProductPage() {
             return;
         }
 
-        if (showCustomTeam && (!customTeamName.trim() || !customLeague.trim())) {
-            showToast("Please enter custom team name and league", "error");
-            return;
-        }
-
         setSubmitting(true);
         try {
             const uploadedImages: string[] = [];
@@ -222,11 +216,7 @@ export default function AdminNewProductPage() {
                     name,
                     price: Number(price),
                     stock: Number(stock || 0),
-                    teamId: showCustomTeam ? customTeamName.toLowerCase().replace(/\s+/g, "-") : teamId,
-                    customTeam: showCustomTeam ? {
-                        name: customTeamName.trim(),
-                        league: customLeague.trim(),
-                    } : undefined,
+                    teamId: teamId,
                     category,
                     description,
                     images: uploadedImages,
@@ -308,14 +298,7 @@ export default function AdminNewProductPage() {
                             <label className="text-sm font-medium text-zinc-700">Team</label>
                             <Select
                                 value={teamId}
-                                onValueChange={(value) => {
-                                    setTeamId(value);
-                                    setShowCustomTeam(value === "other");
-                                    if (value !== "other") {
-                                        setCustomTeamName("");
-                                        setCustomLeague("");
-                                    }
-                                }}
+                                onValueChange={(value) => setTeamId(value)}
                                 required
                             >
                                 <SelectTrigger>
@@ -332,41 +315,10 @@ export default function AdminNewProductPage() {
                                             ))}
                                         </SelectGroup>
                                     ))}
-                                    <SelectGroup>
-                                        <SelectLabel>Custom</SelectLabel>
-                                        <SelectItem value="other">Other (Custom Team)</SelectItem>
-                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
-                        {showCustomTeam && (
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700">Custom Team Name *</label>
-                                <input
-                                    type="text"
-                                    value={customTeamName}
-                                    onChange={(e) => setCustomTeamName(e.target.value)}
-                                    placeholder="e.g., Ghana Black Stars"
-                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                    required={showCustomTeam}
-                                />
-                            </div>
-                        )}
                     </div>
-
-                    {showCustomTeam && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700">League/Competition *</label>
-                            <input
-                                type="text"
-                                value={customLeague}
-                                onChange={(e) => setCustomLeague(e.target.value)}
-                                placeholder="e.g., International, College, Local League"
-                                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                required={showCustomTeam}
-                            />
-                        </div>
-                    )}
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid grid-cols-2 gap-4">
@@ -394,17 +346,17 @@ export default function AdminNewProductPage() {
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={4}
-                            placeholder="Talk about fit, material, and why fans love this drop..."
-                            className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                        />
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-700">Description</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={4}
+                                placeholder="Talk about fit, material, and why fans love this drop..."
+                                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                            />
+                        </div>
                     </div>
 
                     {/* Color Options */}

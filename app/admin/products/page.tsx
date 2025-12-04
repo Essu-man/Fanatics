@@ -36,6 +36,9 @@ export default function AdminProductsPage() {
     const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
     const [restockQuantity, setRestockQuantity] = useState("");
     const [restocking, setRestocking] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -96,11 +99,17 @@ export default function AdminProductsPage() {
         }
     };
 
-    const handleDelete = async (productId: string) => {
-        if (!confirm("Are you sure you want to delete this product?")) return;
+    const handleDeleteClick = (productId: string) => {
+        setProductToDelete(productId);
+        setDeleteModalOpen(true);
+    };
 
+    const handleConfirmDelete = async () => {
+        if (!productToDelete) return;
+
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/admin/products/${productId}`, {
+            const response = await fetch(`/api/admin/products/${productToDelete}`, {
                 method: "DELETE",
             });
             const data = await response.json();
@@ -110,10 +119,14 @@ export default function AdminProductsPage() {
             }
 
             showToast("Product deleted successfully", "success");
+            setDeleteModalOpen(false);
+            setProductToDelete(null);
             fetchProducts();
         } catch (error) {
             console.error("Error deleting product:", error);
-            showToast("An error occurred", "error");
+            showToast(error instanceof Error ? error.message : "An error occurred", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -344,7 +357,7 @@ export default function AdminProductsPage() {
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(product.id)}
+                                                onClick={() => handleDeleteClick(product.id)}
                                                 className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                                                 title="Delete"
                                             >
@@ -424,6 +437,34 @@ export default function AdminProductsPage() {
                             className="rounded-lg bg-[var(--brand-red)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-red-dark)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {restocking ? "Restocking..." : "Restock"}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal open={deleteModalOpen} onClose={() => !isDeleting && setDeleteModalOpen(false)}>
+                <div className="max-w-xs space-y-3">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                        <h2 className="text-base font-semibold text-zinc-900">Delete Product?</h2>
+                    </div>
+
+                    <p className="text-sm text-zinc-600">This action cannot be undone.</p>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                            onClick={() => setDeleteModalOpen(false)}
+                            disabled={isDeleting}
+                            className="rounded px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                            className="rounded bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                        >
+                            {isDeleting ? "Deleting..." : "Delete"}
                         </button>
                     </div>
                 </div>

@@ -11,7 +11,7 @@ export async function GET() {
         customLeaguesFromDb = snapshot.docs.map(doc => ({
             id: doc.id,
             name: doc.data().name,
-            sport: doc.data().sport || "custom",
+            sport: doc.data().sport || "football",
             logoUrl: doc.data().logoUrl,
             teamCount: 0, // Will be updated below
         }));
@@ -33,8 +33,42 @@ export async function GET() {
         console.error("Error fetching custom teams:", error);
     }
 
+    // Define desired order
+    const leagueOrder = [
+        "English Premier League",
+        "Spain la liga",
+        "German bundesliga",
+        "Ghana premier league",
+        "International",
+        "Seria A",
+        "French ligue 1",
+        "Eredivisie",
+        "Others"
+    ];
+
+    // Sort leagues by defined order
+    const sortedLeagues = customLeaguesFromDb.sort((a, b) => {
+        const indexA = leagueOrder.findIndex(name =>
+            a.name.toLowerCase().includes(name.toLowerCase()) ||
+            name.toLowerCase().includes(a.name.toLowerCase())
+        );
+        const indexB = leagueOrder.findIndex(name =>
+            b.name.toLowerCase().includes(name.toLowerCase()) ||
+            name.toLowerCase().includes(b.name.toLowerCase())
+        );
+
+        // If both found in order list, sort by order
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        // If only A found, it comes first
+        if (indexA !== -1) return -1;
+        // If only B found, it comes first
+        if (indexB !== -1) return 1;
+        // If neither found, maintain original order
+        return 0;
+    });
+
     return NextResponse.json({
-        leagues: customLeaguesFromDb,
+        leagues: sortedLeagues,
     });
 }
 
