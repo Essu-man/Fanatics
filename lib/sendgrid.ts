@@ -135,6 +135,7 @@ export const getOrderConfirmationEmail = (
   trackingLink: string,
   items: any[],
   shippingCost: number = 0,
+  customizationFee: number = 0,
   orderDate?: string
 ): string => {
   // Escape HTML to prevent XSS
@@ -327,6 +328,7 @@ export const getOrderConfirmationEmail = (
                 ${item.size ? `<span style="display: inline-block; margin-right: 8px;">Size: <strong>${escapeHtml(String(item.size))}</strong></span>` : ""}
                 ${item.colorId ? `<span style="display: inline-block; margin-right: 8px;">Color: <strong>${escapeHtml(String(item.colorId))}</strong></span>` : ""}
                 <span>Quantity: <strong>${item.quantity || 1}</strong> × ₵${(item.price || 0).toFixed(2)}</span>
+                ${item.customization && (item.customization.playerName || item.customization.playerNumber) ? `<div style="margin-top: 8px; padding: 8px; background: #f3f4f6; border-radius: 4px; font-size: 13px;"><strong>Customization:</strong> ${item.customization.playerName ? `#${item.customization.playerNumber} ${item.customization.playerName}` : `#${item.customization.playerNumber}`}</div>` : ""}
               </div>
             </div>
           </div>
@@ -337,7 +339,17 @@ export const getOrderConfirmationEmail = (
       <!-- Cost Summary Card -->
       <div class="cost-summary">
         <div class="cost-row">
-          <span class="cost-label">Shipping:</span>
+          <span class="cost-label">Subtotal:</span>
+          <span class="cost-value">₵${(orderTotal - shippingCost - customizationFee).toFixed(2)}</span>
+        </div>
+        ${customizationFee > 0 ? `
+        <div class="cost-row">
+          <span class="cost-label">Customization Fee:</span>
+          <span class="cost-value">₵${customizationFee.toFixed(2)}</span>
+        </div>
+        ` : ""}
+        <div class="cost-row">
+          <span class="cost-label">Delivery/Shipping:</span>
           <span class="cost-value">₵${shippingCost.toFixed(2)}</span>
         </div>
         <div class="cost-row">

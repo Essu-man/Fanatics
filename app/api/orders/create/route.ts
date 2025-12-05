@@ -153,7 +153,8 @@ export async function POST(request: NextRequest) {
                     total,
                     orderPageLink, // Use order page link for the button
                     items,
-                    shippingCost,
+                    Number(shippingCost) || 0,
+                    Number(orderData.customizationFee) || 0,
                     new Date().toISOString()
                 );
 
