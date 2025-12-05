@@ -50,6 +50,8 @@ export const sendEmail = async (
         'Precedence': 'bulk', // Indicates transactional/bulk email
         'X-Priority': '3', // Normal priority
         'Importance': 'normal',
+        'List-Unsubscribe': '<mailto:support@cediman.com>', // Helps avoid spam folder
+        'X-Mailer': 'Cediman Order System',
       },
       // Add categories for tracking (helps with reputation)
       categories: ['transactional', 'order-notification'],
@@ -80,6 +82,11 @@ export const sendEmail = async (
         // Sandbox mode for testing (disable in production)
         sandboxMode: {
           enable: false,
+        },
+        // Enable spam check to monitor spam score
+        spamCheck: {
+          enable: true,
+          threshold: 5,
         },
       },
       // Add tracking settings
