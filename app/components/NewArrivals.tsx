@@ -169,7 +169,7 @@ export default function NewArrivals() {
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <h3 className="mb-1 text-lg font-bold">{product.name}</h3>
                       <p className="text-sm text-white/90">
-                        {product.team ? `${product.team} • ` : ""}${product.category || "Jersey"}
+                        {product.team ? `${product.team} • ` : ""}{(product.category || "Jersey").replace(/^\$/, "")}
                       </p>
                       <p className="mt-1 text-base font-semibold">₵{product.price.toFixed(2)}</p>
                     </div>

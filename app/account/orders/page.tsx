@@ -11,6 +11,11 @@ interface Order {
     status: string;
     items: any[];
     total: number;
+    customizationFee?: number;
+    shipping?: {
+        city?: string;
+        region?: string;
+    };
 }
 
 export default function OrdersPage() {
@@ -46,6 +51,8 @@ export default function OrdersPage() {
                 status: order.status || "pending",
                 items: order.items || [],
                 total: Number(order.total || 0),
+                customizationFee: Number(order.customizationFee || 0),
+                shipping: order.shipping || {},
             }));
 
             setOrders(mappedOrders);
@@ -143,6 +150,11 @@ export default function OrdersPage() {
                                         <p className="mt-1 text-sm text-zinc-600">
                                             Placed on {new Date(order.orderDate).toLocaleDateString()}
                                         </p>
+                                        {order.shipping?.city && (
+                                            <p className="mt-1 text-sm text-zinc-600">
+                                                📍 {order.shipping.city}, {order.shipping.region}
+                                            </p>
+                                        )}
                                         <p className="mt-1 text-sm">
                                             <span className="font-medium text-zinc-900">
                                                 {order.items.length} item{order.items.length !== 1 ? "s" : ""}
@@ -151,6 +163,14 @@ export default function OrdersPage() {
                                             <span className="font-bold text-zinc-900">
                                                 ₵{order.total.toFixed(2)}
                                             </span>
+                                            {order.customizationFee && order.customizationFee > 0 && (
+                                                <>
+                                                    {" · "}
+                                                    <span className="text-xs text-zinc-500">
+                                                        Customization: ₵{order.customizationFee.toFixed(2)}
+                                                    </span>
+                                                </>
+                                            )}
                                         </p>
                                     </div>
                                     <div className="text-right">

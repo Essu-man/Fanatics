@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Calculate customization fee
+        const CUSTOMIZATION_FEE = 35;
+        let customizationFee = 0;
+        for (const item of items) {
+            if (item.customization && (item.customization.playerName || item.customization.playerNumber)) {
+                customizationFee += CUSTOMIZATION_FEE * item.quantity;
+            }
+        }
+
         // Create order in Firestore
         const orderData = {
             userId: userId || null,
@@ -91,6 +100,7 @@ export async function POST(request: NextRequest) {
             shippingCost: Number(shippingCost) || 0,
             tax: Number(tax) || 0,
             total: Number(total) || 0,
+            customizationFee: customizationFee || 0,
             paystackReference: paystackReference || null,
         };
 

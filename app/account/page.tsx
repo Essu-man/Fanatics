@@ -5,6 +5,8 @@ import { useAuth } from "../providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Package, MapPin, MessageSquare, Star, ChevronRight, Truck } from "lucide-react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import RecommendedProducts from "../components/RecommendedProducts";
 import OrderActivityCard from "../components/OrderActivityCard";
 import type { Product } from "@/lib/database";
@@ -267,6 +269,7 @@ export default function AccountPage() {
 
     return (
         <div className="min-h-screen bg-zinc-50">
+            <Header />
             <div className="mx-auto max-w-6xl px-4 py-8">
                 {/* Welcome Banner */}
                 <div className="mb-6 rounded-lg bg-gradient-to-r from-[var(--brand-red)] to-red-600 p-6 text-white shadow-md">
@@ -413,6 +416,7 @@ export default function AccountPage() {
                     </div>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }

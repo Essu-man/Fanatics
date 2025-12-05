@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "../../providers/CartProvider";
 import { useAuth } from "../../providers/AuthProvider";
 import { auth } from "@/lib/firebase";
+import { clearUserCart } from "@/lib/firestore";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 function PaymentCallbackContent() {
@@ -98,7 +99,12 @@ function PaymentCallbackContent() {
                 }
 
                 const shipping = JSON.parse(shippingInfo);
-                const subtotal = orderItems.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
+                const CUSTOMIZATION_FEE = 35;
+
+                const subtotal = orderItems.reduce((total: number, item: any) => {
+                    const perItem = item.price + ((item.customization && (item.customization.playerName || item.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
+                    return total + perItem * item.quantity;
+                }, 0);
                 const shippingCost = 0; // Free shipping
                 const tax = 0; // No tax
                 const total = subtotal + shippingCost + tax;
@@ -164,6 +170,7 @@ function PaymentCallbackContent() {
                             image: item.image,
                             size: item.size || null,
                             colorId: item.colorId || null,
+                            customization: item.customization || null,
                         })),
                         shipping,
                         payment: {
@@ -195,8 +202,12 @@ function PaymentCallbackContent() {
                     setStatus("success");
                     setMessage(orderData.alreadyExists ? "Order already processed. Redirecting..." : "Payment successful! Redirecting...");
 
-                    // Clear cart and shipping info
-                    clear();
+                    // Clear cart and shipping info - ensure database clear completes
+                    if (user?.id) {
+                        await clearUserCart(user.id).catch(console.error);
+                    }
+                    clear(); // Also clear local state
+
                     sessionStorage.removeItem("checkoutShipping");
                     sessionStorage.removeItem("checkoutItems");
                     sessionStorage.removeItem("paymentReference");
