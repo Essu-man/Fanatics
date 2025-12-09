@@ -35,6 +35,7 @@ export default function ProductDetailPage() {
     const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [quantity, setQuantity] = useState(1);
     const [imageZoom, setImageZoom] = useState(false);
+    const [isAdded, setIsAdded] = useState(false);
     const [customization, setCustomization] = useState({
         playerName: "",
         playerNumber: "",
@@ -207,6 +208,7 @@ export default function ProductDetailPage() {
             ? ` with ${[customization.playerName, customization.playerNumber].filter(Boolean).join(' #')}`
             : '';
         showToast(`${product.name}${customText} added to cart!`, "success");
+        setIsAdded(true);
     };
 
     return (
@@ -525,38 +527,63 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="mb-6 flex gap-3">
-                            <button
-                                onClick={handleAddToCart}
-                                className="flex-1 rounded-lg bg-[var(--brand-red)] px-6 py-3 text-white font-medium hover:bg-[var(--brand-red-dark)] transition-colors"
-                            >
-                                Add to Cart
-                            </button>
-                            <button
-                                onClick={() => toggle(product.id)}
-                                className="rounded-lg border-2 border-zinc-200 px-4 py-3 hover:border-[var(--brand-red)] transition-colors"
-                                aria-label="Add to wishlist"
-                            >
-                                <Heart className={`h-5 w-5 ${isSaved(product.id) ? "fill-[var(--brand-red)] text-[var(--brand-red)]" : "text-zinc-600"}`} />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (navigator.share) {
-                                        navigator.share({
-                                            title: product.name,
-                                            text: `Check out ${product.name} on Cediman!`,
-                                            url: window.location.href,
-                                        });
-                                    } else {
-                                        navigator.clipboard.writeText(window.location.href);
-                                        showToast("Link copied to clipboard!", "success");
-                                    }
-                                }}
-                                className="rounded-lg border-2 border-zinc-200 px-4 py-3 hover:border-[var(--brand-red)] transition-colors"
-                                aria-label="Share"
-                            >
-                                <Share2 className="h-5 w-5 text-zinc-600" />
-                            </button>
+                        <div className="mb-6 space-y-3">
+                            {!isAdded ? (
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleAddToCart}
+                                        className="flex-1 rounded-lg bg-[var(--brand-red)] px-6 py-3 text-white font-medium hover:bg-[var(--brand-red-dark)] transition-colors"
+                                    >
+                                        Add to Cart
+                                    </button>
+                                    <button
+                                        onClick={() => toggle(product.id)}
+                                        className="rounded-lg border-2 border-zinc-200 px-4 py-3 hover:border-[var(--brand-red)] transition-colors"
+                                        aria-label="Add to wishlist"
+                                    >
+                                        <Heart className={`h-5 w-5 ${isSaved(product.id) ? "fill-[var(--brand-red)] text-[var(--brand-red)]" : "text-zinc-600"}`} />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (navigator.share) {
+                                                navigator.share({
+                                                    title: product.name,
+                                                    text: `Check out ${product.name} on Cediman!`,
+                                                    url: window.location.href,
+                                                });
+                                            } else {
+                                                navigator.clipboard.writeText(window.location.href);
+                                                showToast("Link copied to clipboard!", "success");
+                                            }
+                                        }}
+                                        className="rounded-lg border-2 border-zinc-200 px-4 py-3 hover:border-[var(--brand-red)] transition-colors"
+                                        aria-label="Share"
+                                    >
+                                        <Share2 className="h-5 w-5 text-zinc-600" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="w-full rounded-lg bg-green-50 border-2 border-green-200 py-3 text-center">
+                                        <p className="text-sm font-bold text-green-600">✓ Added to Cart</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setIsAdded(false);
+                                            router.push("/checkout");
+                                        }}
+                                        className="w-full rounded-lg bg-[var(--brand-red)] px-6 py-3 text-white font-medium hover:bg-[var(--brand-red-dark)] transition-colors"
+                                    >
+                                        Proceed to Checkout
+                                    </button>
+                                    <button
+                                        onClick={() => setIsAdded(false)}
+                                        className="w-full rounded-lg border-2 border-zinc-200 px-6 py-3 text-zinc-900 font-medium hover:bg-zinc-50 transition-colors"
+                                    >
+                                        Continue Shopping
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Stock Indicator & Social Proof */}

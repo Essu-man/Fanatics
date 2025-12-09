@@ -83,7 +83,7 @@ const statusConfig: Record<OrderStatus, {
 };
 
 export default function OrderActivityCard({ order }: OrderActivityCardProps) {
-    const config = statusConfig[order.status];
+    const config = statusConfig[order.status] || statusConfig["submitted"];
     const Icon = config.icon;
     const orderDate = new Date(order.orderDate);
     const isRecent = Date.now() - orderDate.getTime() < 24 * 60 * 60 * 1000; // Within 24 hours

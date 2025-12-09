@@ -114,12 +114,13 @@ export default function CartProvider({ children }: { children: React.ReactNode }
                 }
             }
 
-            // Deduplicate: Combine items with same id and colorId, summing quantities
+            // Deduplicate: Combine items with same id, colorId, size, jerseyType, AND customization
             const deduplicatedCart: CartItem[] = [];
             const seen = new Map<string, CartItem>();
 
             for (const item of mergedCart) {
-                const key = `${item.id}-${item.colorId || 'default'}-${item.size || 'nosize'}-${item.jerseyType || 'fan'}`;
+                const customizationStr = JSON.stringify(item.customization || {});
+                const key = `${item.id}-${item.colorId || 'default'}-${item.size || 'nosize'}-${item.jerseyType || 'fan'}-${customizationStr}`;
                 const existing = seen.get(key);
 
                 if (existing) {
@@ -192,17 +193,33 @@ export default function CartProvider({ children }: { children: React.ReactNode }
 
     function addItem(p: CartItem) {
         setItems((prev) => {
-            const found = prev.find((it) => it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType);
+            const found = prev.find((it) =>
+                it.id === p.id &&
+                it.colorId === p.colorId &&
+                it.size === p.size &&
+                it.jerseyType === p.jerseyType &&
+                JSON.stringify(it.customization) === JSON.stringify(p.customization)
+            );
             if (found) {
                 const updated = prev.map((it) =>
-                    it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType
+                    it.id === p.id &&
+                        it.colorId === p.colorId &&
+                        it.size === p.size &&
+                        it.jerseyType === p.jerseyType &&
+                        JSON.stringify(it.customization) === JSON.stringify(p.customization)
                         ? { ...it, quantity: it.quantity + p.quantity }
                         : it
                 );
 
                 // Sync to database immediately if authenticated
                 if (isAuthenticated && user && hasLoadedFromDB) {
-                    const updatedItem = updated.find(it => it.id === p.id && it.colorId === p.colorId && it.size === p.size && it.jerseyType === p.jerseyType);
+                    const updatedItem = updated.find(it =>
+                        it.id === p.id &&
+                        it.colorId === p.colorId &&
+                        it.size === p.size &&
+                        it.jerseyType === p.jerseyType &&
+                        JSON.stringify(it.customization) === JSON.stringify(p.customization)
+                    );
                     if (updatedItem) {
                         updateCartItemDB(user.id, p.id, p.colorId, updatedItem.quantity).catch(console.error);
                     }

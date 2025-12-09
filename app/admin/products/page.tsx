@@ -312,7 +312,7 @@ export default function AdminProductsPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-zinc-600">{product.category}</td>
+                                    <td className="p-4 text-zinc-600">{product.category?.replace(/^\$/, "")}</td>
                                     <td className="p-4 font-semibold text-zinc-900">₵{product.price.toFixed(2)}</td>
                                     <td className="p-4">
                                         <span

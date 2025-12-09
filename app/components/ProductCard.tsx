@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Button from "./ui/button";
 import { useCart } from "../providers/CartProvider";
 import Modal from "./ui/modal";
@@ -12,11 +13,13 @@ import { useWishlist } from "../providers/WishlistProvider";
 import { useToast } from "./ui/ToastContainer";
 
 export default function ProductCard({ product }: { product: PType }) {
+    const router = useRouter();
     const { addItem } = useCart();
     const { toggle, isSaved } = useWishlist();
     const { showToast } = useToast();
     const [quantity, setQuantity] = useState(1);
     const [open, setOpen] = useState(false);
+    const [isAdded, setIsAdded] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
     const [selectedSize, setSelectedSize] = useState<string>("M");
@@ -51,10 +54,8 @@ export default function ProductCard({ product }: { product: PType }) {
                 : undefined,
         });
 
-        // Close modal if it's open
-        if (open) {
-            setOpen(false);
-        }
+        // Set added state to show checkout button
+        setIsAdded(true);
 
         // Reset quantity and customization
         setQuantity(1);
@@ -75,6 +76,7 @@ export default function ProductCard({ product }: { product: PType }) {
     function openModal() {
         setSelectedImageIndex(0);
         setOpen(true);
+        setIsAdded(false);
     }
 
     function nextImage() {
@@ -553,21 +555,51 @@ export default function ProductCard({ product }: { product: PType }) {
                                 </div>
                             ) : (
                                 <>
-                                    <Button
-                                        className="w-full justify-center gap-2 py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
-                                        onClick={addToCart}
-                                    >
-                                        <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
-                                        Add to Cart
-                                    </Button>
-                                    <Button
-                                        as="button"
-                                        variant="outline"
-                                        className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
-                                        onClick={() => setOpen(false)}
-                                    >
-                                        Continue Shopping
-                                    </Button>
+                                    {!isAdded ? (
+                                        <>
+                                            <Button
+                                                className="w-full justify-center gap-2 py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
+                                                onClick={addToCart}
+                                            >
+                                                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                Add to Cart
+                                            </Button>
+                                            <Button
+                                                as="button"
+                                                variant="outline"
+                                                className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
+                                                onClick={() => setOpen(false)}
+                                            >
+                                                Continue Shopping
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="w-full rounded-lg bg-green-50 border-2 border-green-200 py-3 text-center">
+                                                <p className="text-sm font-bold text-green-600">✓ Added to Cart</p>
+                                            </div>
+                                            <Button
+                                                className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-bold shadow-lg transition-all hover:shadow-xl"
+                                                onClick={() => {
+                                                    setOpen(false);
+                                                    router.push("/checkout");
+                                                }}
+                                            >
+                                                Proceed to Checkout
+                                            </Button>
+                                            <Button
+                                                as="button"
+                                                variant="outline"
+                                                className="w-full justify-center py-2.5 sm:py-3 text-sm sm:text-base font-semibold"
+                                                onClick={() => {
+                                                    setOpen(false);
+                                                    setIsAdded(false);
+                                                }}
+                                            >
+                                                Continue Shopping
+                                            </Button>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
