@@ -1,27 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+// Helper function to verify with timeout
+async function verifyWithTimeout(
+    reference: string,
+    secretKey: string,
+    timeoutMs: number = 10000
+): Promise<any> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
-        const body = await request.json();
-        const { reference } = body;
-
-        if (!reference) {
-            return NextResponse.json(
-                { error: "Payment reference is required" },
-                { status: 400 }
-            );
-        }
-
-        const secretKey = process.env.PAYSTACK_SECRET_KEY;
-
-        if (!secretKey) {
-            return NextResponse.json(
-                { error: "Paystack configuration missing" },
-                { status: 500 }
-            );
-        }
-
-        // Verify payment with Paystack
         const response = await fetch(
             `https://api.paystack.co/transaction/verify/${reference}`,
             {
@@ -30,20 +18,76 @@ export async function POST(request: NextRequest) {
                     Authorization: `Bearer ${secretKey}`,
                     "Content-Type": "application/json",
                 },
+                signal: controller.signal,
             }
         );
 
-        const data = await response.json();
+        return { response, error: null };
+    } catch (error: any) {
+        return { response: null, error };
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
 
-        if (!response.ok) {
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json();
+        const { reference } = body;
+
+        if (!reference) {
+            console.error("Payment verification: No reference provided");
             return NextResponse.json(
-                { error: "Payment verification failed", details: data },
-                { status: response.status }
+                { success: false, error: "Payment reference is required" },
+                { status: 400 }
             );
         }
 
-        // Check if payment was successful
-        if (data.status && data.data.status === "success") {
+        const secretKey = process.env.PAYSTACK_SECRET_KEY;
+
+        if (!secretKey) {
+            console.error("Payment verification: Paystack secret key missing");
+            return NextResponse.json(
+                { success: false, error: "Paystack configuration missing" },
+                { status: 500 }
+            );
+        }
+
+        console.log("Verifying payment with reference:", reference);
+
+        // Verify payment with Paystack - with timeout
+        const { response, error } = await verifyWithTimeout(reference, secretKey, 15000);
+
+        if (error) {
+            if (error.name === "AbortError") {
+                console.error("Paystack verification timeout for reference:", reference);
+                return NextResponse.json(
+                    { success: false, error: "Verification timeout. Please try again." },
+                    { status: 504 }
+                );
+            }
+            console.error("Paystack verification network error:", error);
+            return NextResponse.json(
+                { success: false, error: "Network error during verification" },
+                { status: 503 }
+            );
+        }
+
+        const data = await response!.json();
+
+        console.log("Paystack response status:", response!.status, "Data status:", data.status);
+
+        if (!response!.ok) {
+            console.error("Paystack verification failed:", data);
+            return NextResponse.json(
+                { success: false, error: "Payment verification failed", details: data },
+                { status: response!.status }
+            );
+        }
+
+        // Check if payment was successful - Paystack returns status: true for successful requests
+        if (data.status === true && data.data?.status === "success") {
+            console.log("Payment verified successfully for reference:", reference);
             return NextResponse.json({
                 success: true,
                 data: {
@@ -57,11 +101,13 @@ export async function POST(request: NextRequest) {
                 },
             });
         } else {
+            const paymentStatus = data.data?.status || "unknown";
+            console.error("Payment not successful. Status:", paymentStatus);
             return NextResponse.json(
                 {
                     success: false,
                     error: "Payment not successful",
-                    status: data.data.status,
+                    status: paymentStatus,
                 },
                 { status: 400 }
             );
@@ -69,7 +115,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error("Error verifying payment:", error);
         return NextResponse.json(
-            { error: "Failed to verify payment", details: error.message },
+            { success: false, error: "Failed to verify payment", details: error.message },
             { status: 500 }
         );
     }

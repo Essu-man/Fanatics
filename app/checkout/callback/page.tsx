@@ -48,8 +48,10 @@ function PaymentCallbackContent() {
             processedReferenceRef.current = reference;
 
             try {
+                // Verify payment with timeout (30 seconds max)
+                const verifyController = new AbortController();
+                const verifyTimeout = setTimeout(() => verifyController.abort(), 30000);
 
-                // Verify payment with backend
                 const verifyResponse = await fetch("/api/paystack/verify", {
                     method: "POST",
                     headers: {
@@ -58,13 +60,20 @@ function PaymentCallbackContent() {
                     body: JSON.stringify({
                         reference,
                     }),
+                    signal: verifyController.signal,
                 });
+
+                clearTimeout(verifyTimeout);
 
                 const verifyResult = await verifyResponse.json();
 
+                console.log("Payment verification response:", verifyResult, "Status:", verifyResponse.status);
+
                 if (!verifyResult.success) {
                     setStatus("error");
-                    setMessage("Payment verification failed. Please contact support.");
+                    const errorMessage = verifyResult.error || "Payment verification failed";
+                    setMessage(`${errorMessage}. Please contact support with reference: ${reference}`);
+                    console.error("Payment verification failed:", verifyResult);
                     return;
                 }
 
@@ -146,7 +155,10 @@ function PaymentCallbackContent() {
 
                 console.log("Creating order with userId:", userIdForOrder, "AuthProvider user:", user, "Firebase user:", auth.currentUser?.uid);
 
-                // Create order
+                // Create order with timeout (30 seconds max)
+                const orderController = new AbortController();
+                const orderTimeout = setTimeout(() => orderController.abort(), 30000);
+
                 const orderResponse = await fetch("/api/orders/create", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -176,16 +188,21 @@ function PaymentCallbackContent() {
                         total,
                         paystackReference: reference,
                     }),
+                    signal: orderController.signal,
                 });
+
+                clearTimeout(orderTimeout);
 
                 if (!orderResponse.ok) {
                     const errorData = await orderResponse.json().catch(() => ({}));
                     setStatus("error");
-                    setMessage(
-                        errorData.error || errorData.details ||
-                        `Failed to create order (${orderResponse.status}). Please contact support.`
-                    );
-                    console.error("Order creation error:", errorData);
+                    const errorMessage = errorData.error || errorData.details || `Order creation failed (${orderResponse.status})`;
+                    setMessage(`${errorMessage}. Your payment was successful but order creation failed. Please contact support with reference: ${reference}`);
+                    console.error("Order creation error:", {
+                        status: orderResponse.status,
+                        data: errorData,
+                        reference,
+                    });
                     return;
                 }
 

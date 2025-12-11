@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
         const { email, amount, metadata } = body;
 
         if (!email || !amount) {
+            console.error("Payment initialize: Missing email or amount");
             return NextResponse.json(
                 { error: "Email and amount are required" },
                 { status: 400 }
@@ -15,30 +16,40 @@ export async function POST(request: NextRequest) {
 
         const secretKey = process.env.PAYSTACK_SECRET_KEY;
 
-        // Detect the correct app URL based on environment
-        // Priority: 1) Request origin (for localhost), 2) NEXT_PUBLIC_APP_URL, 3) Default based on NODE_ENV
-        const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/");
-        let appUrl = process.env.NEXT_PUBLIC_APP_URL;
-
-        // If no explicit URL set, or if origin contains localhost, use origin or localhost
-        if (!appUrl || (origin && origin.includes("localhost"))) {
-            appUrl = origin || (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.cediman.com");
-        }
-
-        // Ensure we don't use production URL in development
-        if (process.env.NODE_ENV === "development" && appUrl?.includes("cediman.com")) {
-            appUrl = "http://localhost:3000";
-        }
-
         if (!secretKey) {
+            console.error("Payment initialize: Paystack secret key missing");
             return NextResponse.json(
                 { error: "Paystack configuration missing" },
                 { status: 500 }
             );
         }
 
+        // Determine callback URL - prioritize NEXT_PUBLIC_APP_URL for consistency
+        let appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+        // Fallback to environment-based URL if not set
+        if (!appUrl) {
+            if (process.env.NODE_ENV === "development") {
+                appUrl = "http://localhost:3000";
+            } else {
+                appUrl = "https://www.cediman.com";
+            }
+        }
+
+        // Clean up URL - remove trailing slashes
+        appUrl = appUrl.replace(/\/$/, "");
+
+        const callbackUrl = `${appUrl}/checkout/callback`;
         const reference = generatePaymentReference();
         const amountInKobo = cedisToKobo(amount);
+
+        console.log("Payment initialize request:", {
+            email,
+            amount,
+            reference,
+            callbackUrl,
+            currency: "GHS",
+        });
 
         // Initialize transaction with Paystack API
         const paystackResponse = await fetch(
@@ -54,20 +65,25 @@ export async function POST(request: NextRequest) {
                     amount: amountInKobo,
                     currency: "GHS",
                     reference,
-                    callback_url: `${appUrl}/checkout/callback`,
-                    metadata,
+                    callback_url: callbackUrl,
+                    metadata: metadata || {},
                 }),
             }
         );
 
         const paystackData = await paystackResponse.json();
 
+        console.log("Paystack initialize response status:", paystackResponse.status);
+
         if (!paystackData.status) {
+            console.error("Paystack initialization failed:", paystackData);
             return NextResponse.json(
                 { error: paystackData.message || "Failed to initialize payment" },
                 { status: 400 }
             );
         }
+
+        console.log("Payment initialized successfully. Reference:", reference);
 
         // Return authorization URL for redirect
         return NextResponse.json({
