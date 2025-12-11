@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, ArrowLeft, Plus, X } from "lucide-react";
 import { useToast } from "../../../components/ui/ToastContainer";
-import { footballTeams, basketballTeams, type Team } from "@/lib/teams";
+import { footballTeams, basketballTeams, internationalTeams, type Team } from "@/lib/teams";
 import {
     Select,
     SelectContent,
@@ -71,6 +71,11 @@ export default function AdminNewProductPage() {
                 groups.push({ label: "Basketball Teams", teams: basketballTeams });
             }
 
+            // Add international teams
+            if (internationalTeams.length > 0) {
+                groups.push({ label: "International Teams", teams: internationalTeams });
+            }
+
             // Add custom teams
             if (customTeams.length > 0) {
                 groups.push({ label: "Custom Teams", teams: customTeams });
@@ -83,16 +88,16 @@ export default function AdminNewProductPage() {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
         const currentCount = previewUrls.length;
-        const remainingSlots = 3 - currentCount;
+        const remainingSlots = 6 - currentCount;
 
         if (remainingSlots <= 0) {
-            showToast("Maximum 3 images allowed", "error");
+            showToast("Maximum 6 images allowed", "error");
             return;
         }
 
         const filesToAdd = files.slice(0, remainingSlots);
         if (files.length > remainingSlots) {
-            showToast(`Only ${remainingSlots} more image(s) can be added (max 3 total)`, "error");
+            showToast(`Only ${remainingSlots} more image(s) can be added (max 6 total)`, "error");
         }
 
         setImageFiles((prev) => [...prev, ...filesToAdd]);
@@ -309,7 +314,7 @@ export default function AdminNewProductPage() {
                                         <SelectGroup key={group.label}>
                                             <SelectLabel>{group.label}</SelectLabel>
                                             {group.teams.map((team) => (
-                                                <SelectItem key={team.id} value={team.id}>
+                                                <SelectItem key={`${group.label}-${team.id}`} value={team.id}>
                                                     {team.name} ({team.league})
                                                 </SelectItem>
                                             ))}
@@ -478,7 +483,7 @@ export default function AdminNewProductPage() {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <label className="text-sm font-medium text-zinc-700">
-                                Product Images ({previewUrls.length}/3)
+                                Product Images ({previewUrls.length}/6)
                             </label>
                             {previewUrls.length > 0 && (
                                 <button
@@ -496,7 +501,7 @@ export default function AdminNewProductPage() {
                                     <UploadCloud className="h-8 w-8 text-zinc-400" />
                                     <div className="text-center">
                                         <p className="font-semibold text-zinc-900">Drop jersey shots here</p>
-                                        <p className="text-xs text-zinc-500 mt-1">PNG, JPG up to 5MB each (Max 3 images)</p>
+                                        <p className="text-xs text-zinc-500 mt-1">PNG, JPG up to 5MB each (Max 6 images)</p>
                                     </div>
                                     <input
                                         type="file"
@@ -530,16 +535,16 @@ export default function AdminNewProductPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    <label className={`flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors w-full sm:w-auto ${previewUrls.length >= 3 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50 cursor-pointer'}`}>
-                                        <UploadCloud className="h-4 w-4" />
-                                        <span>{previewUrls.length >= 3 ? 'Maximum 3 images reached' : 'Add More Images'}</span>
+                                    <label className={`flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors w-full sm:w-auto ${previewUrls.length >= 6 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50 cursor-pointer'}`}>
+                                        <Plus className="h-4 w-4" />
+                                        <span>{previewUrls.length >= 6 ? 'Maximum 6 images reached' : 'Add More Images'}</span>
                                         <input
                                             type="file"
                                             accept="image/*"
                                             multiple
                                             onChange={handleFileChange}
                                             className="hidden"
-                                            disabled={previewUrls.length >= 3}
+                                            disabled={previewUrls.length >= 6}
                                         />
                                     </label>
                                 </div>

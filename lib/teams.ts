@@ -29,7 +29,7 @@ export const footballTeams: Team[] = [
     { id: "luton", name: "Luton Town", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Luton-Town-Logo.png" },
     { id: "burnley", name: "Burnley", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Burnley-Logo.png" },
     { id: "sheffield", name: "Sheffield United", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Sheffield-United-Logo.png" },
-    
+
     // La Liga
     { id: "real-madrid", name: "Real Madrid", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Real-Madrid-Logo.png" },
     { id: "barcelona", name: "Barcelona", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Barcelona-Logo.png" },
@@ -41,7 +41,7 @@ export const footballTeams: Team[] = [
     { id: "athletic", name: "Athletic Bilbao", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Athletic-Bilbao-Logo.png" },
     { id: "betis", name: "Real Betis", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Real-Betis-Logo.png" },
     { id: "osasuna", name: "Osasuna", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Osasuna-Logo.png" },
-    
+
     // Serie A
     { id: "juventus", name: "Juventus", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/Juventus-Logo.png" },
     { id: "milan", name: "AC Milan", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/AC-Milan-Logo.png" },
@@ -51,28 +51,28 @@ export const footballTeams: Team[] = [
     { id: "lazio", name: "Lazio", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/Lazio-Logo.png" },
     { id: "atalanta", name: "Atalanta", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/Atalanta-Logo.png" },
     { id: "fiorentina", name: "Fiorentina", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/Fiorentina-Logo.png" },
-    
+
     // Bundesliga
     { id: "bayern", name: "Bayern Munich", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Bayern-Munich-Logo.png" },
     { id: "dortmund", name: "Borussia Dortmund", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Borussia-Dortmund-Logo.png" },
     { id: "leipzig", name: "RB Leipzig", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/RB-Leipzig-Logo.png" },
     { id: "leverkusen", name: "Bayer Leverkusen", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Bayer-Leverkusen-Logo.png" },
     { id: "frankfurt", name: "Eintracht Frankfurt", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Eintracht-Frankfurt-Logo.png" },
-    
+
     // Ligue 1
     { id: "psg", name: "Paris Saint-Germain", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Paris-Saint-Germain-Logo.png" },
     { id: "monaco", name: "Monaco", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Monaco-Logo.png" },
     { id: "lyon", name: "Lyon", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Lyon-Logo.png" },
     { id: "marseille", name: "Marseille", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Marseille-Logo.png" },
     { id: "lille", name: "Lille", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Lille-Logo.png" },
-    
+
     // Other European
     { id: "ajax", name: "Ajax", league: "Eredivisie", country: "Netherlands", logo: "https://logos-world.net/wp-content/uploads/2020/06/Ajax-Logo.png" },
     { id: "porto", name: "Porto", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Porto-Logo.png" },
     { id: "benfica", name: "Benfica", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Benfica-Logo.png" },
     { id: "celtic", name: "Celtic", league: "Scottish Premiership", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Celtic-Logo.png" },
     { id: "rangers", name: "Rangers", league: "Scottish Premiership", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Rangers-Logo.png" },
-    
+
     // Turkish
     { id: "galatasaray", name: "Galatasaray", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Galatasaray-Logo.png" },
     { id: "fenerbahce", name: "Fenerbahce", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Fenerbahce-Logo.png" },
@@ -112,4 +112,56 @@ export const basketballTeams: Team[] = [
     { id: "wizards", name: "Washington Wizards", league: "NBA", logo: "https://logos-world.net/wp-content/uploads/2020/06/Washington-Wizards-Logo.png" },
     { id: "rockets", name: "Houston Rockets", league: "NBA", logo: "https://logos-world.net/wp-content/uploads/2020/06/Houston-Rockets-Logo.png" },
 ];
+
+// International Teams
+export const internationalTeams: Team[] = [
+    // Africa
+    { id: "ghana", name: "Ghana", league: "International", country: "Ghana", logo: "https://flagcdn.com/w320/gh.png" },
+    { id: "nigeria", name: "Nigeria", league: "International", country: "Nigeria", logo: "https://flagcdn.com/w320/ng.png" },
+    { id: "egypt", name: "Egypt", league: "International", country: "Egypt", logo: "https://flagcdn.com/w320/eg.png" },
+    { id: "cameroon", name: "Cameroon", league: "International", country: "Cameroon", logo: "https://flagcdn.com/w320/cm.png" },
+    { id: "senegal", name: "Senegal", league: "International", country: "Senegal", logo: "https://flagcdn.com/w320/sn.png" },
+
+    // Europe
+    { id: "france", name: "France", league: "International", country: "France", logo: "https://flagcdn.com/w320/fr.png" },
+    { id: "germany", name: "Germany", league: "International", country: "Germany", logo: "https://flagcdn.com/w320/de.png" },
+    { id: "spain", name: "Spain", league: "International", country: "Spain", logo: "https://flagcdn.com/w320/es.png" },
+    { id: "italy", name: "Italy", league: "International", country: "Italy", logo: "https://flagcdn.com/w320/it.png" },
+    { id: "england", name: "England", league: "International", country: "England", logo: "https://flagcdn.com/w320/gb-eng.png" },
+    { id: "portugal", name: "Portugal", league: "International", country: "Portugal", logo: "https://flagcdn.com/w320/pt.png" },
+    { id: "netherlands", name: "Netherlands", league: "International", country: "Netherlands", logo: "https://flagcdn.com/w320/nl.png" },
+    { id: "belgium", name: "Belgium", league: "International", country: "Belgium", logo: "https://flagcdn.com/w320/be.png" },
+    { id: "sweden", name: "Sweden", league: "International", country: "Sweden", logo: "https://flagcdn.com/w320/se.png" },
+    { id: "norway", name: "Norway", league: "International", country: "Norway", logo: "https://flagcdn.com/w320/no.png" },
+    { id: "denmark", name: "Denmark", league: "International", country: "Denmark", logo: "https://flagcdn.com/w320/dk.png" },
+    { id: "poland", name: "Poland", league: "International", country: "Poland", logo: "https://flagcdn.com/w320/pl.png" },
+    { id: "ukraine", name: "Ukraine", league: "International", country: "Ukraine", logo: "https://flagcdn.com/w320/ua.png" },
+    { id: "russia", name: "Russia", league: "International", country: "Russia", logo: "https://flagcdn.com/w320/ru.png" },
+
+    // South America
+    { id: "brazil", name: "Brazil", league: "International", country: "Brazil", logo: "https://flagcdn.com/w320/br.png" },
+    { id: "argentina", name: "Argentina", league: "International", country: "Argentina", logo: "https://flagcdn.com/w320/ar.png" },
+    { id: "colombia", name: "Colombia", league: "International", country: "Colombia", logo: "https://flagcdn.com/w320/co.png" },
+    { id: "peru", name: "Peru", league: "International", country: "Peru", logo: "https://flagcdn.com/w320/pe.png" },
+    { id: "uruguay", name: "Uruguay", league: "International", country: "Uruguay", logo: "https://flagcdn.com/w320/uy.png" },
+    { id: "chile", name: "Chile", league: "International", country: "Chile", logo: "https://flagcdn.com/w320/cl.png" },
+    { id: "ecuador", name: "Ecuador", league: "International", country: "Ecuador", logo: "https://flagcdn.com/w320/ec.png" },
+
+    // Asia
+    { id: "japan", name: "Japan", league: "International", country: "Japan", logo: "https://flagcdn.com/w320/jp.png" },
+    { id: "south-korea", name: "South Korea", league: "International", country: "South Korea", logo: "https://flagcdn.com/w320/kr.png" },
+    { id: "china", name: "China", league: "International", country: "China", logo: "https://flagcdn.com/w320/cn.png" },
+    { id: "india", name: "India", league: "International", country: "India", logo: "https://flagcdn.com/w320/in.png" },
+
+    // North America
+    { id: "usa", name: "United States", league: "International", country: "USA", logo: "https://flagcdn.com/w320/us.png" },
+    { id: "mexico", name: "Mexico", league: "International", country: "Mexico", logo: "https://flagcdn.com/w320/mx.png" },
+    { id: "canada", name: "Canada", league: "International", country: "Canada", logo: "https://flagcdn.com/w320/ca.png" },
+
+    // Oceania
+    { id: "australia", name: "Australia", league: "International", country: "Australia", logo: "https://flagcdn.com/w320/au.png" },
+];
+
+export const allTeams = [...footballTeams, ...basketballTeams, ...internationalTeams];
+
 

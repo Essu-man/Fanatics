@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, collection, setDoc, doc, getDocs } from "firebase/firestore";
-import { footballTeams, basketballTeams } from "../lib/teams";
+import { footballTeams, basketballTeams, internationalTeams } from "../lib/teams";
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -55,6 +55,22 @@ async function populateHardcodedTeams() {
                 createdAt: new Date(),
             });
             console.log(`Added basketball team: ${team.name}`);
+        }
+
+        // Add international teams
+        for (const team of internationalTeams) {
+            await setDoc(doc(teamsRef, team.id), {
+                id: team.id,
+                name: team.name,
+                league: team.league,
+                country: team.country,
+                logo: team.logo,
+                sport: "football",
+                enabled: false, // Default to disabled, admin must enable
+                isHardcoded: true,
+                createdAt: new Date(),
+            });
+            console.log(`Added international team: ${team.name}`);
         }
 
         console.log("✅ Successfully populated all hardcoded teams!");

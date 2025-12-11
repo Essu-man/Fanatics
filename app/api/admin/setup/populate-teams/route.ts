@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, setDoc, doc, getDocs } from "firebase/firestore";
-import { footballTeams, basketballTeams } from "@/lib/teams";
+import { footballTeams, basketballTeams, internationalTeams } from "@/lib/teams";
 
 export const runtime = "nodejs";
 
@@ -44,6 +44,22 @@ export async function POST(request: Request) {
                 league: team.league,
                 logo: team.logo,
                 sport: "basketball",
+                enabled: false,
+                isHardcoded: true,
+                createdAt: new Date(),
+            });
+            addedCount++;
+        }
+
+        // Add international teams
+        for (const team of internationalTeams) {
+            await setDoc(doc(teamsRef, team.id), {
+                id: team.id,
+                name: team.name,
+                league: team.league,
+                country: team.country,
+                logo: team.logo,
+                sport: "football",
                 enabled: false,
                 isHardcoded: true,
                 createdAt: new Date(),

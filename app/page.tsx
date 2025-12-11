@@ -21,21 +21,21 @@ export default function Home() {
         <HomeProductSections />
         <SplitBanner
           leftSection={{
-            title: "NBA Championship Gear",
-            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=450&fit=crop",
+            title: "Premium Football Collection",
+            video: "https://videos.pexels.com/video-files/19548560/19548560-hd_1280_720_25fps.mp4",
             buttons: [
-              { label: "Shop All", href: "#" },
-              { label: "Jerseys", href: "#" },
-              { label: "Hats", href: "#" },
+              { label: "Shop All", href: "/shop" },
+              { label: "Club Jerseys", href: "/shop?category=jersey" },
+              { label: "Kits & Gear", href: "/shop?category=apparel" },
             ],
           }}
           rightSection={{
-            title: "NFL Game Day Gear",
-            image: "https://images.unsplash.com/photo-1616124619460-ff4ed8f4683c?w=800&h=450&fit=crop",
+            title: "Elite Basketball Gear",
+            video: "https://videos.pexels.com/video-files/29086331/12459282-hd_1080_1920_30fps.mp4",
             buttons: [
-              { label: "Shop NFL", href: "/search?category=nfl" },
-              { label: "Jerseys", href: "/search?category=jerseys&sport=nfl" },
-              { label: "Accessories", href: "/search?category=accessories&sport=nfl" },
+              { label: "Shop Basketball", href: "/shop?category=basketball" },
+              { label: "Team Jerseys", href: "/shop?category=jersey" },
+              { label: "Court Collection", href: "/shop?category=apparel" },
             ],
           }}
         />

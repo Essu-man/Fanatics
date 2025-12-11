@@ -1,7 +1,7 @@
 require("dotenv").config({ path: ".env.local" });
 
 const { initializeApp, getApps } = require("firebase/app");
-const { getFirestore, collection, setDoc, doc, getDocs } = require("firebase/firestore");
+const { getFirestore, collection, setDoc, doc, getDocs, getDoc } = require("firebase/firestore");
 
 // Football Teams
 const footballTeams = [
@@ -129,6 +129,8 @@ async function populateHardcodedTeams() {
 
         // Check if teams already exist
         const existingTeams = await getDocs(teamsRef);
+        let addedCount = 0;
+
         if (existingTeams.size > 0) {
             console.log(`✅ Teams collection already has ${existingTeams.size} documents.`);
             console.log("Checking if all teams have required fields (sport, enabled, isHardcoded)...");
@@ -166,10 +168,8 @@ async function populateHardcodedTeams() {
             } else {
                 console.log("✅ All teams have required fields.");
             }
-            process.exit(0);
+            console.log("\nNow adding any missing international teams...");
         }
-
-        let addedCount = 0;
 
         // Add football teams
         for (const team of footballTeams) {
@@ -202,6 +202,65 @@ async function populateHardcodedTeams() {
             });
             addedCount++;
             console.log(`✓ Added basketball team: ${team.name}`);
+        }
+
+        // Add international teams
+        const internationalTeams = [
+            { id: "ghana", name: "Ghana", league: "International", country: "Ghana", logo: "https://flagcdn.com/w320/gh.png" },
+            { id: "germany", name: "Germany", league: "International", country: "Germany", logo: "https://flagcdn.com/w320/de.png" },
+            { id: "france", name: "France", league: "International", country: "France", logo: "https://flagcdn.com/w320/fr.png" },
+            { id: "brazil", name: "Brazil", league: "International", country: "Brazil", logo: "https://flagcdn.com/w320/br.png" },
+            { id: "argentina", name: "Argentina", league: "International", country: "Argentina", logo: "https://flagcdn.com/w320/ar.png" },
+            { id: "spain", name: "Spain", league: "International", country: "Spain", logo: "https://flagcdn.com/w320/es.png" },
+            { id: "italy", name: "Italy", league: "International", country: "Italy", logo: "https://flagcdn.com/w320/it.png" },
+            { id: "england", name: "England", league: "International", country: "England", logo: "https://flagcdn.com/w320/gb-eng.png" },
+            { id: "portugal", name: "Portugal", league: "International", country: "Portugal", logo: "https://flagcdn.com/w320/pt.png" },
+            { id: "netherlands", name: "Netherlands", league: "International", country: "Netherlands", logo: "https://flagcdn.com/w320/nl.png" },
+            { id: "belgium", name: "Belgium", league: "International", country: "Belgium", logo: "https://flagcdn.com/w320/be.png" },
+            { id: "sweden", name: "Sweden", league: "International", country: "Sweden", logo: "https://flagcdn.com/w320/se.png" },
+            { id: "norway", name: "Norway", league: "International", country: "Norway", logo: "https://flagcdn.com/w320/no.png" },
+            { id: "denmark", name: "Denmark", league: "International", country: "Denmark", logo: "https://flagcdn.com/w320/dk.png" },
+            { id: "poland", name: "Poland", league: "International", country: "Poland", logo: "https://flagcdn.com/w320/pl.png" },
+            { id: "ukraine", name: "Ukraine", league: "International", country: "Ukraine", logo: "https://flagcdn.com/w320/ua.png" },
+            { id: "russia", name: "Russia", league: "International", country: "Russia", logo: "https://flagcdn.com/w320/ru.png" },
+            { id: "colombia", name: "Colombia", league: "International", country: "Colombia", logo: "https://flagcdn.com/w320/co.png" },
+            { id: "peru", name: "Peru", league: "International", country: "Peru", logo: "https://flagcdn.com/w320/pe.png" },
+            { id: "uruguay", name: "Uruguay", league: "International", country: "Uruguay", logo: "https://flagcdn.com/w320/uy.png" },
+            { id: "chile", name: "Chile", league: "International", country: "Chile", logo: "https://flagcdn.com/w320/cl.png" },
+            { id: "ecuador", name: "Ecuador", league: "International", country: "Ecuador", logo: "https://flagcdn.com/w320/ec.png" },
+            { id: "mexico", name: "Mexico", league: "International", country: "Mexico", logo: "https://flagcdn.com/w320/mx.png" },
+            { id: "usa", name: "United States", league: "International", country: "United States", logo: "https://flagcdn.com/w320/us.png" },
+            { id: "canada", name: "Canada", league: "International", country: "Canada", logo: "https://flagcdn.com/w320/ca.png" },
+            { id: "japan", name: "Japan", league: "International", country: "Japan", logo: "https://flagcdn.com/w320/jp.png" },
+            { id: "south-korea", name: "South Korea", league: "International", country: "South Korea", logo: "https://flagcdn.com/w320/kr.png" },
+            { id: "china", name: "China", league: "International", country: "China", logo: "https://flagcdn.com/w320/cn.png" },
+            { id: "india", name: "India", league: "International", country: "India", logo: "https://flagcdn.com/w320/in.png" },
+            { id: "australia", name: "Australia", league: "International", country: "Australia", logo: "https://flagcdn.com/w320/au.png" },
+            { id: "nigeria", name: "Nigeria", league: "International", country: "Nigeria", logo: "https://flagcdn.com/w320/ng.png" },
+            { id: "egypt", name: "Egypt", league: "International", country: "Egypt", logo: "https://flagcdn.com/w320/eg.png" },
+            { id: "cameroon", name: "Cameroon", league: "International", country: "Cameroon", logo: "https://flagcdn.com/w320/cm.png" },
+            { id: "senegal", name: "Senegal", league: "International", country: "Senegal", logo: "https://flagcdn.com/w320/sn.png" },
+        ];
+
+        for (const team of internationalTeams) {
+            const existingTeam = await getDoc(doc(teamsRef, team.id));
+            if (!existingTeam.exists()) {
+                await setDoc(doc(teamsRef, team.id), {
+                    id: team.id,
+                    name: team.name,
+                    league: team.league,
+                    country: team.country,
+                    logo: team.logo,
+                    sport: "football",
+                    enabled: false,
+                    isHardcoded: true,
+                    createdAt: new Date(),
+                });
+                addedCount++;
+                console.log(`✓ Added international team: ${team.name}`);
+            } else {
+                console.log(`⊘ International team already exists: ${team.name}`);
+            }
         }
 
         console.log(`\n✅ Successfully populated ${addedCount} hardcoded teams!`);

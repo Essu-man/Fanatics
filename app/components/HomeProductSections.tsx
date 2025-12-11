@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import type { Product } from "../../lib/products";
-import { footballTeams, basketballTeams } from "../../lib/teams";
+import { footballTeams, basketballTeams, internationalTeams } from "../../lib/teams";
 
 // Helper function to determine if a league is football or basketball
 const isFootballLeague = (league: string | undefined): boolean => {
@@ -222,6 +222,8 @@ export default function HomeProductSections() {
                     }));
 
                     // Separate football and basketball products using the league field
+                    // Football includes both football clubs and international teams
+                    const allFootballTeams = [...footballTeams, ...internationalTeams];
                     const football = allProducts.filter((p: any) => {
                         // First try: use league field directly
                         if (p.league) {
@@ -231,13 +233,13 @@ export default function HomeProductSections() {
 
                         // Second try: find team by teamId
                         if (p.teamId) {
-                            const team = footballTeams.find((t) => t.id === p.teamId);
+                            const team = allFootballTeams.find((t) => t.id === p.teamId);
                             if (team) return true;
                         }
 
                         // Third try: find team by team name
                         if (p.team) {
-                            const team = footballTeams.find((t) => t.name === p.team);
+                            const team = allFootballTeams.find((t) => t.name === p.team);
                             if (team) return true;
                         }
 

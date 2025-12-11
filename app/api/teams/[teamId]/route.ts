@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { footballTeams, basketballTeams } from "../../../../lib/teams";
+import { footballTeams, basketballTeams, internationalTeams } from "../../../../lib/teams";
 import { generateTeamProducts } from "../../../../lib/teamProducts";
 import { getProductsByTeam } from "@/lib/firestore";
 import { db } from "@/lib/firebase";
@@ -11,8 +11,8 @@ export async function GET(
 ) {
     const { teamId } = await Promise.resolve(params);
 
-    // Find team in football or basketball teams
-    const allTeams = [...footballTeams, ...basketballTeams];
+    // Find team in football, basketball, or international teams
+    const allTeams = [...footballTeams, ...basketballTeams, ...internationalTeams];
     let team = allTeams.find((t) => t.id === teamId);
 
     // If not found in hardcoded teams, check custom teams

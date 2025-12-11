@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getProducts, getProductsByTeam, createProduct } from "@/lib/firestore";
-import { footballTeams, basketballTeams } from "@/lib/teams";
+import { footballTeams, basketballTeams, internationalTeams } from "@/lib/teams";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const allTeams = [...footballTeams, ...basketballTeams];
+const allTeams = [...footballTeams, ...basketballTeams, ...internationalTeams];
 
 export const runtime = "nodejs";
 

@@ -10,18 +10,16 @@ export async function GET(request: Request) {
     let teams: any[] = [];
 
     try {
-        // Get all teams from the "teams" collection (both hardcoded and custom)
+        // Get hardcoded teams from the "teams" collection
         const teamsRef = collection(db, "teams");
         let teamsQuery;
 
         if (showAll) {
-            // Return all teams regardless of enabled status (DEBUG MODE)
             teamsQuery = sport
                 ? query(teamsRef, where("sport", "==", sport))
                 : teamsRef;
             console.log(`[/api/teams] DEBUG: ShowAll=true, sport=${sport}`);
         } else if (sport) {
-            // Filter by sport and enabled status
             teamsQuery = query(
                 teamsRef,
                 where("sport", "==", sport),
@@ -29,7 +27,6 @@ export async function GET(request: Request) {
             );
             console.log(`[/api/teams] Filtering: sport=${sport}, enabled=true`);
         } else {
-            // Only get enabled teams
             teamsQuery = query(teamsRef, where("enabled", "==", true));
             console.log(`[/api/teams] Filtering: enabled=true (no sport filter)`);
         }
@@ -44,10 +41,50 @@ export async function GET(request: Request) {
                 league: data.league,
                 logo: data.logo || data.logoUrl,
                 sport: data.sport,
-                isHardcoded: data.isHardcoded || false,
+                isHardcoded: true,
                 enabled: data.enabled,
             };
         });
+
+        // Get custom teams from "custom_teams" collection
+        try {
+            const customTeamsRef = collection(db, "custom_teams");
+            let customTeamsQuery;
+
+            if (showAll) {
+                customTeamsQuery = sport
+                    ? query(customTeamsRef, where("sport", "==", sport))
+                    : customTeamsRef;
+            } else if (sport) {
+                customTeamsQuery = query(
+                    customTeamsRef,
+                    where("sport", "==", sport),
+                    where("enabled", "==", true)
+                );
+            } else {
+                customTeamsQuery = query(customTeamsRef, where("enabled", "==", true));
+            }
+
+            const customSnapshot = await getDocs(customTeamsQuery);
+
+            const customTeams = customSnapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    name: data.name,
+                    league: data.league,
+                    leagueId: data.leagueId,
+                    logo: data.logoUrl,
+                    sport: data.sport || "football",
+                    isHardcoded: false,
+                    enabled: data.enabled !== false,
+                };
+            });
+
+            teams = [...teams, ...customTeams];
+        } catch (error) {
+            console.error("Error fetching custom teams:", error);
+        }
 
         console.log(`[/api/teams] Query completed: ${teams.length} teams found`);
         if (teams.length > 0) {
