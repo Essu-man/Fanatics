@@ -12,7 +12,7 @@ import MobileBottomNav from "./components/MobileBottomNav";
 
 export const metadata: Metadata = {
   title: "Cediman - Premium Football Jerseys",
-  description: "Shop authentic football jerseys from your favorite teams. Official licensed jerseys, fast shipping, and fan-first returns.",
+  description: "Shop authentic football jerseys from your favorite teams. Official licensed jerseys, fast delivery, and fan-first returns.",
 };
 
 export default function RootLayout({
