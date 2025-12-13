@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
                     orderPageLink, // Use order page link for the button
                     items,
                     shippingCost,
-                    new Date().toISOString()
+                    new Date().toISOString(),
+                    subtotal
                 );
 
                 const emailResult = await sendEmail(

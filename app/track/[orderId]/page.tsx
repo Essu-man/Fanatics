@@ -66,6 +66,19 @@ export default function OrderTrackingPage() {
         );
     }
 
+    // Calculate customization details
+    const CUSTOMIZATION_FEE = 35;
+    const itemsSubtotal = order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const customizationDetails = order.items.reduce((acc: any, item: any) => {
+        if (item.customization && (item.customization.playerName || item.customization.playerNumber)) {
+            return {
+                count: acc.count + item.quantity,
+                total: acc.total + (CUSTOMIZATION_FEE * item.quantity)
+            };
+        }
+        return acc;
+    }, { count: 0, total: 0 });
+
     const estimatedDelivery = new Date(order.orderDate);
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 4);
 
@@ -99,18 +112,23 @@ export default function OrderTrackingPage() {
 
                 {/* Order Details */}
                 <div className="grid gap-6 md:grid-cols-2">
-                    {/* Shipping Address */}
+                    {/* Delivery Address */}
                     <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="mb-4 text-lg font-bold text-zinc-900">Shipping Address</h3>
-                        <div className="text-sm text-zinc-600">
+                        <h3 className="mb-4 text-lg font-bold text-zinc-900">Delivery Address</h3>
+                        <div className="text-sm text-zinc-600 space-y-1">
                             <p className="font-medium text-zinc-900">
                                 {order.shipping?.firstName || ""} {order.shipping?.lastName || ""}
                             </p>
-                            <p>{order.shipping?.address || "N/A"}</p>
+                            {order.shipping?.address && <p>{order.shipping.address}</p>}
+                            {order.shipping?.town && (
+                                <p className="font-medium text-[var(--brand-red)]">
+                                    📍 {order.shipping.town}
+                                </p>
+                            )}
                             <p>
-                                {order.shipping?.city || ""}, {order.shipping?.state || ""} {order.shipping?.zipCode || ""}
+                                {[order.shipping?.city, order.shipping?.region].filter(Boolean).join(", ")}
                             </p>
-                            <p>{order.shipping?.country || "N/A"}</p>
+                            {order.shipping?.country && <p>{order.shipping.country}</p>}
                         </div>
                     </div>
 
@@ -162,9 +180,17 @@ export default function OrderTrackingPage() {
                     {/* Order Summary */}
                     <div className="mt-6 space-y-2 border-t border-zinc-200 pt-4">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-600">Subtotal</span>
-                            <span className="font-semibold text-zinc-900">₵{order.subtotal.toFixed(2)}</span>
+                            <span className="text-zinc-600">Items Subtotal</span>
+                            <span className="font-semibold text-zinc-900">₵{itemsSubtotal.toFixed(2)}</span>
                         </div>
+                        {customizationDetails.count > 0 && (
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-zinc-600">
+                                    Customization ({customizationDetails.count} {customizationDetails.count === 1 ? 'jersey' : 'jerseys'})
+                                </span>
+                                <span className="font-semibold text-zinc-900">₵{customizationDetails.total.toFixed(2)}</span>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-zinc-600">Shipping</span>
                             <span className="font-semibold text-zinc-900">
@@ -174,10 +200,6 @@ export default function OrderTrackingPage() {
                                     `₵${order.shippingCost.toFixed(2)}`
                                 )}
                             </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-600">Tax</span>
-                            <span className="font-semibold text-zinc-900">₵{order.tax.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">
                             <span>Total</span>

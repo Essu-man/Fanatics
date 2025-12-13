@@ -28,17 +28,17 @@ export default function CheckoutPaymentPage() {
             return;
         }
 
-        // Load shipping info from sessionStorage
-        const saved = sessionStorage.getItem("checkoutShipping");
+        // Load shipping info from sessionStorage or localStorage as fallback
+        const saved = sessionStorage.getItem("checkoutShipping") || localStorage.getItem("checkoutShipping");
         if (!saved) {
-            router.push("/checkout/shipping");
+            router.push("/checkout");
             return;
         }
 
         setShippingInfo(JSON.parse(saved));
 
-        // Load delivery price from sessionStorage
-        const savedDeliveryPrice = sessionStorage.getItem("deliveryPrice");
+        // Load delivery price from sessionStorage or localStorage as fallback
+        const savedDeliveryPrice = sessionStorage.getItem("deliveryPrice") || localStorage.getItem("deliveryPrice");
         if (savedDeliveryPrice) {
             const priceData = JSON.parse(savedDeliveryPrice);
             setDeliveryPrice(priceData.price || 0);

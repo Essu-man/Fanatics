@@ -14,8 +14,10 @@ function PaymentCallbackContent() {
     const { user, loading: authLoading } = useAuth();
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
     const [message, setMessage] = useState("Verifying your payment...");
+    const [retryCount, setRetryCount] = useState(0);
     const hasProcessedRef = useRef(false);
     const processedReferenceRef = useRef<string | null>(null);
+    const verificationStartTime = useRef<number>(Date.now());
 
     useEffect(() => {
         // Get reference from URL first
@@ -48,42 +50,101 @@ function PaymentCallbackContent() {
             processedReferenceRef.current = reference;
 
             try {
+                // Show mobile-friendly message after 10 seconds
+                const slowNetworkTimer = setTimeout(() => {
+                    setMessage("Still processing... This may take longer on mobile networks.");
+                }, 10000);
 
-                // Verify payment with backend
-                const verifyResponse = await fetch("/api/paystack/verify", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        reference,
-                    }),
-                });
+                // Retry logic for payment verification (max 3 attempts)
+                let verifyResult: any = null;
+                let lastError: any = null;
 
-                const verifyResult = await verifyResponse.json();
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        if (attempt > 0) {
+                            setRetryCount(attempt);
+                            setMessage(`Retrying verification (${attempt}/3)...`);
+                            // Exponential backoff: 2s, 4s
+                            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                        }
 
-                if (!verifyResult.success) {
+                        const verifyResponse = await fetch("/api/paystack/verify", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                reference,
+                            }),
+                        });
+
+                        verifyResult = await verifyResponse.json();
+
+                        // If we got a response (even if unsuccessful), break the retry loop
+                        if (verifyResult) {
+                            break;
+                        }
+                    } catch (fetchError) {
+                        lastError = fetchError;
+                        console.error(`Verification attempt ${attempt + 1} failed:`, fetchError);
+                        // Continue to next retry
+                    }
+                }
+
+                clearTimeout(slowNetworkTimer);
+
+                if (!verifyResult) {
                     setStatus("error");
-                    setMessage("Payment verification failed. Please contact support.");
+                    setMessage("Unable to verify payment after multiple attempts. Please check your connection and contact support if the issue persists.");
                     return;
                 }
 
-                // Get shipping info from sessionStorage, localStorage, or metadata (fallback)
-                let shippingInfo = sessionStorage.getItem("checkoutShipping") || localStorage.getItem("checkoutShipping");
+                if (!verifyResult.success) {
+                    setStatus("error");
+                    setMessage(verifyResult.error || "Payment verification failed. Please contact support.");
+                    return;
+                }
 
-                // If both storage methods are missing, try to get from payment metadata
+                // Enhanced shipping info retrieval with better fallback handling
+                let shippingInfo: string | null = null;
+                let dataSource = "unknown";
+
+                // Try sessionStorage first
+                shippingInfo = sessionStorage.getItem("checkoutShipping");
+                if (shippingInfo) {
+                    dataSource = "sessionStorage";
+                    console.log("Retrieved shipping info from sessionStorage");
+                }
+
+                // Try localStorage as fallback
+                if (!shippingInfo) {
+                    shippingInfo = localStorage.getItem("checkoutShipping");
+                    if (shippingInfo) {
+                        dataSource = "localStorage";
+                        console.log("Retrieved shipping info from localStorage (mobile storage cleared)");
+                    }
+                }
+
+                // Try payment metadata as ultimate fallback (important for mobile)
                 if (!shippingInfo && verifyResult.data?.metadata) {
-                    const metadata = verifyResult.data.metadata;
-                    // Check if shipping info is in metadata
-                    if (metadata.shipping) {
-                        shippingInfo = metadata.shipping;
-                        console.log("Retrieved shipping info from payment metadata");
+                    try {
+                        const metadata = verifyResult.data.metadata;
+                        if (metadata.shipping) {
+                            // Metadata shipping might be a string or object
+                            shippingInfo = typeof metadata.shipping === 'string'
+                                ? metadata.shipping
+                                : JSON.stringify(metadata.shipping);
+                            dataSource = "paystack metadata";
+                            console.log("Retrieved shipping info from Paystack metadata (all storage cleared)");
+                        }
+                    } catch (metadataError) {
+                        console.error("Error parsing metadata:", metadataError);
                     }
                 }
 
                 if (!shippingInfo) {
                     setStatus("error");
-                    setMessage("Shipping information not found");
+                    setMessage("Shipping information not found. This may happen if browser storage was cleared. Please contact support with your payment reference: " + reference);
                     return;
                 }
 
@@ -98,8 +159,29 @@ function PaymentCallbackContent() {
                 }
 
                 const shipping = JSON.parse(shippingInfo);
-                const subtotal = orderItems.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
-                const shippingCost = 0; // Free shipping
+
+                // Get delivery price from storage
+                const storedDeliveryPrice = sessionStorage.getItem("deliveryPrice") || localStorage.getItem("deliveryPrice");
+                let shippingCost = 0;
+                if (storedDeliveryPrice) {
+                    try {
+                        const priceData = JSON.parse(storedDeliveryPrice);
+                        shippingCost = priceData.price || 0;
+                    } catch (e) {
+                        console.error("Error parsing delivery price:", e);
+                    }
+                }
+
+                // Calculate subtotal including customization fees
+                const CUSTOMIZATION_FEE = 35;
+                const itemsSubtotal = orderItems.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
+                const customizationTotal = orderItems.reduce((total: number, item: any) => {
+                    if (item.customization && (item.customization.playerName || item.customization.playerNumber)) {
+                        return total + (CUSTOMIZATION_FEE * item.quantity);
+                    }
+                    return total;
+                }, 0);
+                const subtotal = itemsSubtotal + customizationTotal;
                 const tax = 0; // No tax
                 const total = subtotal + shippingCost + tax;
 
@@ -111,15 +193,19 @@ function PaymentCallbackContent() {
                     // Order already exists, redirect to success page
                     setStatus("success");
                     setMessage("Payment already processed. Redirecting...");
+
+                    // Clear cart and storage since order is complete
                     clear();
                     sessionStorage.removeItem("checkoutShipping");
                     sessionStorage.removeItem("checkoutItems");
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
-                    // Also clear localStorage
+                    sessionStorage.removeItem("deliveryPrice");
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
+                    localStorage.removeItem("deliveryPrice");
+
                     setTimeout(() => {
                         router.push(`/checkout/success?orderId=${checkData.orderId}`);
                     }, 2000);
@@ -164,6 +250,7 @@ function PaymentCallbackContent() {
                             image: item.image,
                             size: item.size || null,
                             colorId: item.colorId || null,
+                            customization: item.customization || null,
                         })),
                         shipping,
                         payment: {
@@ -201,10 +288,12 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("checkoutItems");
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
+                    sessionStorage.removeItem("deliveryPrice");
                     // Also clear localStorage
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
+                    localStorage.removeItem("deliveryPrice");
 
                     // Redirect to success page
                     setTimeout(() => {
@@ -236,6 +325,16 @@ function PaymentCallbackContent() {
                         <Loader2 className="h-16 w-16 mx-auto text-[var(--brand-red)] animate-spin" />
                         <h1 className="mt-6 text-2xl font-bold text-zinc-900">Processing Payment</h1>
                         <p className="mt-2 text-zinc-600">{message}</p>
+                        {retryCount > 0 && (
+                            <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
+                                <p className="text-sm text-yellow-800">
+                                    Retrying... Attempt {retryCount} of 3
+                                </p>
+                                <p className="text-xs text-yellow-600 mt-1">
+                                    This is normal on slow mobile networks
+                                </p>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -253,7 +352,7 @@ function PaymentCallbackContent() {
                         <h1 className="mt-6 text-2xl font-bold text-zinc-900">Payment Failed</h1>
                         <p className="mt-2 text-zinc-600">{message}</p>
                         <button
-                            onClick={() => router.push("/checkout/payment")}
+                            onClick={() => router.push("/checkout")}
                             className="mt-6 w-full rounded-lg bg-[var(--brand-red)] px-6 py-3 font-semibold text-white hover:bg-[var(--brand-red-dark)]"
                         >
                             Try Again
