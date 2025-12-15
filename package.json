@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check-leagues": "ts-node scripts/manage-leagues.ts check",
+    "enable-premier-league": "ts-node scripts/manage-leagues.ts enable",
+    "teams-status": "ts-node scripts/hardcode-teams.ts status",
+    "add-new-teams": "ts-node scripts/hardcode-teams.ts add",
+    "enable-all-teams": "ts-node scripts/hardcode-teams.ts enable-all"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -35,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

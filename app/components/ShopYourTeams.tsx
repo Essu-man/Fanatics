@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import TeamSelectionModal from "./TeamSelectionModal";
+import LeagueTeamsModal from "./LeagueTeamsModal";
 
 interface League {
     id: string;
@@ -78,7 +78,7 @@ export default function ShopYourTeams() {
     return (
         <>
             <section className="border-b border-zinc-200 bg-white py-3">
-                <div className="mx-auto max-w-7xl px-6">
+                <div className="mx-auto max-w-7xl px-4 md:px-6">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-2xl font-bold text-zinc-900">Shop Your Teams</h2>
                         <Link href="#" className="text-sm font-medium text-zinc-700 hover:text-[var(--brand-red)]">
@@ -86,43 +86,43 @@ export default function ShopYourTeams() {
                         </Link>
                     </div>
                     {loading ? (
-                        <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+                        <div className="flex snap-x gap-3 md:gap-4 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0">
                             {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="flex min-w-[80px] snap-start flex-col items-center gap-2">
-                                    <div className="flex h-16 w-16 items-center justify-center animate-pulse rounded-full bg-zinc-200">
-                                        <div className="h-14 w-14 animate-pulse rounded-full bg-zinc-300" />
+                                <div key={i} className="flex min-w-[70px] md:min-w-[80px] snap-start flex-col items-center gap-2">
+                                    <div className="flex h-14 md:h-16 w-14 md:w-16 items-center justify-center animate-pulse rounded-full bg-zinc-200">
+                                        <div className="h-12 md:h-14 w-12 md:w-14 animate-pulse rounded-full bg-zinc-300" />
                                     </div>
-                                    <div className="h-4 w-16 animate-pulse rounded bg-zinc-200" />
+                                    <div className="h-3 md:h-4 w-14 md:w-16 animate-pulse rounded bg-zinc-200" />
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+                        <div className="flex snap-x gap-3 md:gap-4 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0 scrollbar-hide">
                             {leagues.map((league) => (
                                 <button
                                     key={league.id}
                                     onClick={() => handleLeagueClick(league.id)}
-                                    className="flex min-w-[80px] snap-start flex-col items-center gap-2"
+                                    className="flex min-w-[70px] md:min-w-[80px] snap-start flex-col items-center gap-2 flex-shrink-0"
                                 >
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-zinc-300 bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-zinc-200 bg-white overflow-hidden">
+                                    <div className="flex h-14 md:h-16 w-14 md:w-16 items-center justify-center rounded-full border-2 border-zinc-300 bg-white shadow-sm hover:border-[var(--brand-red)] transition-colors">
+                                        <div className="h-12 md:h-14 w-12 md:w-14 rounded-full bg-white overflow-hidden flex items-center justify-center">
                                             {renderLeagueLogo(league)}
                                         </div>
                                     </div>
-                                    <span className="text-xs font-medium text-zinc-700 text-center">{league.name}</span>
+                                    <span className="text-xs font-medium text-zinc-700 text-center line-clamp-2">{league.name}</span>
                                 </button>
                             ))}
                         </div>
                     )}
                 </div>
             </section>
-            <TeamSelectionModal
+            <LeagueTeamsModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
                     setSelectedLeague(null);
                 }}
-                selectedLeague={selectedLeague}
+                selectedLeagueId={selectedLeague}
             />
         </>
     );
