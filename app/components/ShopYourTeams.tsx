@@ -50,7 +50,7 @@ export default function ShopYourTeams() {
                 <img
                     src={league.logoUrl}
                     alt={league.name}
-                    className="h-full w-full object-contain p-2"
+                    className="h-full w-full object-cover"
                     loading="lazy"
                     onError={(e) => {
                         // Fallback to initials if image fails to load

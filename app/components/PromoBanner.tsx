@@ -2,55 +2,76 @@
 
 import Button from "./ui/button";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export default function PromoBanner() {
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    const slides = [
+        {
+            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&h=1080&fit=crop",
+            label: "Football Action"
+        },
+        {
+            image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1920&h=1080&fit=crop",
+            label: "Soccer Pitch"
+        },
+        {
+            image: "https://images.unsplash.com/photo-1516977080064-fde7c36b15cb?w=1920&h=1080&fit=crop",
+            label: "Basketball Court"
+        },
+        {
+            image: "https://images.unsplash.com/photo-1488747807830-63789f68bb65?w=1920&h=1080&fit=crop",
+            label: "Sports Players"
+        },
+        {
+            image: "https://images.unsplash.com/photo-1574623452619-afcda10c7d5a?w=1920&h=1080&fit=crop",
+            label: "Team Spirit"
+        }
+    ];
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % slides.length);
+        }, 2500); // Change every 2.5 seconds
+
+        return () => clearInterval(timer);
+    }, [slides.length]);
+
     return (
         <section className="relative w-full overflow-hidden">
-            <div className="relative h-[500px] w-full md:h-[600px]">
-                {/* Background Image with better overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-950/95 via-purple-900/90 to-red-900/95">
-                    <div
-                        className="absolute inset-0 bg-cover bg-center opacity-25"
-                        style={{
-                            backgroundImage: "url('https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&h=1080&fit=crop')"
-                        }}
-                    ></div>
-                    {/* Animated gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-transparent animate-pulse"></div>
+            <div className="relative h-[400px] w-full md:h-[500px] lg:h-[550px] flex">
+                {/* Left Side - Content */}
+                <div className="w-full md:w-1/2 bg-amber-50 flex items-center px-6 md:px-10 lg:px-16 py-8">
+                    <div className="max-w-md space-y-6">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 leading-tight mb-3">
+                                Up To 60% Off
+                            </h1>
+                            <p className="text-sm md:text-base text-zinc-600">
+                                Passion The Season Strong, Just In Time.
+                            </p>
+                        </div>
+                        <Button
+                            as={Link}
+                            href="/shop"
+                            className="bg-zinc-900 text-white px-8 py-3 text-base font-semibold hover:bg-zinc-800 transition-colors w-fit"
+                        >
+                            Shop Now
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Content Overlay */}
-                <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-6">
-                    <div className="max-w-2xl space-y-6">
-                        <div className="inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-                            Limited Time Offer
-                        </div>
-                        <h1 className="text-4xl font-black leading-tight text-white drop-shadow-2xl md:text-6xl lg:text-7xl">
-                            25% Off All<br />
-                            <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-                                Football and Basketball
-                            </span>
-                        </h1>
-                        <p className="text-lg text-white/95 md:text-xl max-w-xl">
-                            Shop the latest styles and support your favorite team with our exclusive collection. Authentic gear for true fans.
-                        </p>
-                        <div className="flex flex-wrap gap-4">
-                            <Button
-                                as={Link}
-                                href="/shop"
-                                className="bg-[var(--brand-red)] px-8 py-3.5 text-base font-bold text-white shadow-xl hover:bg-[var(--brand-red-dark)] hover:scale-105 transition-transform"
-                            >
-                                Shop Now
-                            </Button>
-                            <Button
-                                as={Link}
-                                href="/teams"
-                                className="border-2 border-white/80 bg-white/10 px-8 py-3.5 text-base font-bold text-white backdrop-blur-sm hover:bg-white/20 transition-all"
-                            >
-                                Browse Teams
-                            </Button>
-                        </div>
-                    </div>
+                {/* Right Side - Image Carousel */}
+                <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
+                    {slides.map((slide, index) => (
+                        <div
+                            key={index}
+                            className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-700 ${index === currentSlide ? "opacity-100" : "opacity-0"
+                                }`}
+                            style={{ backgroundImage: `url('${slide.image}')` }}
+                        />
+                    ))}
                 </div>
             </div>
         </section>
