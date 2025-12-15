@@ -21,21 +21,19 @@ export default function Home() {
         <HomeProductSections />
         <SplitBanner
           leftSection={{
-            title: "Premium Football Collection",
+            title: "Epic Football Moments",
             video: "https://videos.pexels.com/video-files/19548560/19548560-hd_1280_720_25fps.mp4",
             buttons: [
-              { label: "Shop All", href: "/shop" },
-              { label: "Club Jerseys", href: "/shop?category=jersey" },
-              { label: "Kits & Gear", href: "/shop?category=apparel" },
+              { label: "Shop Jerseys", href: "/shop" },
+              { label: "Team Collection", href: "/teams" },
             ],
           }}
           rightSection={{
-            title: "Elite Basketball Gear",
-            video: "https://videos.pexels.com/video-files/29086331/12459282-hd_1080_1920_30fps.mp4",
+            title: "Legendary Players",
+            video: "https://videos.pexels.com/video-files/12459282/12459282-hd_1080_1920_30fps.mp4",
             buttons: [
-              { label: "Shop Basketball", href: "/shop?category=basketball" },
-              { label: "Team Jerseys", href: "/shop?category=jersey" },
-              { label: "Court Collection", href: "/shop?category=apparel" },
+              { label: "Browse Gear", href: "/shop" },
+              { label: "Fan Favorites", href: "/shop?sort=popular" },
             ],
           }}
         />

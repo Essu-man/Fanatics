@@ -9,24 +9,32 @@ export default function PromoBanner() {
 
     const slides = [
         {
-            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&h=1080&fit=crop",
-            label: "Football Action"
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/1.jpeg",
+            label: "Jersey 1"
         },
         {
-            image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1920&h=1080&fit=crop",
-            label: "Soccer Pitch"
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/2.jpeg",
+            label: "Jersey 2"
         },
         {
-            image: "https://images.unsplash.com/photo-1516977080064-fde7c36b15cb?w=1920&h=1080&fit=crop",
-            label: "Basketball Court"
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/3.jpeg",
+            label: "Jersey 3"
         },
         {
-            image: "https://images.unsplash.com/photo-1488747807830-63789f68bb65?w=1920&h=1080&fit=crop",
-            label: "Sports Players"
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/4.jpeg",
+            label: "Jersey 4"
         },
         {
-            image: "https://images.unsplash.com/photo-1574623452619-afcda10c7d5a?w=1920&h=1080&fit=crop",
-            label: "Team Spirit"
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/8.jpeg",
+            label: "Jersey 5"
+        },
+        {
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/7.jpeg",
+            label: "Jersey 6"
+        },
+        {
+            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/6.jpeg",
+            label: "Jersey 7"
         }
     ];
 
@@ -44,21 +52,34 @@ export default function PromoBanner() {
                 {/* Left Side - Content */}
                 <div className="w-full md:w-1/2 bg-amber-50 flex items-center px-6 md:px-10 lg:px-16 py-8">
                     <div className="max-w-md space-y-6">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 leading-tight mb-3">
-                                Up To 60% Off
-                            </h1>
-                            <p className="text-sm md:text-base text-zinc-600">
-                                Passion The Season Strong, Just In Time.
-                            </p>
+                        <div className="inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-semibold text-zinc-900 backdrop-blur-sm">
+                            Limited Time Offer
                         </div>
-                        <Button
-                            as={Link}
-                            href="/shop"
-                            className="bg-zinc-900 text-white px-8 py-3 text-base font-semibold hover:bg-zinc-800 transition-colors w-fit"
-                        >
-                            Shop Now
-                        </Button>
+                        <h1 className="text-4xl md:text-5xl font-black leading-tight text-zinc-900 mb-3">
+                            25% Off All<br />
+                            <span className="text-orange-600">
+                                Football and Basketball
+                            </span>
+                        </h1>
+                        <p className="text-sm md:text-base text-zinc-700 max-w-xl">
+                            Shop the latest styles and support your favorite team with our exclusive collection. Authentic gear for true fans.
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                            <Button
+                                as={Link}
+                                href="/shop"
+                                className="bg-zinc-900 text-white px-8 py-3 text-base font-bold hover:bg-zinc-800 transition-colors"
+                            >
+                                Shop Now
+                            </Button>
+                            <Button
+                                as={Link}
+                                href="/teams"
+                                className="border-2 border-zinc-900 text-zinc-900 px-8 py-3 text-base font-bold bg-transparent hover:bg-zinc-900 hover:text-white transition-all"
+                            >
+                                Browse Teams
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -67,9 +88,9 @@ export default function PromoBanner() {
                     {slides.map((slide, index) => (
                         <div
                             key={index}
-                            className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-700 ${index === currentSlide ? "opacity-100" : "opacity-0"
+                            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${index === currentSlide ? "opacity-100" : "opacity-0"
                                 }`}
-                            style={{ backgroundImage: `url('${slide.image}')` }}
+                            style={{ backgroundImage: `url('${slide.image}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#f3f4f6' }}
                         />
                     ))}
                 </div>
