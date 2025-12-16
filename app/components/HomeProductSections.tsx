@@ -332,7 +332,7 @@ export default function HomeProductSections() {
 
     return (
         <>
-            {/* Football Section */}
+            {/* Football Section - Extended, Basketball section removed for now */}
             <section className="bg-white py-12">
                 <div className="mx-auto max-w-7xl px-6">
                     <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
@@ -343,22 +343,6 @@ export default function HomeProductSections() {
                     ) : (
                         <div className="flex items-center justify-center py-12">
                             <div className="text-zinc-500">No football products available</div>
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {/* Basketball Section */}
-            <section className="bg-white py-12">
-                <div className="mx-auto max-w-7xl px-6">
-                    <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
-                        Rule the Court: Shop Basketball
-                    </h2>
-                    {basketballProducts.length > 0 ? (
-                        <ProductCarousel products={basketballProducts} />
-                    ) : (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="text-zinc-500">No basketball products available</div>
                         </div>
                     )}
                 </div>

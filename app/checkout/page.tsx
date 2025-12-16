@@ -54,6 +54,28 @@ export default function CheckoutPage() {
         // Initialize curated towns for Greater Accra delivery
         const accraTowns = getCuratedAccraTowns();
         setTowns(accraTowns);
+
+        // Restore shipping data from localStorage if available (for retry scenarios)
+        const savedShipping = localStorage.getItem("checkoutShipping");
+        if (savedShipping) {
+            try {
+                const parsedShipping = JSON.parse(savedShipping);
+                setShipping(parsedShipping);
+
+                // Also restore delivery price if available
+                const savedDeliveryPrice = localStorage.getItem("deliveryPrice");
+                if (savedDeliveryPrice) {
+                    const priceData = JSON.parse(savedDeliveryPrice);
+                    setDeliveryPrice({
+                        price: priceData.price || 0,
+                        location: priceData.location || parsedShipping.town,
+                        found: priceData.found || false,
+                    });
+                }
+            } catch (error) {
+                console.error("Error restoring checkout data:", error);
+            }
+        }
     }, []);
 
     // Keep towns synced if region changes programmatically (region is static in UI)
@@ -95,10 +117,20 @@ export default function CheckoutPage() {
     };
 
     const CUSTOMIZATION_FEE = 35;
-    const subtotal = items.reduce((sum, it) => {
-        const perItem = it.price + ((it.customization && (it.customization.playerName || it.customization.playerNumber)) ? CUSTOMIZATION_FEE : 0);
-        return sum + perItem * it.quantity;
-    }, 0);
+
+    // Calculate subtotal and customization details
+    const itemsSubtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const customizationDetails = items.reduce((acc, it) => {
+        if (it.customization && (it.customization.playerName || it.customization.playerNumber)) {
+            return {
+                count: acc.count + it.quantity,
+                total: acc.total + (CUSTOMIZATION_FEE * it.quantity)
+            };
+        }
+        return acc;
+    }, { count: 0, total: 0 });
+
+    const subtotal = itemsSubtotal + customizationDetails.total;
     const estimatedShipping = deliveryPrice?.price || 0;
     const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
@@ -175,6 +207,11 @@ export default function CheckoutPage() {
             localStorage.setItem("checkoutShipping", JSON.stringify(shipping));
             localStorage.setItem("checkoutItems", JSON.stringify(items));
             localStorage.setItem("paymentReference", paymentData.data.reference);
+            // Store delivery price for restoration
+            if (deliveryPrice) {
+                localStorage.setItem("deliveryPrice", JSON.stringify(deliveryPrice));
+                sessionStorage.setItem("deliveryPrice", JSON.stringify(deliveryPrice));
+            }
 
             // Redirect to Paystack's hosted checkout page
             window.location.href = paymentData.data.authorization_url;
@@ -386,9 +423,17 @@ export default function CheckoutPage() {
 
                             <div className="space-y-2 border-t border-zinc-200 pt-4">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-600">Subtotal</span>
-                                    <span className="font-semibold text-zinc-900">GH₵ {subtotal.toFixed(2)}</span>
+                                    <span className="text-zinc-600">Items Subtotal</span>
+                                    <span className="font-semibold text-zinc-900">GH₵ {itemsSubtotal.toFixed(2)}</span>
                                 </div>
+                                {customizationDetails.count > 0 && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-zinc-600">
+                                            Customization ({customizationDetails.count} {customizationDetails.count === 1 ? 'jersey' : 'jerseys'})
+                                        </span>
+                                        <span className="font-semibold text-zinc-900">GH₵ {customizationDetails.total.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Delivery Fee</span>
                                     <span className="font-semibold text-zinc-900">

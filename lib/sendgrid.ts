@@ -135,7 +135,8 @@ export const getOrderConfirmationEmail = (
   trackingLink: string,
   items: any[],
   shippingCost: number = 0,
-  orderDate?: string
+  orderDate?: string,
+  subtotal?: number
 ): string => {
   // Escape HTML to prevent XSS
   const escapeHtml = (text: string) => {
@@ -160,7 +161,21 @@ export const getOrderConfirmationEmail = (
     month: 'long',
     day: 'numeric'
   });
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Calculate breakdown
+  const CUSTOMIZATION_FEE = 35;
+  const itemsSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const customizationDetails = items.reduce((acc, item) => {
+    if (item.customization && (item.customization.playerName || item.customization.playerNumber)) {
+      return {
+        count: acc.count + item.quantity,
+        total: acc.total + (CUSTOMIZATION_FEE * item.quantity)
+      };
+    }
+    return acc;
+  }, { count: 0, total: 0 });
+
+  const calculatedSubtotal = subtotal !== undefined ? subtotal : (itemsSubtotal + customizationDetails.total);
 
   return `
 <!DOCTYPE html>
@@ -337,8 +352,18 @@ export const getOrderConfirmationEmail = (
       <!-- Cost Summary Card -->
       <div class="cost-summary">
         <div class="cost-row">
+          <span class="cost-label">Items Subtotal:</span>
+          <span class="cost-value">₵${itemsSubtotal.toFixed(2)}</span>
+        </div>
+        ${customizationDetails.count > 0 ? `
+        <div class="cost-row">
+          <span class="cost-label">Customization (${customizationDetails.count} ${customizationDetails.count === 1 ? 'jersey' : 'jerseys'}):</span>
+          <span class="cost-value">₵${customizationDetails.total.toFixed(2)}</span>
+        </div>
+        ` : ''}
+        <div class="cost-row">
           <span class="cost-label">Shipping:</span>
-          <span class="cost-value">₵${shippingCost.toFixed(2)}</span>
+          <span class="cost-value">${shippingCost > 0 ? `₵${shippingCost.toFixed(2)}` : 'FREE'}</span>
         </div>
         <div class="cost-row">
           <span class="cost-label">Total:</span>

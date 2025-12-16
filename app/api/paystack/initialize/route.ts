@@ -40,44 +40,63 @@ export async function POST(request: NextRequest) {
         const reference = generatePaymentReference();
         const amountInKobo = cedisToKobo(amount);
 
-        // Initialize transaction with Paystack API
-        const paystackResponse = await fetch(
-            "https://api.paystack.co/transaction/initialize",
-            {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${secretKey}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email,
-                    amount: amountInKobo,
-                    currency: "GHS",
-                    reference,
-                    callback_url: `${appUrl}/checkout/callback`,
-                    metadata,
-                }),
-            }
-        );
+        // Initialize transaction with Paystack API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-        const paystackData = await paystackResponse.json();
-
-        if (!paystackData.status) {
-            return NextResponse.json(
-                { error: paystackData.message || "Failed to initialize payment" },
-                { status: 400 }
+        try {
+            const paystackResponse = await fetch(
+                "https://api.paystack.co/transaction/initialize",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${secretKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email,
+                        amount: amountInKobo,
+                        currency: "GHS",
+                        reference,
+                        callback_url: `${appUrl}/checkout/callback`,
+                        metadata,
+                    }),
+                    signal: controller.signal,
+                }
             );
-        }
 
-        // Return authorization URL for redirect
-        return NextResponse.json({
-            success: true,
-            data: {
-                authorization_url: paystackData.data.authorization_url,
-                access_code: paystackData.data.access_code,
-                reference: paystackData.data.reference,
-            },
-        });
+            clearTimeout(timeoutId);
+            const paystackData = await paystackResponse.json();
+
+            if (!paystackData.status) {
+                return NextResponse.json(
+                    { error: paystackData.message || "Failed to initialize payment" },
+                    { status: 400 }
+                );
+            }
+
+            // Return authorization URL for redirect
+            return NextResponse.json({
+                success: true,
+                data: {
+                    authorization_url: paystackData.data.authorization_url,
+                    access_code: paystackData.data.access_code,
+                    reference: paystackData.data.reference,
+                },
+            });
+        } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+
+            if (fetchError.name === 'AbortError') {
+                console.error("Payment initialization timeout");
+                return NextResponse.json(
+                    { error: "Payment initialization timed out. Please check your connection and try again." },
+                    { status: 408 }
+                );
+            }
+
+            throw fetchError; // Re-throw other errors to be caught by outer try-catch
+        }
     } catch (error: any) {
         console.error("Error initializing payment:", error);
         return NextResponse.json(

@@ -4,6 +4,7 @@ export interface Team {
     league: string;
     country?: string;
     logo?: string;
+    sport?: string;
 }
 
 // Football (Soccer) Teams
@@ -77,6 +78,14 @@ export const footballTeams: Team[] = [
     { id: "galatasaray", name: "Galatasaray", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Galatasaray-Logo.png" },
     { id: "fenerbahce", name: "Fenerbahce", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Fenerbahce-Logo.png" },
     { id: "besiktas", name: "Besiktas", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Besiktas-Logo.png" },
+
+    // African
+    { id: "kotoko", name: "Asante Kotoko", league: "Ghana Premier League", country: "Ghana", logo: "https://upload.wikimedia.org/wikipedia/en/7/7d/Asante_Kotoko_Crest.png" },
+    { id: "hearts-of-oak", name: "Hearts of Oak", league: "Ghana Premier League", country: "Ghana", logo: "https://upload.wikimedia.org/wikipedia/en/c/cb/Accra_Hearts_of_Oak_Sporting_Club_logo.png" },
+
+    // Other International Clubs
+    { id: "al-nassr", name: "Al Nassr", league: "Others", country: "Saudi Arabia", logo: "https://upload.wikimedia.org/wikipedia/en/d/da/Al_Nassr_FC.png" },
+    { id: "inter-miami", name: "Inter Miami CF", league: "Others", country: "United States", logo: "https://upload.wikimedia.org/wikipedia/en/a/a2/Inter_Miami_CF_crest.svg" },
 ];
 
 // Basketball Teams (NBA)

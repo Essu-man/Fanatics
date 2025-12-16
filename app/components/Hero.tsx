@@ -60,7 +60,7 @@ export default function Hero() {
                     Official Football Jerseys
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg font-medium leading-relaxed text-white/90">
-                    Shop authentic football jerseys from the world's top teams. Official licensed gear, fast shipping, and fan-first returns.
+                    Shop authentic football jerseys from the world's top teams. Official licensed gear, fast delivery, and fan-first returns.
                 </p>
 
                 <div className="mt-10 flex flex-wrap gap-4">

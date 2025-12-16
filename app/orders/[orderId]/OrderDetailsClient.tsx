@@ -180,6 +180,19 @@ export default function OrderDetailsPage() {
         );
     }
 
+    // Calculate customization details
+    const CUSTOMIZATION_FEE = 35;
+    const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const customizationDetails = order.items.reduce((acc, item) => {
+        if (item.customization && (item.customization.playerName || item.customization.playerNumber)) {
+            return {
+                count: acc.count + item.quantity,
+                total: acc.total + (CUSTOMIZATION_FEE * item.quantity)
+            };
+        }
+        return acc;
+    }, { count: 0, total: 0 });
+
     const StatusIcon = statusConfig[order.status].icon;
 
     return (
@@ -315,13 +328,15 @@ export default function OrderDetailsPage() {
                             <h2 className="mb-4 text-lg font-bold text-zinc-900">Order Summary</h2>
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-zinc-600">Subtotal</span>
-                                    <span className="font-semibold text-zinc-900">₵{order.subtotal.toFixed(2)}</span>
+                                    <span className="text-zinc-600">Items Subtotal</span>
+                                    <span className="font-semibold text-zinc-900">₵{itemsSubtotal.toFixed(2)}</span>
                                 </div>
-                                {order.customizationFee && order.customizationFee > 0 && (
+                                {customizationDetails.count > 0 && (
                                     <div className="flex justify-between">
-                                        <span className="text-zinc-600">Customization</span>
-                                        <span className="font-semibold text-zinc-900">₵{order.customizationFee.toFixed(2)}</span>
+                                        <span className="text-zinc-600">
+                                            Customization ({customizationDetails.count} {customizationDetails.count === 1 ? 'jersey' : 'jerseys'})
+                                        </span>
+                                        <span className="font-semibold text-zinc-900">₵{customizationDetails.total.toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between">
