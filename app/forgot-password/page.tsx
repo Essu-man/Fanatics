@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { resetPassword } from "@/lib/supabase-auth";
+import { sendPasswordResetEmailToUser } from "@/lib/firebase-auth";
 import { useToast } from "../components/ui/ToastContainer";
 import { ArrowLeft, Mail } from "lucide-react";
 
@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
         setLoading(true);
 
         try {
-            const result = await resetPassword(email);
+            const result = await sendPasswordResetEmailToUser(email);
 
             if (result.success) {
                 setSent(true);

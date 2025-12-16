@@ -43,7 +43,7 @@ async function addCologneTeam() {
         if (docSnapshot.exists) {
             console.log(`⚠️  Team already exists: ${cologneTeam.name}`);
             console.log('📋 Existing data:', docSnapshot.data());
-            
+
             // Ask if user wants to update
             console.log('\n💡 To update this team, run with --force flag');
             return false;
@@ -66,7 +66,7 @@ async function verifyTeam() {
         console.log('\n✔️  Verifying FC Cologne in database...\n');
 
         const teamsRef = db.collection('teams');
-        
+
         // Check if Cologne exists
         const cologneDoc = await teamsRef.doc('cologne').get();
         if (cologneDoc.exists) {

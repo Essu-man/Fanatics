@@ -78,7 +78,7 @@ export default function TeamCollections() {
 
                                 {/* Overlay with gradient */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100"></div>
-                                
+
                                 {/* White Team Name Card - positioned at bottom */}
                                 <div className="absolute bottom-2 md:bottom-3 left-2 md:left-3 right-2 md:right-3 bg-white rounded-md px-2 md:px-3 py-1.5 md:py-2 shadow-md">
                                     <h3 className="text-xs md:text-sm font-bold text-zinc-900 leading-tight truncate">{collection.name}</h3>
