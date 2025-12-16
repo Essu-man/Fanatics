@@ -21,25 +21,25 @@ export default function TeamCollections() {
                 id: "real-madrid",
                 name: "Real Madrid",
                 image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/1.jpeg",
-                link: "/teams?team=real-madrid",
+                link: "/teams/real-madrid",
             },
             {
                 id: "barcelona",
                 name: "Barcelona",
                 image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/2.jpeg",
-                link: "/teams?team=barcelona",
+                link: "/teams/barcelona",
             },
             {
-                id: "bayern-munich",
+                id: "bayern",
                 name: "Bayern Munich",
                 image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/3.jpeg",
-                link: "/teams?team=bayern-munich",
+                link: "/teams/bayern",
             },
             {
                 id: "psg",
                 name: "Paris Saint Germain",
                 image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/4.jpeg",
-                link: "/teams?team=psg",
+                link: "/teams/psg",
             },
         ];
 
@@ -78,11 +78,11 @@ export default function TeamCollections() {
 
                                 {/* Overlay with gradient */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100"></div>
-                            </div>
-
-                            {/* Team Name - positioned at bottom */}
-                            <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 text-white">
-                                <h3 className="text-sm md:text-base font-bold leading-tight">{collection.name}</h3>
+                                
+                                {/* White Team Name Card - positioned at bottom */}
+                                <div className="absolute bottom-2 md:bottom-3 left-2 md:left-3 right-2 md:right-3 bg-white rounded-md px-2 md:px-3 py-1.5 md:py-2 shadow-md">
+                                    <h3 className="text-xs md:text-sm font-bold text-zinc-900 leading-tight truncate">{collection.name}</h3>
+                                </div>
                             </div>
                         </Link>
                     ))}
