@@ -39,35 +39,42 @@ function ResetPasswordContent() {
         e.preventDefault();
         setLoading(true);
 
-        if (formData.password !== formData.confirmPassword) {
-            showToast("Passwords do not match", "error");
-            setLoading(false);
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            showToast("Password must be at least 6 characters", "error");
-            setLoading(false);
-            return;
-        }
-
         try {
-            // Get the action code from URL (Firebase sends it as 'code' or 'oobCode')
+            if (formData.password !== formData.confirmPassword) {
+                showToast("Passwords do not match", "error");
+                setLoading(false);
+                return;
+            }
+
+            if (formData.password.length < 6) {
+                showToast("Password must be at least 6 characters", "error");
+                setLoading(false);
+                return;
+            }
+
+            // Get the action code from URL
             const code = searchParams.get('code');
             const oobCode = searchParams.get('oobCode');
             const actionCode = code || oobCode;
 
+            console.log('Reset Password Debug:', { code, oobCode, actionCode, password: formData.password });
+
             if (!actionCode) {
                 showToast("Invalid reset link. Please request a new one.", "error");
+                setLoading(false);
                 router.push("/forgot-password");
                 return;
             }
 
             // Confirm password reset with Firebase
+            console.log('Calling confirmPasswordReset with:', { actionCode, passwordLength: formData.password.length });
             const result = await confirmPasswordReset(actionCode, formData.password);
+
+            console.log('confirmPasswordReset result:', result);
 
             if (!result.success) {
                 showToast(result.error || "Failed to update password", "error");
+                setLoading(false);
                 return;
             }
 
@@ -79,8 +86,8 @@ function ResetPasswordContent() {
                 router.push("/login");
             }, 2000);
         } catch (error: any) {
+            console.error('Password reset error:', error);
             showToast(error.message || "An error occurred. Please try again.", "error");
-        } finally {
             setLoading(false);
         }
     };

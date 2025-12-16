@@ -387,10 +387,18 @@ export const sendPasswordResetEmailToUser = async (email: string) => {
  */
 export const confirmPasswordReset = async (actionCode: string, newPassword: string) => {
     try {
-        await firebaseConfirmPasswordReset(auth, actionCode, newPassword);
+        console.log('confirmPasswordReset: Starting with actionCode length:', actionCode.length);
+
+        const result = await firebaseConfirmPasswordReset(auth, actionCode, newPassword);
+
+        console.log('confirmPasswordReset: Success!', result);
         return { success: true };
     } catch (error: any) {
-        console.error('Error confirming password reset:', error);
+        console.error('confirmPasswordReset: Error', {
+            code: error.code,
+            message: error.message,
+            fullError: error
+        });
         return {
             success: false,
             error: error.message || 'Failed to reset password'
