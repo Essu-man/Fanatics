@@ -19,27 +19,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load initial user
-        loadUser();
-
-        // Listen to auth changes
+        // Firebase's onAuthStateChange already persists auth state
+        // Just listen to it - it will handle persistence automatically
         const unsubscribe = onAuthStateChange((newUser) => {
-            setUser((prevUser) => {
-                // Only update if there's a meaningful change
-                // If Firebase user exists but profile fetch failed, keep previous user
-                // Only clear user if Firebase user is actually null (real logout)
-                if (newUser === null && prevUser !== null) {
-                    // Real logout - Firebase user is null
-                    return null;
-                }
-                if (newUser !== null) {
-                    // User exists - update
-                    return newUser;
-                }
-                // Keep previous user if newUser is null but we had a user
-                // This prevents clearing user on temporary profile fetch failures
-                return prevUser;
-            });
+            setUser(newUser);
             setLoading(false);
         });
 
@@ -48,30 +31,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         };
     }, []);
 
-    const loadUser = async () => {
-        try {
-            setLoading(true);
-            const currentUser = await getCurrentUser();
-            if (currentUser) {
-                setUser(currentUser);
-            } else {
-                // Only clear user if we're certain there's no user
-                // Don't clear during initial load to prevent flicker
-                if (user !== null) {
-                    setUser(null);
-                }
-            }
-        } catch (error) {
-            console.error("Error loading user:", error);
-            // Don't clear user on error - might be a temporary network issue
-            // Only clear if we're certain the user is logged out
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const refreshUser = async () => {
-        await loadUser();
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
     };
 
     const logout = async () => {

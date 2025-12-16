@@ -74,6 +74,95 @@ export const signUp = async (
 
         const profileResult = await createUserProfile(firebaseUser.uid, profileData);
 
+        // Send welcome email via SendGrid
+        if (profileResult.success) {
+            try {
+                await fetch('/api/notifications/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: email,
+                        subject: 'Welcome to Cediman - Verify Your Email',
+                        htmlBody: `
+                            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <h1 style="color: #2563eb; margin: 0;">Welcome to Cediman!</h1>
+                                </div>
+                                
+                                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                    <p>Hi ${firstName},</p>
+                                    <p>Thank you for creating an account with <strong>Cediman</strong>! We're excited to have you join our community.</p>
+                                    <p>Your account has been successfully created. To complete your registration and start shopping for premium jerseys, please verify your email address by clicking the link below:</p>
+                                    
+                                    <div style="text-align: center; margin: 30px 0;">
+                                        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}" 
+                                           style="display: inline-block; background-color: #c41e3a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                            Verify Your Email
+                                        </a>
+                                    </div>
+                                    
+                                    <p style="font-size: 13px; color: #666; margin-top: 20px;">
+                                        If the button above doesn't work, copy and paste this link in your browser:<br>
+                                        <span style="word-break: break-all;">${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}</span>
+                                    </p>
+                                </div>
+                                
+                                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                    <h3 style="color: #1f2937; margin-top: 0;">What's Next?</h3>
+                                    <ul style="color: #666; line-height: 1.8;">
+                                        <li><strong>Explore Teams</strong> - Browse jerseys from your favorite teams</li>
+                                        <li><strong>Shop Premium Jerseys</strong> - Discover authentic and stylish jerseys</li>
+                                        <li><strong>Track Orders</strong> - Keep an eye on your purchases</li>
+                                        <li><strong>Save to Wishlist</strong> - Mark items for later</li>
+                                    </ul>
+                                </div>
+                                
+                                <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: center;">
+                                    <p style="margin: 0; font-size: 13px; color: #999;">
+                                        Need help? Contact our support team at <a href="mailto:support@cediman.com" style="color: #2563eb; text-decoration: none;">support@cediman.com</a>
+                                    </p>
+                                </div>
+                                
+                                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                    <p style="font-size: 12px; color: #999; margin: 0;">
+                                        © 2025 Cediman. All rights reserved.<br>
+                                        <a href="https://www.cediman.com" style="color: #2563eb; text-decoration: none;">Visit our website</a>
+                                    </p>
+                                </div>
+                            </div>
+                        `,
+                        textBody: `
+                            Welcome to Cediman!
+                            
+                            Hi ${firstName},
+                            
+                            Thank you for creating an account with Cediman! We're excited to have you join our community.
+                            
+                            Your account has been successfully created. To complete your registration and start shopping for premium jerseys, please verify your email address by visiting the link below:
+                            
+                            ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}
+                            
+                            What's Next?
+                            - Explore Teams - Browse jerseys from your favorite teams
+                            - Shop Premium Jerseys - Discover authentic and stylish jerseys
+                            - Track Orders - Keep an eye on your purchases
+                            - Save to Wishlist - Mark items for later
+                            
+                            Need help? Contact our support team at support@cediman.com
+                            
+                            © 2025 Cediman. All rights reserved.
+                            Visit our website: https://www.cediman.com
+                        `,
+                    }),
+                });
+            } catch (sendgridError) {
+                console.warn('Failed to send welcome email via SendGrid:', sendgridError);
+                // Don't fail signup if SendGrid email fails
+            }
+        }
+
         if (!profileResult.success) {
             // If profile creation fails, delete the auth user
             await firebaseUser.delete();

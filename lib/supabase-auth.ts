@@ -319,9 +319,62 @@ export const resetPassword = async (email: string) => {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
             (typeof window !== 'undefined' ? window.location.origin : 'https://www.cediman.com');
 
+        // First, attempt to use Supabase's built-in password reset
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${baseUrl}/reset-password`,
         });
+
+        // If Supabase email is not configured, it will still work but won't send email
+        // We'll also send via SendGrid as a fallback/redundancy
+        try {
+            const response = await fetch('/api/notifications/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: email,
+                    subject: 'Reset your Cediman password',
+                    htmlBody: `
+                        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                            <h2>Password Reset Request</h2>
+                            <p>Hello,</p>
+                            <p>We received a request to reset your password for your Cediman account. Click the link below to reset your password:</p>
+                            <p>
+                                <a href="${baseUrl}/reset-password" 
+                                   style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                                    Reset Your Password
+                                </a>
+                            </p>
+                            <p>Or copy this link: ${baseUrl}/reset-password</p>
+                            <p>If you didn't request this, you can ignore this email. Your password won't change unless you confirm the reset.</p>
+                            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999;">Cediman Team</p>
+                        </div>
+                    `,
+                    textBody: `
+                        Password Reset Request
+                        
+                        Hello,
+                        
+                        We received a request to reset your password for your Cediman account. Visit this link to reset your password:
+                        
+                        ${baseUrl}/reset-password
+                        
+                        If you didn't request this, you can ignore this email. Your password won't change unless you confirm the reset.
+                        
+                        Cediman Team
+                    `,
+                }),
+            });
+
+            if (!response.ok) {
+                console.warn('SendGrid email notification sent but with warning:', await response.text());
+            }
+        } catch (emailError) {
+            console.warn('Failed to send email via SendGrid:', emailError);
+            // Don't fail the whole operation if SendGrid fails
+        }
 
         if (error) {
             return { success: false, error: error.message };

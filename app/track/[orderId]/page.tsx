@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Package, ArrowLeft, Phone, Mail } from "lucide-react";
+import { Package, ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
 import OrderProgressTracker from "../../components/OrderProgressTracker";
 import type { Order } from "@/lib/firestore";
 
@@ -113,22 +113,43 @@ export default function OrderTrackingPage() {
                 {/* Order Details */}
                 <div className="grid gap-6 md:grid-cols-2">
                     {/* Delivery Address */}
-                    <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="mb-4 text-lg font-bold text-zinc-900">Delivery Address</h3>
-                        <div className="text-sm text-zinc-600 space-y-1">
-                            <p className="font-medium text-zinc-900">
-                                {order.shipping?.firstName || ""} {order.shipping?.lastName || ""}
-                            </p>
-                            {order.shipping?.address && <p>{order.shipping.address}</p>}
-                            {order.shipping?.town && (
-                                <p className="font-medium text-[var(--brand-red)]">
-                                    📍 {order.shipping.town}
+                    <div className="rounded-lg border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 shadow-sm">
+                        <h3 className="mb-6 text-lg font-bold text-zinc-900 flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-[var(--brand-red)]" />
+                            Delivery Address
+                        </h3>
+                        <div className="space-y-4">
+                            {/* Full Name */}
+                            <div className="pb-4 border-b border-zinc-100">
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Full Name</p>
+                                <p className="text-lg font-bold text-zinc-900">
+                                    {order.shipping?.firstName || ""} {order.shipping?.lastName || ""}
                                 </p>
-                            )}
-                            <p>
-                                {[order.shipping?.city, order.shipping?.region].filter(Boolean).join(", ")}
-                            </p>
-                            {order.shipping?.country && <p>{order.shipping.country}</p>}
+                            </div>
+
+                            {/* Landmark */}
+                            <div>
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Landmark</p>
+                                <p className="text-base text-zinc-700 font-medium">
+                                    {order.shipping?.address || <span className="text-zinc-400 italic">Not provided</span>}
+                                </p>
+                            </div>
+
+                            {/* City / Area */}
+                            <div>
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">City / Area</p>
+                                <p className="text-base text-zinc-700 font-medium">
+                                    {order.shipping?.city || <span className="text-zinc-400 italic">Not provided</span>}
+                                </p>
+                            </div>
+
+                            {/* Region */}
+                            <div className="pt-2 border-t border-zinc-100">
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Region</p>
+                                <p className="text-base text-zinc-700 font-medium">
+                                    {order.shipping?.region || <span className="text-zinc-400 italic">Not provided</span>}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -206,14 +227,14 @@ export default function OrderTrackingPage() {
                             <span>₵{order.total.toFixed(2)}</span>
                         </div>
                     </div>
-                </div>
 
-                {/* Support */}
-                <div className="mt-6 rounded-lg border border-zinc-200 bg-blue-50 p-6">
-                    <h3 className="mb-2 font-semibold text-blue-900">Need Help?</h3>
-                    <p className="text-sm text-blue-700">
-                        If you have any questions about your order, please contact our support team.
-                    </p>
+                    {/* Support */}
+                    <div className="mt-6 rounded-lg border border-zinc-200 bg-blue-50 p-6">
+                        <h3 className="mb-2 font-semibold text-blue-900">Need Help?</h3>
+                        <p className="text-sm text-blue-700">
+                            If you have any questions about your order, please contact our support team.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -46,97 +46,100 @@ export default function OrderProgressTracker({
     orderDate,
     estimatedDelivery,
 }: OrderProgressTrackerProps) {
+    // Normalize the stage
+    const normalizedStage = (currentStage || "submitted").toString().toLowerCase().trim();
+
     // Don't show progress tracker for cancelled orders
-    if (currentStage === "cancelled") {
+    if (normalizedStage === "cancelled") {
         return (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-                <p className="text-center text-sm font-medium text-red-900">
-                    ❌ This order has been cancelled.
+            <div className="rounded-xl border-2 border-red-200 bg-gradient-to-r from-red-50 to-pink-50 p-8 mb-8 shadow-sm">
+                <p className="text-center text-lg font-bold text-red-900">
+                    ❌ This order has been cancelled
                 </p>
             </div>
         );
     }
 
-    // For submitted orders, show a special message
-    if (currentStage === "submitted") {
-        return (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-                <div className="text-center">
-                    <Package className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                    <p className="text-sm font-medium text-gray-900 mb-1">
-                        Order Submitted
-                    </p>
-                    <p className="text-xs text-gray-600">
-                        Your order has been submitted and is awaiting admin confirmation.
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    let currentIndex = stages.findIndex((stage) => stage.id === normalizedStage);
 
-    let currentIndex = stages.findIndex((stage) => stage.id === currentStage);
-
-    // Fallback mapping if a removed/unknown stage is provided (e.g., "in_transit")
+    // Fallback mapping if a removed/unknown stage is provided
     if (currentIndex === -1) {
-        if (currentStage === "in_transit") {
-            currentIndex = stages.findIndex((s) => s.id === "out_for_delivery");
+        const stageMappings: Record<string, string> = {
+            "in_transit": "out_for_delivery",
+            "pending": "submitted",
+            "preparing": "processing",
+            "shipped": "out_for_delivery",
+        };
+
+        const mappedStage = stageMappings[normalizedStage];
+        if (mappedStage) {
+            currentIndex = stages.findIndex((s) => s.id === mappedStage);
         } else {
-            currentIndex = 0;
+            currentIndex = 0; // Default to first stage
         }
     }
 
+    const progressPercentage = (currentIndex / (stages.length - 1)) * 100;
+
     return (
-        <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-zinc-900">Order Tracking</h3>
-                {estimatedDelivery && currentStage !== "delivered" && (
-                    <div className="text-right">
-                        <p className="text-xs text-zinc-500">Estimated Delivery</p>
-                        <p className="text-sm font-semibold text-zinc-900">{estimatedDelivery}</p>
+        <div className="w-full rounded-xl border-2 border-zinc-200 bg-white p-8 shadow-md mb-8" role="region" aria-label="Order progress tracker">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h3 className="text-2xl font-bold text-zinc-900">Order Status Tracker</h3>
+                    <p className="text-sm text-zinc-600 mt-1">Real-time tracking of your order</p>
+                </div>
+                {estimatedDelivery && normalizedStage !== "delivered" && (
+                    <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+                        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Estimated Delivery</p>
+                        <p className="text-xl font-bold text-blue-900">{estimatedDelivery}</p>
                     </div>
                 )}
             </div>
 
-            {/* Progress Bar */}
-            <div className="relative mb-8">
+            {/* Progress Bar with improved visibility */}
+            <div className="relative mb-12">
                 {/* Background Line */}
-                <div className="absolute left-0 top-5 h-1 w-full bg-zinc-200"></div>
+                <div className="absolute left-0 top-6 h-1.5 w-full bg-gradient-to-r from-zinc-200 to-zinc-300 rounded-full"></div>
 
-                {/* Progress Line */}
+                {/* Progress Line Animation */}
                 <div
-                    className="absolute left-0 top-5 h-1 bg-[var(--brand-red)] transition-all duration-500"
-                    style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
+                    className="absolute left-0 top-6 h-1.5 bg-gradient-to-r from-green-400 via-blue-500 to-[var(--brand-red)] rounded-full transition-all duration-700 shadow-md"
+                    style={{ width: `${progressPercentage}%` }}
                 ></div>
 
                 {/* Stage Indicators */}
-                <div className="relative flex justify-between">
+                <div className="relative flex justify-between px-2">
                     {stages.map((stage, index) => {
                         const Icon = stage.icon;
                         const isCompleted = index <= currentIndex;
                         const isCurrent = index === currentIndex;
 
                         return (
-                            <div key={stage.id} className="flex flex-col items-center" style={{ width: "20%" }}>
-                                {/* Circle */}
+                            <div key={stage.id} className="flex flex-col items-center flex-1">
+                                {/* Circle with enhanced styling */}
                                 <div
-                                    className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${isCompleted
-                                        ? "border-[var(--brand-red)] bg-[var(--brand-red)] text-white"
+                                    className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-full border-3 transition-all duration-300 shadow-lg ${isCompleted
+                                        ? isCurrent
+                                            ? "border-[var(--brand-red)] bg-[var(--brand-red)] text-white scale-125 shadow-xl"
+                                            : "border-green-500 bg-green-500 text-white"
                                         : "border-zinc-300 bg-white text-zinc-400"
-                                        } ${isCurrent ? "scale-110 shadow-lg" : ""}`}
+                                        }`}
                                 >
-                                    <Icon className="h-5 w-5" />
+                                    <Icon className="h-6 w-6" />
                                 </div>
 
                                 {/* Label */}
-                                <div className="mt-3 text-center">
+                                <div className="mt-4 text-center w-full">
                                     <p
-                                        className={`text-xs font-semibold ${isCompleted ? "text-zinc-900" : "text-zinc-500"
+                                        className={`text-sm font-bold transition-colors ${isCompleted ? "text-zinc-900" : "text-zinc-500"
                                             }`}
                                     >
                                         {stage.label}
                                     </p>
                                     {isCurrent && (
-                                        <p className="mt-1 text-xs text-zinc-600">{stage.description}</p>
+                                        <p className="mt-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full inline-block font-semibold">
+                                            {stage.description}
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -146,37 +149,50 @@ export default function OrderProgressTracker({
             </div>
 
             {/* Timeline Details */}
-            <div className="space-y-3 border-t border-zinc-200 pt-4">
+            <div className="space-y-3 border-t border-zinc-200 pt-6">
                 {orderDate && (
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-600">Order Placed</span>
-                        <span className="font-medium text-zinc-900">{orderDate}</span>
+                    <div className="flex items-center justify-between text-sm bg-zinc-50 p-3 rounded-lg">
+                        <span className="text-zinc-600 font-medium">📅 Order Placed</span>
+                        <span className="font-semibold text-zinc-900">{orderDate}</span>
                     </div>
                 )}
-                {currentStage === "delivered" && (
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-600">Delivered On</span>
-                        <span className="font-medium text-green-600">
+                {normalizedStage === "delivered" && (
+                    <div className="flex items-center justify-between text-sm bg-green-50 p-3 rounded-lg">
+                        <span className="text-green-600 font-medium">✅ Delivered On</span>
+                        <span className="font-semibold text-green-900">
                             {new Date().toLocaleDateString()}
                         </span>
                     </div>
                 )}
             </div>
 
-            {/* Status Message */}
-            <div className="mt-4 rounded-lg bg-blue-50 p-4">
-                <p className="text-sm font-medium text-blue-900">
-                    {currentStage === "delivered"
-                        ? "🎉 Your order has been delivered! Thank you for shopping with us."
-                        : currentStage === "out_for_delivery"
-                            ? "📦 Your order is out for delivery and will arrive today!"
-                            : currentStage === "processing"
-                                ? "⏳ We're carefully preparing your items for shipment."
-                                : currentStage === "confirmed"
-                                    ? "✅ Your order has been confirmed and will be processed soon."
-                                    : currentStage === "submitted"
-                                        ? "📝 Your order has been submitted and is awaiting confirmation."
-                                        : "✅ Your order has been confirmed and will be processed soon."}
+            {/* Enhanced Status Message */}
+            <div className="mt-6 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-5 border-l-4 border-blue-500">
+                <p className="text-sm font-semibold text-blue-900 flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">
+                        {currentStage === "delivered"
+                            ? "🎉"
+                            : currentStage === "out_for_delivery"
+                                ? "🚚"
+                                : currentStage === "processing"
+                                    ? "⏳"
+                                    : currentStage === "confirmed"
+                                        ? "✅"
+                                        : "📝"}
+                    </span>
+                    <span>
+                        {currentStage === "delivered"
+                            ? "Your order has been delivered! Thank you for shopping with us."
+                            : currentStage === "out_for_delivery"
+                                ? "Your order is out for delivery and will arrive today!"
+                                : currentStage === "processing"
+                                    ? "We're carefully preparing your items for shipment."
+                                    : currentStage === "confirmed"
+                                        ? "Your order has been confirmed and will be processed soon."
+                                        : currentStage === "submitted"
+                                            ? "Your order has been submitted and is awaiting admin confirmation."
+                                            : "Your order is being processed."}
+                    </span>
                 </p>
             </div>
         </div>
