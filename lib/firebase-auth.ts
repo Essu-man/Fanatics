@@ -53,7 +53,7 @@ export const signUp = async (
         // Send email verification with custom action handler
         try {
             await sendEmailVerification(firebaseUser, {
-                url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/auth/action`,
+                url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cediman.com'}/auth/action`,
                 handleCodeInApp: false,
             });
         } catch (emailError) {
@@ -255,7 +255,7 @@ export const signIn = async (email: string, password: string) => {
 export const sendPasswordResetEmailToUser = async (email: string) => {
     try {
         // Get production URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cediman.com';
 
         // Send Firebase password reset email
         await sendPasswordResetEmail(auth, email, {
