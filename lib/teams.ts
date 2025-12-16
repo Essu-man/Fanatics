@@ -59,6 +59,7 @@ export const footballTeams: Team[] = [
     { id: "leipzig", name: "RB Leipzig", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/RB-Leipzig-Logo.png" },
     { id: "leverkusen", name: "Bayer Leverkusen", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Bayer-Leverkusen-Logo.png" },
     { id: "frankfurt", name: "Eintracht Frankfurt", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/Eintracht-Frankfurt-Logo.png" },
+    { id: "cologne", name: "FC Cologne", league: "Bundesliga", country: "Germany", logo: "https://logos-world.net/wp-content/uploads/2020/06/FC-Cologne-Logo.png" },
 
     // Ligue 1
     { id: "psg", name: "Paris Saint-Germain", league: "Ligue 1", country: "France", logo: "https://logos-world.net/wp-content/uploads/2020/06/Paris-Saint-Germain-Logo.png" },
