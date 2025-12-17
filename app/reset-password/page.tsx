@@ -26,8 +26,17 @@ function ResetPasswordContent() {
         const oobCode = searchParams.get('oobCode');
         const actionCode = code || oobCode;
 
+        console.log('ResetPasswordContent useEffect:', {
+            url: typeof window !== 'undefined' ? window.location.href : 'N/A',
+            code,
+            oobCode,
+            actionCode,
+            allParams: Array.from(searchParams.entries())
+        });
+
         if (!actionCode) {
             // If no code, redirect to forgot password
+            console.warn('No action code found, redirecting...');
             showToast("Invalid or expired reset link. Please request a new one.", "error");
             setTimeout(() => {
                 router.push("/forgot-password");

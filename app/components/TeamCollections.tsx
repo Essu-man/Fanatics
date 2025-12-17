@@ -20,25 +20,25 @@ export default function TeamCollections() {
             {
                 id: "real-madrid",
                 name: "Real Madrid",
-                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/1.jpeg",
+                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/RM.jpeg",
                 link: "/teams/real-madrid",
             },
             {
                 id: "barcelona",
                 name: "Barcelona",
-                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/2.jpeg",
+                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/Barca.jpeg",
                 link: "/teams/barcelona",
             },
             {
                 id: "bayern",
                 name: "Bayern Munich",
-                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/3.jpeg",
+                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/Bayern.jpeg",
                 link: "/teams/bayern",
             },
             {
                 id: "psg",
                 name: "Paris Saint Germain",
-                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/4.jpeg",
+                image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/psg.jpeg",
                 link: "/teams/psg",
             },
         ];

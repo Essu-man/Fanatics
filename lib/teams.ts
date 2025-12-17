@@ -72,8 +72,8 @@ export const footballTeams: Team[] = [
     { id: "ajax", name: "Ajax", league: "Eredivisie", country: "Netherlands", logo: "https://logos-world.net/wp-content/uploads/2020/06/Ajax-Logo.png" },
     { id: "porto", name: "Porto", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Porto-Logo.png" },
     { id: "benfica", name: "Benfica", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Benfica-Logo.png" },
-    { id: "celtic", name: "Celtic", league: "Scottish Premiership", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Celtic-Logo.png" },
-    { id: "rangers", name: "Rangers", league: "Scottish Premiership", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Rangers-Logo.png" },
+    { id: "celtic", name: "Celtic", league: "Scottish League", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Celtic-Logo.png" },
+    { id: "rangers", name: "Rangers", league: "Scottish League", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Rangers-Logo.png" },
 
     // Turkish
     { id: "galatasaray", name: "Galatasaray", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Galatasaray-Logo.png" },

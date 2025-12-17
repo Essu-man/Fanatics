@@ -7,7 +7,6 @@ import SportsNav from "../components/SportsNav";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import { TeamPageSkeleton } from "../components/ui/Skeleton";
-import { products } from "../../lib/products";
 import { footballTeams, basketballTeams } from "../../lib/teams";
 import type { Product } from "../../lib/products";
 import Link from "next/link";
@@ -25,16 +24,27 @@ function SearchContent() {
         if (query) {
             setLoading(true);
             const q = query.toLowerCase();
-            
-            const matchingProducts = products.filter(
-                (p) => p.name.toLowerCase().includes(q) || p.team?.toLowerCase().includes(q)
-            );
 
-            const allTeams = [...footballTeams, ...basketballTeams];
-            const matchingTeams = allTeams.filter((team) => team.name.toLowerCase().includes(q));
+            // Fetch real products from database
+            fetch("/api/admin/products")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.products) {
+                        const matchingProducts = data.products.filter(
+                            (p: Product) => p.name.toLowerCase().includes(q) || p.team?.toLowerCase().includes(q)
+                        );
 
-            setResults({ products: matchingProducts, teams: matchingTeams });
-            setLoading(false);
+                        const allTeams = [...footballTeams, ...basketballTeams];
+                        const matchingTeams = allTeams.filter((team) => team.name.toLowerCase().includes(q));
+
+                        setResults({ products: matchingProducts, teams: matchingTeams });
+                    }
+                    setLoading(false);
+                })
+                .catch(error => {
+                    console.error("Failed to fetch products:", error);
+                    setLoading(false);
+                });
         } else {
             setLoading(false);
         }

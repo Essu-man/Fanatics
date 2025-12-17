@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import cn from "../../lib/cn";
-import { products } from "../../lib/products";
+import type { Product } from "../../lib/products";
 import { footballTeams, basketballTeams } from "../../lib/teams";
 
 const trending = ["Black Stars", "Messi", "Real Madrid", "Chelsea", "PSG", "Man United"];
@@ -15,8 +15,29 @@ export default function SearchAutocomplete() {
 	const [query, setQuery] = useState("");
 	const [open, setOpen] = useState(false);
 	const [recent, setRecent] = useState<string[]>([]);
+	const [products, setProducts] = useState<Product[]>([]);
+	const [loadingProducts, setLoadingProducts] = useState(false);
 	const router = useRouter();
 	const containerRef = useRef<HTMLDivElement>(null);
+
+	// Fetch real products from Firestore
+	useEffect(() => {
+		const fetchProducts = async () => {
+			try {
+				setLoadingProducts(true);
+				const response = await fetch("/api/admin/products");
+				const data = await response.json();
+				if (data.success && data.products) {
+					setProducts(data.products);
+				}
+			} catch (error) {
+				console.error("Failed to fetch products:", error);
+			} finally {
+				setLoadingProducts(false);
+			}
+		};
+		fetchProducts();
+	}, []);
 
 	useEffect(() => {
 		try {
@@ -44,7 +65,7 @@ export default function SearchAutocomplete() {
 			.filter((team) => team.name.toLowerCase().includes(q))
 			.slice(0, 3);
 
-		// Search products
+		// Search products from real database
 		const matchingProducts = products
 			.filter((p) =>
 				p.name.toLowerCase().includes(q) ||
@@ -59,7 +80,7 @@ export default function SearchAutocomplete() {
 			.slice(0, 4);
 
 		return { teams: matchingTeams, products: matchingProducts, suggestions: matchingSuggestions };
-	}, [query, recent]);
+	}, [query, recent, products]);
 
 	function submit(value: string) {
 		const val = value.trim();
