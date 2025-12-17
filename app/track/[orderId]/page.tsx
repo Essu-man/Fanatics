@@ -80,7 +80,7 @@ export default function OrderTrackingPage() {
     }, { count: 0, total: 0 });
 
     const estimatedDelivery = new Date(order.orderDate);
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 4);
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 2);
 
     return (
         <div className="min-h-screen bg-zinc-50">

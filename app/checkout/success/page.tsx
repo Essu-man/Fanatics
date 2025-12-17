@@ -44,7 +44,7 @@ function SuccessContent() {
     // Calculate estimated delivery
     const orderDate = order ? new Date(order.orderDate) : new Date();
     const estimatedDelivery = new Date(orderDate);
-    estimatedDelivery.setDate(orderDate.getDate() + 4);
+    estimatedDelivery.setDate(orderDate.getDate() + 2);
 
     return (
         <div className="min-h-screen bg-zinc-50">

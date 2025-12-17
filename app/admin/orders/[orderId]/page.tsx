@@ -123,7 +123,7 @@ export default function AdminOrderDetailPage() {
 
     const orderDate = order.order_date || order.orderDate || new Date().toISOString();
     const estimatedDelivery = new Date(orderDate);
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 4);
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 2);
 
     const customerEmail = order.guestEmail || order.shipping?.email;
     const customerPhone = order.guestPhone || order.shipping?.phone;

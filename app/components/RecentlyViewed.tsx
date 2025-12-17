@@ -12,7 +12,7 @@ export default function RecentlyViewed() {
     useEffect(() => {
         try {
             const viewedIds = JSON.parse(localStorage.getItem("cediman:recentlyViewed") || "[]");
-            
+
             if (viewedIds.length === 0) {
                 setViewedProducts([]);
                 setLoading(false);
