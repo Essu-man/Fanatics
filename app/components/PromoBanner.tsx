@@ -115,8 +115,8 @@ export default function PromoBanner() {
                                 key={index}
                                 onClick={() => setCurrentSlide(index)}
                                 className={`transition-all duration-300 rounded-full ${index === currentSlide
-                                        ? "bg-orange-600 w-2.5 h-2.5 sm:w-3 sm:h-3"
-                                        : "bg-white/40 w-2 h-2 hover:bg-white/60"
+                                    ? "bg-orange-600 w-2.5 h-2.5 sm:w-3 sm:h-3"
+                                    : "bg-white/40 w-2 h-2 hover:bg-white/60"
                                     }`}
                                 aria-label={`Go to slide ${index + 1}`}
                             />
