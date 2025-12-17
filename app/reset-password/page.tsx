@@ -87,13 +87,13 @@ function ResetPasswordContent() {
                 return;
             }
 
-            setSuccess(true);
-            showToast("Password updated successfully!", "success");
+            // Success!
+            showToast("Password updated successfully! Redirecting to login...", "success");
 
-            // Redirect to login after 2 seconds
-            setTimeout(() => {
-                router.push("/login");
-            }, 2000);
+            // Force redirect to login page immediately as requested
+            // Using window.location to ensure a full navigation and avoid any client-side state issues
+            window.location.href = "/login";
+
         } catch (error: any) {
             console.error('Password reset error:', error);
             showToast(error.message || "An error occurred. Please try again.", "error");
@@ -101,38 +101,7 @@ function ResetPasswordContent() {
         }
     };
 
-    if (success) {
-        return (
-            <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
-                <div className="w-full max-w-md">
-                    <div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
-                        <div className="mb-8 text-center">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                                <CheckCircle className="h-8 w-8 text-green-600" />
-                            </div>
-                            <h1 className="text-3xl font-bold text-zinc-900">Password Reset!</h1>
-                            <p className="mt-2 text-sm text-zinc-600">
-                                Your password has been successfully updated.
-                            </p>
-                        </div>
-
-                        <div className="text-center">
-                            <p className="text-sm text-zinc-600 mb-6">
-                                Redirecting to login page...
-                            </p>
-                            <Link
-                                href="/login"
-                                className="inline-flex items-center gap-2 text-sm text-[var(--brand-red)] hover:underline"
-                            >
-                                Go to Sign In
-                                <ArrowLeft className="h-4 w-4 rotate-180" />
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // Note: Success UI block removed as we redirect immediately.
 
     return (
         <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">

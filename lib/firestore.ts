@@ -278,6 +278,7 @@ export interface Product {
     id: string;
     name: string;
     price: number;
+    salePrice?: number;
     stock: number;
     available: boolean;
     category: string;

@@ -254,122 +254,20 @@ export const signIn = async (email: string, password: string) => {
  */
 export const sendPasswordResetEmailToUser = async (email: string) => {
     try {
-        // Get production URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cediman.com';
-
-        // Send Firebase password reset email
-        await sendPasswordResetEmail(auth, email, {
-            url: `${baseUrl}/reset-password`,
-            handleCodeInApp: false,
+        // Call our custom API route which uses Firebase Admin to generate the link
+        // and SendGrid to send the custom HTML email
+        const response = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
         });
 
-        // Also send beautiful email via SendGrid with manual instructions
-        try {
-            const response = await fetch('/api/notifications/send-email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    to: email,
-                    subject: 'Reset Your Cediman Password',
-                    htmlBody: `
-                        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.6; max-width: 600px; margin: 0 auto;">
-                            <!-- Header -->
-                            <div style="background: linear-gradient(135deg, #c41e3a 0%, #a01630 100%); padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">Password Reset Request</h1>
-                            </div>
-                            
-                            <!-- Body -->
-                            <div style="background-color: #f9fafb; padding: 40px 20px; border-bottom: 1px solid #e5e7eb;">
-                                <p style="margin: 0 0 20px 0; font-size: 16px;">Hello,</p>
-                                
-                                <p style="margin: 0 0 20px 0; font-size: 15px; color: #4b5563;">
-                                    We received a request to reset your password for your Cediman account. Click the button below to create a new password:
-                                </p>
-                                
-                                <!-- CTA Button -->
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${baseUrl}/reset-password" 
-                                       style="display: inline-block; background: linear-gradient(135deg, #c41e3a 0%, #a01630 100%); color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(196, 30, 58, 0.3);">
-                                        Reset Your Password
-                                    </a>
-                                </div>
-                                
-                                <p style="margin: 20px 0; font-size: 14px; color: #6b7280; text-align: center;">
-                                    Or copy this link to your browser:
-                                </p>
-                                <p style="margin: 10px 0 30px 0; font-size: 12px; word-break: break-all; color: #7c3aed; background-color: #f3f4f6; padding: 10px; border-radius: 4px; border-left: 4px solid #7c3aed;">
-                                    ${baseUrl}/reset-password
-                                </p>
-                                
-                                <!-- Security Note -->
-                                <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                                    <p style="margin: 0; font-size: 14px; color: #166534;">
-                                        <strong>🔒 Security Tip:</strong> This link will expire in 24 hours. If you didn't request this, please ignore this email and your password will remain unchanged.
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <!-- Features -->
-                            <div style="background-color: #ffffff; padding: 30px 20px;">
-                                <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: 600; color: #1f2937;">Once you reset your password, you can:</p>
-                                <ul style="margin: 0; padding: 0; list-style: none;">
-                                    <li style="margin: 8px 0; font-size: 14px; color: #4b5563; padding-left: 20px; position: relative;">
-                                        <span style="position: absolute; left: 0;">✓</span> Log in with your new password
-                                    </li>
-                                    <li style="margin: 8px 0; font-size: 14px; color: #4b5563; padding-left: 20px; position: relative;">
-                                        <span style="position: absolute; left: 0;">✓</span> Browse our premium jersey collection
-                                    </li>
-                                    <li style="margin: 8px 0; font-size: 14px; color: #4b5563; padding-left: 20px; position: relative;">
-                                        <span style="position: absolute; left: 0;">✓</span> Track your orders and manage your account
-                                    </li>
-                                </ul>
-                            </div>
-                            
-                            <!-- Footer -->
-                            <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                                <p style="margin: 0 0 10px 0; font-size: 12px; color: #9ca3af;">
-                                    Need help? Contact us at <a href="mailto:support@cediman.com" style="color: #c41e3a; text-decoration: none;">support@cediman.com</a>
-                                </p>
-                                <p style="margin: 0; font-size: 11px; color: #d1d5db;">
-                                    © 2025 Cediman. All rights reserved.<br>
-                                    <a href="https://www.cediman.com" style="color: #c41e3a; text-decoration: none;">www.cediman.com</a>
-                                </p>
-                            </div>
-                        </div>
-                    `,
-                    textBody: `
-                        Password Reset Request
-                        
-                        Hello,
-                        
-                        We received a request to reset your password for your Cediman account. Visit this link to create a new password:
-                        
-                        ${baseUrl}/reset-password
-                        
-                        This link will expire in 24 hours.
-                        
-                        If you didn't request this, please ignore this email and your password will remain unchanged.
-                        
-                        Once you reset your password, you can:
-                        • Log in with your new password
-                        • Browse our premium jersey collection
-                        • Track your orders and manage your account
-                        
-                        Need help? Contact us at support@cediman.com
-                        
-                        © 2025 Cediman. All rights reserved.
-                        www.cediman.com
-                    `,
-                }),
-            });
+        const data = await response.json();
 
-            if (!response.ok) {
-                console.warn('SendGrid email sent but with warning:', await response.text());
-            }
-        } catch (sendgridError) {
-            console.warn('Failed to send email via SendGrid:', sendgridError);
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to send reset email');
         }
 
         return { success: true };

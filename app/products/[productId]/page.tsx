@@ -12,9 +12,7 @@ import ProductRecommendations from "../../components/ProductRecommendations";
 import { useToast } from "../../components/ui/ToastContainer";
 import { useCart } from "../../providers/CartProvider";
 import { useWishlist } from "../../providers/WishlistProvider";
-import type { Product } from "../../../lib/products";
-import { products } from "../../../lib/products";
-import { generateTeamProducts } from "../../../lib/teamProducts";
+import type { Product } from "../../../lib/firestore";
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
@@ -43,17 +41,6 @@ export default function ProductDetailPage() {
 
     useEffect(() => {
         setLoading(true);
-        // First try to find product in local products array
-        const foundProduct = products.find((p) => p.id === productId);
-
-        if (foundProduct) {
-            setProduct(foundProduct);
-            setSelectedImage(foundProduct.images?.[0] || "");
-            setSelectedImageIndex(0);
-            setSelectedColor(foundProduct.colors?.[0]?.id || null);
-            setLoading(false);
-            return;
-        }
 
         // Try to fetch from database via API
         fetch(`/api/products/${productId}`)

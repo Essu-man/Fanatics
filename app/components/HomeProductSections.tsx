@@ -18,63 +18,6 @@ const isBasketballLeague = (league: string | undefined): boolean => {
     return basketballLeagues.has(league);
 };
 
-// Helper function to generate 2 products per team
-const generateTeamProducts = (teams: typeof footballTeams | typeof basketballTeams, basePrice: number = 120): Product[] => {
-    const products: Product[] = [];
-    const imageUrls = [
-        "https://images.unsplash.com/photo-1637089760728-0707413a1a03?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1616124619460-ff4ed8f4683c?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=500&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1565877302143-786477b33d82?w=500&h=600&fit=crop",
-    ];
-
-    teams.forEach((team, index) => {
-        const imageIndex1 = index % imageUrls.length;
-        const imageIndex2 = (index + 1) % imageUrls.length;
-
-        // Product 1: Home Jersey
-        products.push({
-            id: `${team.id}-home`,
-            name: `${team.name} Home Jersey`,
-            team: team.name,
-            price: basePrice + (index % 5) * 10,
-            images: [imageUrls[imageIndex1]],
-            colors: [
-                { id: "primary", name: "Primary", hex: "#000000" },
-            ],
-        });
-
-        // Product 2: Away Jersey
-        products.push({
-            id: `${team.id}-away`,
-            name: `${team.name} Away Jersey`,
-            team: team.name,
-            price: basePrice + (index % 5) * 10 + 15,
-            images: [imageUrls[imageIndex2]],
-            colors: [
-                { id: "secondary", name: "Secondary", hex: "#FFFFFF" },
-            ],
-        });
-    });
-
-    return products;
-};
-
-// Generate fallback products: 2 per team
-const fallbackFootballProducts: Product[] = generateTeamProducts(
-    footballTeams.slice(0, 20), // Top 20 football teams = 40 products
-    120
-);
-
-const fallbackBasketballProducts: Product[] = generateTeamProducts(
-    basketballTeams.slice(0, 15), // Top 15 basketball teams = 30 products
-    150
-);
-
 function ProductCarousel({ products }: { products: Product[] }) {
     const [scrollPosition, setScrollPosition] = useState(0);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -268,33 +211,16 @@ export default function HomeProductSections() {
                         return false;
                     });
 
-                    // Debug logging
-                    console.log("Total products:", allProducts.length);
-                    console.log("Football products found:", football.length);
-                    console.log("Basketball products found:", basketball.length);
-                    if (allProducts.length > 0) {
-                        console.log("Sample product:", {
-                            id: allProducts[0].id,
-                            name: allProducts[0].name,
-                            league: allProducts[0].league,
-                            teamId: allProducts[0].teamId,
-                            team: allProducts[0].team
-                        });
-                    }
-
-                    // Use real products if available, otherwise fallback
-                    setFootballProducts(football.length > 0 ? football.slice(0, 8) : fallbackFootballProducts);
-                    setBasketballProducts(basketball.length > 0 ? basketball.slice(0, 8) : fallbackBasketballProducts);
+                    setFootballProducts(football.slice(0, 8));
+                    setBasketballProducts(basketball.slice(0, 8));
                 } else {
-                    // Use fallback products if API fails
-                    setFootballProducts(fallbackFootballProducts);
-                    setBasketballProducts(fallbackBasketballProducts);
+                    setFootballProducts([]);
+                    setBasketballProducts([]);
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
-                // Use fallback products on error
-                setFootballProducts(fallbackFootballProducts);
-                setBasketballProducts(fallbackBasketballProducts);
+                setFootballProducts([]);
+                setBasketballProducts([]);
             } finally {
                 setLoading(false);
             }
@@ -350,4 +276,3 @@ export default function HomeProductSections() {
         </>
     );
 }
-
