@@ -15,6 +15,8 @@ export type Product = {
         hex: string;
         image?: string;
     }>;
+    // available sizes
+    sizes?: string[];
     // inventory management
     stock?: number;
     available?: boolean;

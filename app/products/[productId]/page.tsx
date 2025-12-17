@@ -14,8 +14,6 @@ import { useCart } from "../../providers/CartProvider";
 import { useWishlist } from "../../providers/WishlistProvider";
 import type { Product } from "../../../lib/firestore";
 
-const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
 export default function ProductDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -29,7 +27,7 @@ export default function ProductDetailPage() {
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
-    const [selectedSize, setSelectedSize] = useState<string>("M");
+    const [selectedSize, setSelectedSize] = useState<string>("");
     const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [quantity, setQuantity] = useState(1);
     const [imageZoom, setImageZoom] = useState(false);
@@ -51,6 +49,10 @@ export default function ProductDetailPage() {
                     setSelectedImage(data.product.images?.[0] || "");
                     setSelectedImageIndex(0);
                     setSelectedColor(data.product.colors?.[0]?.id || null);
+                    // Set default size from product's available sizes
+                    if (data.product.sizes && data.product.sizes.length > 0) {
+                        setSelectedSize(data.product.sizes[0]);
+                    }
                     setLoading(false);
                 } else {
                     // Fallback: Try to fetch from team products API
@@ -66,6 +68,10 @@ export default function ProductDetailPage() {
                                         setSelectedImage(teamProduct.images?.[0] || "");
                                         setSelectedImageIndex(0);
                                         setSelectedColor(teamProduct.colors?.[0]?.id || null);
+                                        // Set default size from product's available sizes
+                                        if (teamProduct.sizes && teamProduct.sizes.length > 0) {
+                                            setSelectedSize(teamProduct.sizes[0]);
+                                        }
                                         setLoading(false);
                                     } else {
                                         setProduct(null);
@@ -381,25 +387,27 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Size Selection */}
-                        <div className="mb-6">
-                            <label className="mb-2 block text-sm font-medium text-zinc-900">
-                                Size: {selectedSize}
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {sizes.map((size) => (
-                                    <button
-                                        key={size}
-                                        onClick={() => setSelectedSize(size)}
-                                        className={`h-10 w-10 rounded-md border-2 text-sm font-medium transition-all ${selectedSize === size
-                                            ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
-                                            : "border-zinc-200 hover:border-zinc-300"
-                                            }`}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
+                        {product.sizes && product.sizes.length > 0 && (
+                            <div className="mb-6">
+                                <label className="mb-2 block text-sm font-medium text-zinc-900">
+                                    Size: {selectedSize}
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {product.sizes.map((size) => (
+                                        <button
+                                            key={size}
+                                            onClick={() => setSelectedSize(size)}
+                                            className={`h-10 w-10 rounded-md border-2 text-sm font-medium transition-all ${selectedSize === size
+                                                ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
+                                                : "border-zinc-200 hover:border-zinc-300"
+                                                }`}
+                                        >
+                                            {size}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Jersey Customization - Show for all products */}
                         <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-4 sm:p-5">

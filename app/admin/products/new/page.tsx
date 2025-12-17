@@ -120,7 +120,18 @@ export default function AdminNewProductPage() {
     const [colors, setColors] = useState<Array<{ id: string; name: string; hex: string }>>([]);
     const [newColorName, setNewColorName] = useState("");
     const [newColorHex, setNewColorHex] = useState("#000000");
+    const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
     const [customTeams, setCustomTeams] = useState<Team[]>([]);
+
+    const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+
+    const toggleSize = (size: string) => {
+        setSelectedSizes((prev) =>
+            prev.includes(size)
+                ? prev.filter((s) => s !== size)
+                : [...prev, size]
+        );
+    };
 
     useEffect(() => {
         // Fetch custom teams
@@ -270,8 +281,8 @@ export default function AdminNewProductPage() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!name || !teamId || !price || imageFiles.length === 0) {
-            showToast("Name, price, team and at least one image are required", "error");
+        if (!name || !teamId || !price || imageFiles.length === 0 || selectedSizes.length === 0) {
+            showToast("Name, price, team, at least one image, and at least one size are required", "error");
             return;
         }
 
@@ -313,6 +324,7 @@ export default function AdminNewProductPage() {
                     description,
                     images: uploadedImages,
                     colors: colors.length > 0 ? colors : undefined,
+                    sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
                 }),
             });
 
@@ -435,10 +447,37 @@ export default function AdminNewProductPage() {
                         </div>
                     </div>
 
+                    {/* Available Sizes */}
+                    <div className="space-y-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4">
+                        <label className="text-sm font-semibold text-zinc-900">
+                            Available Sizes * (Select at least one)
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                            {AVAILABLE_SIZES.map((size) => (
+                                <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => toggleSize(size)}
+                                    className={`py-2 px-3 rounded-lg text-sm font-bold transition-all text-center ${selectedSizes.includes(size)
+                                        ? "bg-orange-600 text-white border-2 border-orange-700 shadow-md hover:shadow-lg"
+                                        : "bg-white text-zinc-900 border-2 border-zinc-200 hover:border-orange-400 hover:shadow-sm"
+                                        }`}
+                                >
+                                    {size}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedSizes.length > 0 && (
+                            <div className="text-sm font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
+                                ✓ Selected ({selectedSizes.length}): {selectedSizes.join(", ")}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Color Options */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-700">
-                            Available Colors (Optional)
+                            Available Colors * (Required)
                         </label>
                         <p className="text-xs text-zinc-500 mb-3">
                             Add color variants that will appear on the product card

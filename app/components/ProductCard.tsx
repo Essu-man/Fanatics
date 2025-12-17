@@ -22,16 +22,35 @@ export default function ProductCard({ product }: { product: PType }) {
     const [isAdded, setIsAdded] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
-    const [selectedSize, setSelectedSize] = useState<string>("M");
+    const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] ?? "");
     const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [customization, setCustomization] = useState({
         playerName: "",
         playerNumber: "",
     });
+    const [modalProduct, setModalProduct] = useState<PType | null>(null);
 
-    const images = product.images || [];
+    // Fetch full product details for modal when opened
+    useEffect(() => {
+        if (open) {
+            fetch(`/api/products/${product.id}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && data.product) {
+                        setModalProduct(data.product);
+                        // Set default size and color from fetched product
+                        setSelectedSize(data.product.sizes?.[0] ?? "");
+                        setSelectedColor(data.product.colors?.[0]?.id ?? null);
+                    }
+                });
+        }
+    }, [open, product.id]);
+
+    // Use modalProduct for modal rendering, fallback to prop product
+    const modalData = modalProduct || product;
+    const images = modalData.images || [];
     const selectedImage = images[selectedImageIndex];
-    const sizes = ["S", "M", "L", "XL"];
+    const sizes = Array.isArray(modalData.sizes) && modalData.sizes.length > 0 ? modalData.sizes : [];
 
     // Check if product is out of stock
     const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
