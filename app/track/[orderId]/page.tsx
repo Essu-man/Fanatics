@@ -105,8 +105,8 @@ export default function OrderTrackingPage() {
                 <div className="mb-6">
                     <OrderProgressTracker
                         currentStage={order.status}
-                        orderDate={new Date(order.orderDate).toLocaleDateString()}
-                        estimatedDelivery={estimatedDelivery.toLocaleDateString()}
+                        orderDate={new Date(order.orderDate).toLocaleDateString('en-GB')}
+                        estimatedDelivery={estimatedDelivery.toLocaleDateString('en-GB')}
                     />
                 </div>
 

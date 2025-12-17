@@ -4,22 +4,44 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductCard from "./ProductCard";
 import type { Product } from "../../lib/products";
-import { products } from "../../lib/products";
 
 export default function RecentlyViewed() {
     const [viewedProducts, setViewedProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         try {
             const viewedIds = JSON.parse(localStorage.getItem("cediman:recentlyViewed") || "[]");
-            const viewed = products.filter((p) => viewedIds.includes(p.id)).slice(0, 4);
-            setViewedProducts(viewed);
+            
+            if (viewedIds.length === 0) {
+                setViewedProducts([]);
+                setLoading(false);
+                return;
+            }
+
+            // Fetch real products from database
+            fetch("/api/admin/products")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.products) {
+                        const viewed = data.products
+                            .filter((p: Product) => viewedIds.includes(p.id))
+                            .slice(0, 4);
+                        setViewedProducts(viewed);
+                    }
+                    setLoading(false);
+                })
+                .catch(error => {
+                    console.error("Failed to fetch products:", error);
+                    setLoading(false);
+                });
         } catch (e) {
             setViewedProducts([]);
+            setLoading(false);
         }
     }, []);
 
-    if (viewedProducts.length === 0) return null;
+    if (viewedProducts.length === 0 || loading) return null;
 
     return (
         <section className="bg-white py-12">

@@ -160,7 +160,7 @@ export default function OrderProgressTracker({
                     <div className="flex items-center justify-between text-sm bg-green-50 p-3 rounded-lg">
                         <span className="text-green-600 font-medium">✅ Delivered On</span>
                         <span className="font-semibold text-green-900">
-                            {new Date().toLocaleDateString()}
+                            {new Date().toLocaleDateString('en-GB')}
                         </span>
                     </div>
                 )}

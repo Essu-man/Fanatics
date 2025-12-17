@@ -67,8 +67,8 @@ function SuccessContent() {
                 <div className="mb-6">
                     <OrderProgressTracker
                         currentStage="confirmed"
-                        orderDate={orderDate.toLocaleDateString()}
-                        estimatedDelivery={estimatedDelivery.toLocaleDateString()}
+                        orderDate={orderDate.toLocaleDateString('en-GB')}
+                        estimatedDelivery={estimatedDelivery.toLocaleDateString('en-GB')}
                     />
                 </div>
 

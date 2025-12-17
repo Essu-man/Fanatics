@@ -178,8 +178,8 @@ export default function AdminOrderDetailPage() {
                         </div>
                         <OrderProgressTracker
                             currentStage={order.status as any}
-                            orderDate={new Date(orderDate).toLocaleDateString()}
-                            estimatedDelivery={estimatedDelivery.toLocaleDateString()}
+                            orderDate={new Date(orderDate).toLocaleDateString('en-GB')}
+                            estimatedDelivery={estimatedDelivery.toLocaleDateString('en-GB')}
                         />
                     </div>
 

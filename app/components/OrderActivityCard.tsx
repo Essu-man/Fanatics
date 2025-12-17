@@ -125,7 +125,7 @@ export default function OrderActivityCard({ order }: OrderActivityCardProps) {
                         <div>
                             <h3 className="font-bold text-zinc-900">Order #{order.id.slice(0, 8)}</h3>
                             <p className="text-xs text-zinc-600">
-                                {orderDate.toLocaleDateString('en-US', {
+                                {orderDate.toLocaleDateString('en-GB', {
                                     month: 'short',
                                     day: 'numeric',
                                     hour: '2-digit',

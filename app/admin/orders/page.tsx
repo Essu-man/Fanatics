@@ -638,13 +638,13 @@ export default function AdminOrdersPage() {
                                         <td className="p-4">
                                             <div>
                                                 <p className="font-medium text-zinc-900">
-                                                    {orderDate.toLocaleDateString("en-US", {
+                                                    {orderDate.toLocaleDateString("en-GB", {
                                                         month: "short",
                                                         day: "numeric",
                                                     })}
                                                 </p>
                                                 <p className="text-xs text-zinc-500">
-                                                    {orderDate.toLocaleTimeString("en-US", {
+                                                    {orderDate.toLocaleTimeString("en-GB", {
                                                         hour: "2-digit",
                                                         minute: "2-digit",
                                                     })}

@@ -141,7 +141,7 @@ export default function OrdersPage() {
                                     <div>
                                         <h3 className="text-lg font-bold text-zinc-900">{order.id}</h3>
                                         <p className="mt-1 text-sm text-zinc-600">
-                                            Placed on {new Date(order.orderDate).toLocaleDateString()}
+                                            Placed on {new Date(order.orderDate).toLocaleDateString('en-GB')}
                                         </p>
                                         <p className="mt-1 text-sm">
                                             <span className="font-medium text-zinc-900">

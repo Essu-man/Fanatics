@@ -219,7 +219,7 @@ export default function ComplaintsPage() {
                                     </div>
                                     <p className="mb-3 text-sm text-zinc-600">{complaint.description}</p>
                                     <p className="text-xs text-zinc-500">
-                                        Submitted: {new Date(complaint.created_at).toLocaleDateString()}
+                                        Submitted: {new Date(complaint.created_at).toLocaleDateString('en-GB')}
                                     </p>
                                     {complaint.responses && complaint.responses.length > 0 && (
                                         <div className="mt-4 border-t border-zinc-100 pt-4">

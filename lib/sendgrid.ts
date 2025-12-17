@@ -152,11 +152,11 @@ export const getOrderConfirmationEmail = (
 
   const safeName = escapeHtml(customerName);
   const safeOrderId = escapeHtml(orderId);
-  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
+  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  }) : new Date().toLocaleDateString('en-US', {
+  }) : new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -440,11 +440,11 @@ export const getOrderStatusEmail = (
   const safeOrderId = escapeHtml(orderId);
   const safeTitle = escapeHtml(statusTitles[status] || "Order Update");
   const safeMessage = escapeHtml(statusMessages[status] || "Your order status has been updated.");
-  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-US', {
+  const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  }) : new Date().toLocaleDateString('en-US', {
+  }) : new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
