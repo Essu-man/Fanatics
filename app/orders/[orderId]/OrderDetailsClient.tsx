@@ -57,6 +57,8 @@ interface Order {
         city: string;
         region: string;
         country: string;
+        area?: string;
+        landmark?: string;
     };
     subtotal: number;
     shippingCost: number;
@@ -85,11 +87,27 @@ export default function OrderDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [confirmingDelivery, setConfirmingDelivery] = useState(false);
 
+    // Delivery price state
+    const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
+    const [deliveryLocation, setDeliveryLocation] = useState<string>("");
+
     useEffect(() => {
         if (orderId) {
             fetchOrder();
         }
     }, [orderId]);
+
+    useEffect(() => {
+        if (order && (order.shipping.area || order.shipping.city)) {
+            const location = order.shipping.area || order.shipping.city;
+            setDeliveryLocation(location);
+            fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) setDeliveryPrice(data.price);
+                });
+        }
+    }, [order]);
 
     const fetchOrder = async () => {
         try {
@@ -356,13 +374,23 @@ export default function OrderDetailsPage() {
                                 <MapPin className="h-5 w-5 text-[var(--brand-red)]" />
                                 <h2 className="text-lg font-bold text-zinc-900">Delivery Address</h2>
                             </div>
-                            <div className="space-y-1 text-sm text-zinc-700">
-                                <p className="font-semibold">{order.shipping.firstName} {order.shipping.lastName}</p>
-                                <p>{order.shipping.address}</p>
-                                <p>{order.shipping.city}, {order.shipping.region}</p>
-                                <p>{order.shipping.country}</p>
-                                <p className="pt-2 text-zinc-600">{order.shipping.phone}</p>
-                            </div>
+                            {/* Clean Delivery Address with Area/City and Landmark, formatted as requested */}
+                            {(() => {
+                                const addr = order.shipping;
+                                return (
+                                    <div className="space-y-1 text-sm text-zinc-700">
+                                        <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim()}</p>
+                                        {/* Only show Area/City once, prefer addr.area or deliveryLocation */}
+                                        {(addr.area || deliveryLocation || addr.city) && (
+                                            <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation || addr.city} {deliveryPrice !== null && (addr.area || deliveryLocation || addr.city) && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
+                                        )}
+                                        {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
+                                        {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}
+                                        {addr.country && <p><span className="font-semibold">Country:</span> {addr.country}</p>}
+                                        {addr.phone && <p className="pt-2 text-zinc-600"><span className="font-semibold">Phone Number:</span> {addr.phone}</p>}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

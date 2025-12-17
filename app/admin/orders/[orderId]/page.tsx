@@ -7,6 +7,7 @@ import { ArrowLeft, Package, Mail, Phone, MapPin, CreditCard, Clock, CheckCircle
 import OrderStatusUpdater from "../../../components/admin/OrderStatusUpdater";
 import OrderProgressTracker from "../../../components/OrderProgressTracker";
 import DeliveryPersonModal, { type DeliveryPersonInfo } from "../../../components/DeliveryPersonModal";
+import DeleteOrderModal from "../../../components/DeleteOrderModal";
 
 type Order = {
     id: string;
@@ -37,6 +38,11 @@ export default function AdminOrderDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // Delivery price state
+    const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
+    const [deliveryLocation, setDeliveryLocation] = useState<string>("");
 
     const fetchOrder = async () => {
         try {
@@ -85,6 +91,19 @@ export default function AdminOrderDetailPage() {
             console.error("Failed to update status:", error);
         }
     };
+
+    // Fetch delivery price when order loads
+    useEffect(() => {
+        if (order && order.shipping && (order.shipping.area || order.shipping.city)) {
+            const location = order.shipping.area || order.shipping.city;
+            setDeliveryLocation(location);
+            fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) setDeliveryPrice(data.price);
+                });
+        }
+    }, [order]);
 
     useEffect(() => {
         if (orderId) {
@@ -323,14 +342,23 @@ export default function AdminOrderDetailPage() {
                             <div className="flex items-start gap-2 text-sm">
                                 <MapPin className="mt-0.5 h-4 w-4 text-zinc-400" />
                                 <div>
-                                    <p className="font-medium text-zinc-900">
-                                        {order.shipping.firstName} {order.shipping.lastName}
-                                    </p>
-                                    <p className="text-zinc-600">{order.shipping.address}</p>
-                                    <p className="text-zinc-600">
-                                        {order.shipping.city}, {order.shipping.state} {order.shipping.zipCode}
-                                    </p>
-                                    <p className="text-zinc-600">{order.shipping.country}</p>
+                                    {/* Clean Shipping Address with Area/City and Landmark, formatted as requested */}
+                                    {(() => {
+                                        const addr = order.shipping;
+                                        return (
+                                            <div className="space-y-1 text-sm text-zinc-700">
+                                                <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim()}</p>
+                                                {/* Only show Area/City once, prefer addr.area or deliveryLocation */}
+                                                {(addr.area || deliveryLocation) && (
+                                                    <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation} {deliveryPrice !== null && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
+                                                )}
+                                                {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
+                                                {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}
+                                                {addr.country && <p><span className="font-semibold">Country:</span> {addr.country}</p>}
+                                                {addr.phone && <p className="pt-2 text-zinc-600"><span className="font-semibold">Phone Number:</span> {addr.phone}</p>}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -410,6 +438,18 @@ export default function AdminOrderDetailPage() {
                 onSubmit={handleDeliveryPersonAssignment}
                 orderId={order.id}
                 isUpdating={false}
+            />
+
+            {/* Delete Order Modal */}
+            <DeleteOrderModal
+                open={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                orderId={order.id}
+                onDelete={async () => {
+                    setShowDeleteModal(false);
+                    // Optionally, you can add a callback here to refresh the order list or redirect
+                }}
+                loading={false}
             />
         </div>
     );

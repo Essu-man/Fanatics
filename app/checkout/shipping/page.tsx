@@ -142,11 +142,18 @@ export default function CheckoutShippingPage() {
         }
     };
 
+    // When saving shipping info, always set city to selected town
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Always set city to selected town for consistency
+        const shippingData = {
+            ...formData,
+            city: formData.town || formData.city,
+        };
+
         // Store shipping info and delivery price in sessionStorage
-        sessionStorage.setItem("checkoutShipping", JSON.stringify(formData));
+        sessionStorage.setItem("checkoutShipping", JSON.stringify(shippingData));
         sessionStorage.setItem("deliveryPrice", JSON.stringify({
             price: deliveryPrice?.price || 0,
             location: formData.town,
