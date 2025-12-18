@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Heart, Share2, ZoomIn, Plus, Minus, ChevronRight, X } from "lucide-react";
+import Breadcrumb from "../../components/Breadcrumb";
 import Header from "../../components/Header";
 import SportsNav from "../../components/SportsNav";
 import Footer from "../../components/Footer";
@@ -210,28 +211,11 @@ export default function ProductDetailPage() {
             <SportsNav />
             <div className="mx-auto max-w-7xl px-6 py-12">
                 {/* Breadcrumb */}
-                <div className="mb-6 flex items-center gap-2 text-sm">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-1 text-zinc-600 hover:text-[var(--brand-red)] transition-colors"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span>Back</span>
-                    </button>
-                    <span className="text-zinc-400">/</span>
-                    <Link href="/" className="text-blue-600 hover:text-blue-800 underline">
-                        Home
-                    </Link>
-                    <span className="text-zinc-400">/</span>
-                    {product.team && (
-                        <>
-                            <Link href={`/teams/${product.team.toLowerCase().replace(/\s+/g, "-")}`} className="text-blue-600 hover:text-blue-800 underline">
-                                {product.team}
-                            </Link>
-                            <span className="text-zinc-400">/</span>
-                        </>
-                    )}
-                    <span className="text-zinc-900">{product.name}</span>
+                <div className="mb-6">
+                    <Breadcrumb
+                        league={product.league ? { id: product.league.toLowerCase().replace(/\s+/g, "-"), name: product.league } : undefined}
+                        team={product.team ? { id: product.team.toLowerCase().replace(/\s+/g, "-"), name: product.team } : undefined}
+                    />
                 </div>
 
                 {/* Product Details */}

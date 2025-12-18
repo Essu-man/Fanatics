@@ -29,6 +29,8 @@ export default function AdminEditProductPage() {
     const [price, setPrice] = useState("");
     const [stock, setStock] = useState("25");
     const [description, setDescription] = useState("");
+    const [sizes, setSizes] = useState<string[]>([]);
+    const allSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -69,6 +71,7 @@ export default function AdminEditProductPage() {
                 setExistingImages(product.images || []);
                 setPreviewUrls(product.images || []);
                 setColors(product.colors || []);
+                setSizes(product.sizes || []);
             } catch (error) {
                 console.error("Error fetching product:", error);
                 showToast("Failed to load product", "error");
@@ -248,6 +251,7 @@ export default function AdminEditProductPage() {
                     description,
                     images: uploadedImages,
                     colors: colors.length > 0 ? colors : undefined,
+                    sizes: sizes.length > 0 ? sizes : undefined,
                 }),
             });
 
@@ -391,6 +395,25 @@ export default function AdminEditProductPage() {
                     </div>
 
                     {/* Color Options */}
+                    {/* Sizes Selection */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-zinc-700">Available Sizes</label>
+                        <div className="flex flex-wrap gap-2">
+                            {allSizes.map((size) => (
+                                <button
+                                    type="button"
+                                    key={size}
+                                    className={`px-3 py-1 rounded-lg border text-sm font-medium transition-colors ${sizes.includes(size) ? 'bg-[var(--brand-red)] text-white border-[var(--brand-red)]' : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'}`}
+                                    onClick={() => setSizes(sizes.includes(size) ? sizes.filter(s => s !== size) : [...sizes, size])}
+                                >
+                                    {size}
+                                </button>
+                            ))}
+                        </div>
+                        {sizes.length > 0 && (
+                            <div className="text-xs text-zinc-500 mt-1">Selected: {sizes.join(', ')}</div>
+                        )}
+                    </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-700">
                             Available Colors (Optional)

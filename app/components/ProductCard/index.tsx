@@ -122,6 +122,16 @@ export default function ProductCard({ product }: { product: PType }) {
                         ))}
                     </div>
                 )}
+                {/* Sizes */}
+                {product.sizes && product.sizes.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {product.sizes.map((size) => (
+                            <span key={size} className="px-2 py-0.5 rounded bg-zinc-100 text-xs font-semibold text-zinc-700 border border-zinc-200">
+                                {size}
+                            </span>
+                        ))}
+                    </div>
+                )}
 
                 {/* Add to Cart */}
                 {((product as any).stock !== undefined && (product as any).stock === 0) ||
@@ -220,6 +230,21 @@ export default function ProductCard({ product }: { product: PType }) {
                                                 {color.name}
                                             </span>
                                         </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {/* Sizes */}
+                        {product.sizes && product.sizes.length > 0 && (
+                            <div className="mt-6">
+                                <h3 className="text-sm font-medium text-zinc-900">
+                                    Available Sizes
+                                </h3>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {product.sizes.map((size) => (
+                                        <span key={size} className="px-2 py-0.5 rounded bg-zinc-100 text-xs font-semibold text-zinc-700 border border-zinc-200">
+                                            {size}
+                                        </span>
                                     ))}
                                 </div>
                             </div>
