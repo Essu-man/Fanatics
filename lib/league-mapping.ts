@@ -27,13 +27,18 @@ export const LEAGUE_NAME_MAP: Record<string, string[]> = {
     // African leagues
     "Ghana premier league": ["Ghana Premier League", "Ghana", "GPL"],
 
+    // Portuguese leagues
+    "Portuguese Liga": ["Portuguese Liga", "Primeira Liga", "Portugal", "PORTUGAL"],
+
+
     // International
     "International": ["International", "International Teams", "International Clubs"],
 
     // Turkish and other Rest of World leagues
     "Others": [
-        "Other", "Unknown", "Miscellaneous", "Süper Lig", "Super Lig", "Turkey", "Turkish", "Scottish League", "Scottish Premiership", "Primeira Liga", "Portugal", "Eredivisie", "Dutch", "Netherlands"
+        "Other", "Unknown", "Miscellaneous", "Süper Lig", "Super Lig", "Turkey", "Turkish", "Scottish League", "Scottish Premiership", "Eredivisie", "Dutch", "Netherlands"
     ],
+
 };
 
 /**
