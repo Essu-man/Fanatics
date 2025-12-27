@@ -26,6 +26,8 @@ const footballTeams = [
     { id: "luton", name: "Luton Town", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Luton-Town-Logo.png" },
     { id: "burnley", name: "Burnley", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Burnley-Logo.png" },
     { id: "sheffield", name: "Sheffield United", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Sheffield-United-Logo.png" },
+    { id: "leeds-united", name: "Leeds United", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Leeds-United-Logo.png" },
+
 
     // La Liga
     { id: "real-madrid", name: "Real Madrid", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Real-Madrid-Logo.png" },

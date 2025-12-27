@@ -31,7 +31,7 @@ const deliveryPrices = [
     { location: "Osu", price: 30 },
     { location: "Labone", price: 30 },
     { location: "Airport Residential Area", price: 35 },
-    { location: "Cantonments", price: 35 },
+    { location: "Cantonment", price: 40 },
     { location: "East Legon", price: 40 },
     { location: "North Legon", price: 45 },
     { location: "West Legon", price: 45 },

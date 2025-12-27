@@ -30,8 +30,10 @@ export const LEAGUE_NAME_MAP: Record<string, string[]> = {
     // International
     "International": ["International", "International Teams", "International Clubs"],
 
-    // Catch-all
-    "Others": ["Other", "Unknown", "Miscellaneous"],
+    // Turkish and other Rest of World leagues
+    "Others": [
+        "Other", "Unknown", "Miscellaneous", "Süper Lig", "Super Lig", "Turkey", "Turkish", "Scottish League", "Scottish Premiership", "Primeira Liga", "Portugal", "Eredivisie", "Dutch", "Netherlands"
+    ],
 };
 
 /**
@@ -93,9 +95,21 @@ export function leaguesMatch(teamLeague: string, customLeagueName: string): bool
     }
 
     // 3. Fallback to partial match (one contains the other)
+    // Only allow if not a generic "Premier League" confusion
+    const isGenericEPL = normalized1 === "premier league" || normalized1 === "epl" || normalized1 === "premier";
+    const isGenericGhana = normalized1 === "ghana premier league" || normalized1 === "gpl";
+
     if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+        // Prevent "Premier League" from matching strictly "Ghana Premier League" and vice versa
+        if ((normalized1.includes("premier league") && normalized2.includes("premier league"))) {
+            // If both contain "premier league", they must have the same context (e.g. both "ghana" or both not "ghana")
+            const hasGhana1 = normalized1.includes("ghana");
+            const hasGhana2 = normalized2.includes("ghana");
+            if (hasGhana1 !== hasGhana2) return false;
+        }
         return true;
     }
+
 
     return false;
 }

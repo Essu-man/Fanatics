@@ -30,6 +30,9 @@ export const footballTeams: Team[] = [
     { id: "luton", name: "Luton Town", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Luton-Town-Logo.png" },
     { id: "burnley", name: "Burnley", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Burnley-Logo.png" },
     { id: "sheffield", name: "Sheffield United", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Sheffield-United-Logo.png" },
+    { id: "leeds-united", name: "Leeds United", league: "Premier League", country: "England", logo: "https://logos-world.net/wp-content/uploads/2020/06/Leeds-United-Logo.png" },
+
+
 
     // La Liga
     { id: "real-madrid", name: "Real Madrid", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Real-Madrid-Logo.png" },
@@ -72,13 +75,30 @@ export const footballTeams: Team[] = [
     { id: "ajax", name: "Ajax", league: "Eredivisie", country: "Netherlands", logo: "https://logos-world.net/wp-content/uploads/2020/06/Ajax-Logo.png" },
     { id: "porto", name: "Porto", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Porto-Logo.png" },
     { id: "benfica", name: "Benfica", league: "Primeira Liga", country: "Portugal", logo: "https://logos-world.net/wp-content/uploads/2020/06/Benfica-Logo.png" },
+    { id: "sporting-cp", name: "Sporting CP", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/4/4f/Sporting_Clube_de_Portugal.png" },
+    { id: "braga", name: "Braga", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/6/6e/Sporting_Clube_de_Braga.png" },
+    { id: "v-guimaraes", name: "V. Guimarães", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/8/8c/Vitoria_SC.png" },
+    { id: "famalicao", name: "Famalicão", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2e/F.C._Famalic%C3%A3o.png" },
+    { id: "gil-vicente", name: "Gil Vicente", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2c/Gil_Vicente_FC.png" },
+    { id: "moreirense", name: "Moreirense", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/7/7a/Moreirense_FC.png" },
+    { id: "boavista", name: "Boavista", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2e/Boavista_FC.png" },
+    { id: "rio-ave", name: "Rio Ave", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/7/7e/Rio_Ave_FC.png" },
+    { id: "estoril", name: "Estoril", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2a/G.D._Estoril_Praia.png" },
+    { id: "arouca", name: "Arouca", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2e/F.C._Arouca.png" },
+    { id: "santa-clara", name: "Santa Clara", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/CD_Santa_Clara.png" },
+    { id: "casa-pia", name: "Casa Pia", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/Casa_Pia_A.C..png" },
+    { id: "farense", name: "Farense", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/S.C._Farense.png" },
+    { id: "portimonense", name: "Portimonense", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/Portimonense_SC.png" },
+    { id: "chaves", name: "Chaves", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/G.D._Chaves.png" },
+    { id: "estrela-amadora", name: "Estrela Amadora", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/C.F._Estrela_da_Amadora.png" },
+    { id: "vizela", name: "Vizela", league: "Primeira Liga", country: "Portugal", logo: "https://upload.wikimedia.org/wikipedia/en/2/2d/F.C._Vizela.png" },
     { id: "celtic", name: "Celtic", league: "Scottish League", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Celtic-Logo.png" },
     { id: "rangers", name: "Rangers", league: "Scottish League", country: "Scotland", logo: "https://logos-world.net/wp-content/uploads/2020/06/Rangers-Logo.png" },
 
-    // Turkish
-    { id: "galatasaray", name: "Galatasaray", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Galatasaray-Logo.png" },
-    { id: "fenerbahce", name: "Fenerbahce", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Fenerbahce-Logo.png" },
-    { id: "besiktas", name: "Besiktas", league: "Süper Lig", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Besiktas-Logo.png" },
+    // Turkish (moved to Others)
+    { id: "galatasaray", name: "Galatasaray", league: "Others", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Galatasaray-Logo.png" },
+    { id: "fenerbahce", name: "Fenerbahce", league: "Others", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Fenerbahce-Logo.png" },
+    { id: "besiktas", name: "Besiktas", league: "Others", country: "Turkey", logo: "https://logos-world.net/wp-content/uploads/2020/06/Besiktas-Logo.png" },
 
     // African
     { id: "kotoko", name: "Asante Kotoko", league: "Ghana Premier League", country: "Ghana", logo: "https://upload.wikimedia.org/wikipedia/en/7/7d/Asante_Kotoko_Crest.png" },

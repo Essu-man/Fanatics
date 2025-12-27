@@ -119,13 +119,15 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
         "Eredivisie": ["Eredivisie", "Dutch", "Netherlands"],
 
         // African leagues
-        "Ghana premier league": ["Ghana Premier League", "Ghana", "GPL"],
+        "Ghana premier league": ["Ghana Premier League", "GPL"],
 
         // International
         "International": ["International", "International Teams", "International Clubs"],
 
-        // Catch-all
-        "Rest of the World": ["Other", "Unknown", "Miscellaneous", "Others"],
+        // Catch-all (Rest of World, including Turkish, Scottish, Portuguese, etc.)
+        "Others": [
+            "Other", "Unknown", "Miscellaneous", "Others", "Süper Lig", "Super Lig", "Turkey", "Turkish", "Scottish League", "Scottish Premiership", "Primeira Liga", "Portugal", "Eredivisie", "Dutch", "Netherlands"
+        ],
     };
 
     // Check if two league names match (handles variations like "Premier League" vs "English Premier League")
@@ -166,9 +168,17 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
 
         // 3. Fallback to partial match (one contains the other)
         if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+            // Prevent "Premier League" from matching strictly "Ghana Premier League" and vice versa
+            if ((normalized1.includes("premier league") && normalized2.includes("premier league"))) {
+                // If both contain "premier league", they must have the same context (e.g. both "ghana" or both not "ghana")
+                const hasGhana1 = normalized1.includes("ghana");
+                const hasGhana2 = normalized2.includes("ghana");
+                if (hasGhana1 !== hasGhana2) return false;
+            }
             console.log(`[LeagueTeamsModal] Partial match: "${teamLeague}" contains or is contained in "${leagueName}"`);
             return true;
         }
+
 
         return false;
     };
@@ -209,9 +219,18 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
                 })));
 
                 const filteredTeams = allTeams.filter((team: Team) => {
-                    // First, check if team matches the league
-                    const matchesLeague = team.leagueId === league.id ||
-                        (team.league && leaguesMatch(team.league, league.name));
+
+                    // Special strict filter for Ghana Premier League
+                    let matchesLeague = false;
+                    if (league.name.toLowerCase().includes("ghana premier league")) {
+                        // Only allow exact matches for Ghana Premier League
+                        const normalized = team.league ? team.league.trim().toLowerCase() : "";
+                        matchesLeague = normalized === "ghana premier league" || normalized === "gpl";
+                    } else {
+                        matchesLeague = team.leagueId === league.id ||
+                            !!(team.league && leaguesMatch(team.league, league.name));
+
+                    }
 
                     if (!matchesLeague) return false;
 
