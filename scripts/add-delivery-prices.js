@@ -27,6 +27,7 @@ const deliveryPrices = [
     { location: "Nungua", price: 40 },
 
     // Additional Greater Accra locations (estimated prices based on distance)
+    { location: "Awoshie", price: 45 },
     { location: "Accra Central", price: 30 },
     { location: "Osu", price: 30 },
     { location: "Labone", price: 30 },

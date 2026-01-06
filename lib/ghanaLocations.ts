@@ -17,6 +17,7 @@ export const ghanaRegions: GhanaLocation[] = [
             "Ashaley Botwe",
             "Asylum Down",
             "Atomic",
+            "Awoshie",
             "Baatsona",
             "Cantonment",
             "Community 1",

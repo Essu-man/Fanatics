@@ -131,7 +131,7 @@ export default function CheckoutPage() {
     }, { count: 0, total: 0 });
 
     const subtotal = itemsSubtotal + customizationDetails.total;
-    const estimatedShipping = deliveryPrice?.price || 0;
+    const estimatedShipping = typeof deliveryPrice?.price === 'number' ? deliveryPrice.price : 0;
     const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
 
@@ -354,7 +354,7 @@ export default function CheckoutPage() {
                                                 </svg>
                                                 <div>
                                                     <p className="text-sm font-semibold text-green-900">
-                                                        Delivery Fee: GH₵ {deliveryPrice.price.toFixed(2)}
+                                                        Delivery Fee: GH₵ {typeof deliveryPrice.price === 'number' ? deliveryPrice.price.toFixed(2) : 'N/A'}
                                                     </p>
                                                     <p className="mt-1 text-xs text-green-700">
                                                         {deliveryPrice.found
@@ -437,7 +437,7 @@ export default function CheckoutPage() {
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Delivery Fee</span>
                                     <span className="font-semibold text-zinc-900">
-                                        {estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : 'FREE'}
+                                        {typeof estimatedShipping === 'number' && estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : 'FREE'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">

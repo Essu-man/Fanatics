@@ -57,66 +57,31 @@ async function main() {
     for (const file of files) {
         if (!file.name) continue;
 
-        // Remove timestamp prefix only if it's a numeric timestamp
-        let namePart = file.name.toLowerCase();
-        const firstDashIndex = file.name.indexOf('-');
-        if (firstDashIndex !== -1) {
-            const prefix = file.name.substring(0, firstDashIndex);
-            if (/^\d{10,}$/.test(prefix)) { // If prefix is at least 10 digits
-                namePart = file.name.substring(firstDashIndex + 1).toLowerCase();
-            }
-        }
-
+        // Remove timestamp prefix (assuming it's a number followed by a dash)
+        const namePart = file.name.substring(file.name.indexOf('-') + 1).toLowerCase();
         const baseNameNoExt = namePart.replace(/\.[^/.]+$/, '');
         const cleanBaseName = baseNameNoExt.replace(/[^a-z0-9]/g, '');
 
+        // Try to match by id in the name part
+        let team = teams.find(t => namePart.includes(t.id.toLowerCase()));
 
-        // Multi-stage matching for better accuracy
-        let team = null;
-        const blacklist = ['ham', 'fc', 'city', 'united', 'club', 'real', 'social', 'sporting', 'ac', 'inter', 'milan'];
-
-        // Stage 1: Exact ID match
-        team = teams.find(t => t.id.toLowerCase() === cleanBaseName || t.id.toLowerCase() === baseNameNoExt);
-
-        // Stage 2: Exact Name match
+        // If not found, try by clean name match
         if (!team) {
             team = teams.find(t => {
-                const cleanTeamName = (t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                return cleanTeamName === cleanBaseName;
+                if (!t.name) return false;
+                const cleanTeamName = t.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return cleanBaseName.includes(cleanTeamName) || cleanTeamName.includes(cleanBaseName);
             });
         }
-
-        // Stage 3: Flexible ID/Name match (one contains the other)
-        if (!team) {
-            team = teams.find(t => {
-                const cleanID = t.id.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const cleanTeamName = (t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-                // Only allow partial matches if the string is significant (>3 chars)
-                const isIdMatch = cleanID.length > 3 && (cleanBaseName.includes(cleanID) || cleanID.includes(cleanBaseName));
-                const isNameMatch = cleanTeamName.length > 3 && (cleanBaseName.includes(cleanTeamName) || cleanTeamName.includes(cleanBaseName));
-
-                // If the cleaned filename matches a blacklisted word exactly, ignore it for partial matching
-                if (blacklist.includes(cleanBaseName)) return false;
-
-                // Special check for 'ham' and 'milan' - they must not be the ONLY reason for a match
-                // We've already cleaned names, so let's check if the match is specific enough
-                return isIdMatch || isNameMatch;
-            });
-        }
-
 
         if (team) {
             const logoUrl = `${PUBLIC_BASE}/${file.name}`;
             await team.ref.update({ logo: logoUrl });
-            console.log(`✅ Matched [${file.name}] (clean: ${cleanBaseName}) to team: [${team.name}] (id: ${team.id})`);
+            console.log(`✅ Matched ${file.name} to ${team.name}. Updated logo to ${logoUrl}`);
             updated++;
         } else {
-            console.log(`❌ No match found for: ${file.name} (clean: ${cleanBaseName})`);
+            console.log(`❌ No match found for: ${file.name}`);
         }
-
-
-
     }
 
     console.log(`Updated ${updated} team logos from Supabase.`);
