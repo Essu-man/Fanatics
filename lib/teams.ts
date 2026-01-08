@@ -109,6 +109,9 @@ export const footballTeams: Team[] = [
     // Other International Clubs
     { id: "al-nassr", name: "Al Nassr", league: "Others", country: "Saudi Arabia", logo: "https://upload.wikimedia.org/wikipedia/en/d/da/Al_Nassr_FC.png" },
     { id: "inter-miami", name: "Inter Miami CF", league: "Others", country: "United States", logo: "https://upload.wikimedia.org/wikipedia/en/a/a2/Inter_Miami_CF_crest.svg" },
+    { id: "santos-fc", name: "Santos FC", league: "Others", country: "Brazil", logo: "https://upload.wikimedia.org/wikipedia/commons/3/35/Santos_logo.svg", sport: "football" },
+    { id: "huddersfield", name: "Huddersfield Town A.F.C", league: "Others", country: "England", logo: "https://upload.wikimedia.org/wikipedia/en/5/5e/Huddersfield_Town_A.F.C._logo.png", sport: "football" },
+    { id: "venezia", name: "Venezia", league: "Others", country: "Italy", logo: "https://upload.wikimedia.org/wikipedia/en/6/6e/Venezia_FC_logo.png", sport: "football" },
 ];
 
 // Basketball Teams (NBA)
