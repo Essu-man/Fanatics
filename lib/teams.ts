@@ -45,6 +45,7 @@ export const footballTeams: Team[] = [
     { id: "athletic", name: "Athletic Bilbao", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Athletic-Bilbao-Logo.png" },
     { id: "betis", name: "Real Betis", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Real-Betis-Logo.png" },
     { id: "osasuna", name: "Osasuna", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Osasuna-Logo.png" },
+    { id: "celta-vigo", name: "Celta Vigo", league: "La Liga", country: "Spain", logo: "https://logos-world.net/wp-content/uploads/2020/06/Celta-Vigo-Logo.png" },
 
     // Serie A
     { id: "juventus", name: "Juventus", league: "Serie A", country: "Italy", logo: "https://logos-world.net/wp-content/uploads/2020/06/Juventus-Logo.png" },
