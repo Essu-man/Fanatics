@@ -14,6 +14,7 @@ import { useToast } from "../../components/ui/ToastContainer";
 import { useCart } from "../../providers/CartProvider";
 import { useWishlist } from "../../providers/WishlistProvider";
 import type { Product } from "../../../lib/firestore";
+import StockIndicator from "../../components/StockIndicator";
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -182,6 +183,8 @@ export default function ProductDetailPage() {
     }
 
     const handleAddToCart = () => {
+        if (isOutOfStock) return;
+
         addItem({
             id: product.id,
             name: product.name,
@@ -205,6 +208,8 @@ export default function ProductDetailPage() {
         setIsAdded(true);
     };
 
+    const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
+
     return (
         <div className="min-h-screen bg-white text-zinc-900">
             <Header />
@@ -226,7 +231,7 @@ export default function ProductDetailPage() {
                             <img
                                 src={selectedImage || product.images?.[0]}
                                 alt={product.name}
-                                className="h-full w-full object-cover cursor-zoom-in"
+                                className={`h-full w-full object-cover cursor-zoom-in ${isOutOfStock ? 'grayscale opacity-80' : ''}`}
                                 onClick={() => setImageZoom(true)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter" || e.key === " ") {
@@ -511,9 +516,13 @@ export default function ProductDetailPage() {
                                 <div className="flex gap-3">
                                     <button
                                         onClick={handleAddToCart}
-                                        className="flex-1 rounded-lg bg-[var(--brand-red)] px-6 py-3 text-white font-medium hover:bg-[var(--brand-red-dark)] transition-colors"
+                                        disabled={isOutOfStock}
+                                        className={`flex-1 rounded-lg px-6 py-3 font-medium transition-colors ${isOutOfStock
+                                                ? "bg-zinc-200 text-zinc-500 cursor-not-allowed"
+                                                : "bg-[var(--brand-red)] text-white hover:bg-[var(--brand-red-dark)]"
+                                            }`}
                                     >
-                                        Add to Cart
+                                        {isOutOfStock ? "Out of Stock" : "Add to Cart"}
                                     </button>
                                     <button
                                         onClick={() => toggle(product.id)}
@@ -567,10 +576,13 @@ export default function ProductDetailPage() {
 
                         {/* Stock Indicator & Social Proof */}
                         <div className="mb-6 space-y-3">
-                            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                                <p className="text-sm font-medium text-green-800">
-                                    ✓ In Stock - Usually ships within 2-3 business days
-                                </p>
+                            <div className="flex items-center gap-3">
+                                <StockIndicator stock={product.stock ?? 0} />
+                                {product.available !== false && product.stock !== 0 && (
+                                    <span className="text-sm text-zinc-500">
+                                        Usually ships within 2-3 business days
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-zinc-600">
                                 <span>🔥 12 people viewing this</span>

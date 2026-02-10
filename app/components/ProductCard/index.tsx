@@ -53,7 +53,7 @@ export default function ProductCard({ product }: { product: PType }) {
                 <img
                     src={product.images?.[0]}
                     alt={product.name}
-                    className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                    className={`h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105 ${((product as any).stock === 0 || (product as any).available === false) ? 'grayscale' : ''}`}
                 />
 
                 {/* Quick View Button */}
@@ -79,8 +79,10 @@ export default function ProductCard({ product }: { product: PType }) {
                 {/* Out of Stock Badge */}
                 {((product as any).stock !== undefined && (product as any).stock === 0) ||
                     ((product as any).available === false) ? (
-                    <div className="absolute left-4 top-4 rounded bg-zinc-900 px-2 py-1 text-xs font-medium text-white">
-                        Out of Stock
+                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/60 backdrop-blur-[2px]">
+                        <div className="rounded bg-white/95 px-3 py-1.5 shadow-xl border border-red-100">
+                            <p className="text-xs font-black text-red-600 tracking-wider">OUT OF STOCK</p>
+                        </div>
                     </div>
                 ) : null}
             </div>

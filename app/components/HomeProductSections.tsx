@@ -147,9 +147,9 @@ export default function HomeProductSections() {
                 const data = await response.json();
 
                 if (data.success && data.products) {
-                    // Filter available products with images
+                    // Filter products with images
                     const availableProducts = data.products.filter(
-                        (p: any) => p.available && p.images && p.images.length > 0
+                        (p: any) => p.images && p.images.length > 0
                     );
 
                     // Convert to Product type and filter by league
@@ -162,6 +162,8 @@ export default function HomeProductSections() {
                         price: p.price,
                         images: p.images || [],
                         colors: p.colors || [],
+                        stock: p.stock,
+                        available: p.available,
                     }));
 
                     // Separate football and basketball products using the league field

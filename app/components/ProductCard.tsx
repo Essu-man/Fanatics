@@ -11,6 +11,7 @@ import { PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWishlist } from "../providers/WishlistProvider";
 import { useToast } from "./ui/ToastContainer";
+import StockIndicator from "./StockIndicator";
 
 export default function ProductCard({ product }: { product: PType }) {
     const router = useRouter();
@@ -182,13 +183,13 @@ export default function ProductCard({ product }: { product: PType }) {
                                 loading="lazy"
                             />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                         {/* Out of Stock Overlay */}
                         {isOutOfStock && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                                <div className="rounded-lg bg-white/95 px-4 py-2 shadow-xl">
-                                    <p className="text-sm font-bold text-red-600">OUT OF STOCK</p>
+                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/60 backdrop-blur-[2px]">
+                                <div className="rounded-lg bg-white/95 px-4 py-2 shadow-2xl transform scale-110 border border-red-100">
+                                    <p className="text-sm font-black text-red-600 tracking-wider">OUT OF STOCK</p>
                                 </div>
                             </div>
                         )}
@@ -231,9 +232,10 @@ export default function ProductCard({ product }: { product: PType }) {
                         <p className="mt-0.5 text-xs text-zinc-500">{product.team}</p>
                     </Link>
 
-                    {/* Price */}
-                    <div className="mt-2 flex items-baseline gap-2">
+                    {/* Price & Stock */}
+                    <div className="mt-2 flex items-center justify-between">
                         <span className="text-base font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
+                        <StockIndicator stock={product.stock ?? 0} />
                     </div>
 
                     {/* Color Swatches */}
@@ -386,8 +388,9 @@ export default function ProductCard({ product }: { product: PType }) {
                         <h3 className="text-xl sm:text-2xl font-black text-zinc-900">{product.name}</h3>
                         <p className="mt-2 text-sm sm:text-base text-zinc-500">{product.team}</p>
 
-                        <div className="mt-4 sm:mt-6">
+                        <div className="mt-4 sm:mt-6 flex items-center gap-4">
                             <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
+                            <StockIndicator stock={modalData.stock ?? 0} />
                         </div>
 
                         {/* Jersey Type */}

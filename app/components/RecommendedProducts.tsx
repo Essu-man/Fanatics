@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Product } from "@/lib/database";
+import type { Product } from "@/lib/firestore";
+import StockIndicator from "./StockIndicator";
 
 interface RecommendedProductsProps {
     title: string;
@@ -111,15 +112,15 @@ export default function RecommendedProducts({
                             style={{ width: `${100 / itemsPerView}%` }}
                         >
                             <Link
-                                href={`/product/${product.id}`}
-                                className="group block rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:shadow-md"
+                                href={`/products/${product.id}`}
+                                className={`group block rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all hover:shadow-md ${product.available === false || product.stock === 0 ? 'opacity-60' : ''}`}
                             >
                                 {product.images && product.images.length > 0 && (
                                     <div className="mb-3 aspect-square overflow-hidden rounded-lg bg-zinc-100">
                                         <img
                                             src={product.images[0]}
                                             alt={product.name}
-                                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                            className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${product.available === false || product.stock === 0 ? 'grayscale' : ''}`}
                                         />
                                     </div>
                                 )}
@@ -134,11 +135,7 @@ export default function RecommendedProducts({
                                         <p className="text-lg font-bold text-[var(--brand-red)]">
                                             ₵{product.price.toFixed(2)}
                                         </p>
-                                        {product.stock > 0 ? (
-                                            <span className="text-xs text-green-600">In Stock</span>
-                                        ) : (
-                                            <span className="text-xs text-red-600">Out of Stock</span>
-                                        )}
+                                        <StockIndicator stock={product.stock ?? 0} />
                                     </div>
                                 </div>
                             </Link>
