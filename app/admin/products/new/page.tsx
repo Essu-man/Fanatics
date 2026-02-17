@@ -16,7 +16,7 @@ import {
 } from "../../../components/ui/select";
 import { Search } from "lucide-react";
 
-const categories = ["Jersey", "Apparel", "Accessories", "Training", "Fan Gear"];
+const categories = ["Jersey", "Trainers"];
 
 interface TeamSearchInputProps {
     teams: Array<{ label: string; teams: Team[] }>;
@@ -281,8 +281,17 @@ export default function AdminNewProductPage() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!name || !teamId || !price || imageFiles.length === 0 || selectedSizes.length === 0) {
-            showToast("Name, price, team, at least one image, and at least one size are required", "error");
+
+        // Team is only required for Jersey category, not for Trainers
+        const isTeamRequired = category === "Jersey";
+
+        if (!name || !price || imageFiles.length === 0 || selectedSizes.length === 0) {
+            showToast("Name, price, at least one image, and at least one size are required", "error");
+            return;
+        }
+
+        if (isTeamRequired && !teamId) {
+            showToast("Team is required for jerseys", "error");
             return;
         }
 
@@ -319,7 +328,7 @@ export default function AdminNewProductPage() {
                     name,
                     price: Number(price),
                     stock: Number(stock || 0),
-                    teamId: teamId,
+                    ...(teamId && { teamId }), // Only include teamId if it exists
                     category,
                     description,
                     images: uploadedImages,
@@ -397,16 +406,19 @@ export default function AdminNewProductPage() {
                         </div>
                     </div>
 
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700">Team</label>
-                            <TeamSearchInput
-                                teams={allTeams}
-                                value={teamId}
-                                onChange={(value) => setTeamId(value)}
-                            />
+                    {/* Only show team selection for Jersey category */}
+                    {category === "Jersey" && (
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700">Team</label>
+                                <TeamSearchInput
+                                    teams={allTeams}
+                                    value={teamId}
+                                    onChange={(value) => setTeamId(value)}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid grid-cols-2 gap-4">

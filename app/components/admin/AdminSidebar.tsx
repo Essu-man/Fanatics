@@ -11,7 +11,8 @@ import {
     Settings,
     ChevronLeft,
     ChevronRight,
-    Shield
+    Shield,
+    Image as ImageIcon
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +23,7 @@ const navigation = [
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Customers", href: "/admin/customers", icon: Users },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { name: "Content", href: "/admin/content", icon: ImageIcon },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

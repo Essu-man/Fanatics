@@ -3,6 +3,7 @@ export type Product = {
     name: string;
     team?: string;
     league?: string;
+    category?: string;
     description?: string;
     // prices in Ghana Cedi
     price: number;

@@ -138,6 +138,7 @@ function ProductCarousel({ products }: { products: Product[] }) {
 export default function HomeProductSections() {
     const [footballProducts, setFootballProducts] = useState<Product[]>([]);
     const [basketballProducts, setBasketballProducts] = useState<Product[]>([]);
+    const [trainersProducts, setTrainersProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -213,11 +214,18 @@ export default function HomeProductSections() {
                         return false;
                     });
 
+                    // Filter trainers by category
+                    const trainers = allProducts.filter((p: any) => {
+                        return p.category && p.category.toLowerCase() === 'trainers';
+                    });
+
                     setFootballProducts(football.slice(0, 8));
                     setBasketballProducts(basketball.slice(0, 8));
+                    setTrainersProducts(trainers.slice(0, 8));
                 } else {
                     setFootballProducts([]);
                     setBasketballProducts([]);
+                    setTrainersProducts([]);
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -254,6 +262,16 @@ export default function HomeProductSections() {
                         </div>
                     </div>
                 </section>
+                <section className="bg-white py-12">
+                    <div className="mx-auto max-w-7xl px-6">
+                        <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
+                            Train Like a Pro: Shop Training Kits
+                        </h2>
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">Loading...</div>
+                        </div>
+                    </div>
+                </section>
             </>
         );
     }
@@ -271,6 +289,22 @@ export default function HomeProductSections() {
                     ) : (
                         <div className="flex items-center justify-center py-12">
                             <div className="text-zinc-500">No football products available</div>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* Trainers Section */}
+            <section className="bg-zinc-50 py-12">
+                <div className="mx-auto max-w-7xl px-6">
+                    <h2 className="mb-8 text-center text-3xl font-bold text-zinc-900 md:text-4xl">
+                        Train Like a Pro: Shop Training Kits
+                    </h2>
+                    {trainersProducts.length > 0 ? (
+                        <ProductCarousel products={trainersProducts} />
+                    ) : (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-zinc-500">No training kits available</div>
                         </div>
                     )}
                 </div>

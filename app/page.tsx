@@ -1,5 +1,6 @@
 import Header from "./components/Header";
 import SportsNav from "./components/SportsNav";
+import CategoryNav from "./components/CategoryNav";
 import ShopYourTeams from "./components/ShopYourTeams";
 import PromoBanner from "./components/PromoBanner";
 import FeatureRibbons from "./components/FeatureRibbons";
@@ -15,6 +16,7 @@ export default function Home() {
       <main id="main-content">
         <Header />
         <SportsNav />
+        <CategoryNav />
         <ShopYourTeams />
         <PromoBanner />
         <FeatureRibbons />

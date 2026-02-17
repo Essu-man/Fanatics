@@ -15,7 +15,7 @@ import {
     SelectLabel,
 } from "../../../../components/ui/select";
 
-const categories = ["Jersey", "Apparel", "Accessories", "Training", "Fan Gear"];
+const categories = ["Jersey", "Trainers"];
 
 export default function AdminEditProductPage() {
     const router = useRouter();
@@ -202,8 +202,17 @@ export default function AdminEditProductPage() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!name || !teamId || !price) {
-            showToast("Name, price, and team are required", "error");
+
+        // Team is only required for Jersey category, not for Trainers
+        const isTeamRequired = category === "Jersey";
+
+        if (!name || !price) {
+            showToast("Name and price are required", "error");
+            return;
+        }
+
+        if (isTeamRequired && !teamId) {
+            showToast("Team is required for jerseys", "error");
             return;
         }
 
@@ -246,7 +255,7 @@ export default function AdminEditProductPage() {
                     name,
                     price: Number(price),
                     stock: Number(stock || 0),
-                    teamId,
+                    ...(teamId && { teamId }), // Only include teamId if it exists
                     category,
                     description,
                     images: uploadedImages,
@@ -335,27 +344,33 @@ export default function AdminEditProductPage() {
                         </div>
                     </div>
 
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700">Team</label>
-                            <Select value={teamId} onValueChange={setTeamId} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a team..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {allTeams.map((group) => (
-                                        <SelectGroup key={group.label}>
-                                            <SelectLabel>{group.label}</SelectLabel>
-                                            {group.teams.map((team) => (
-                                                <SelectItem key={`${group.label}-${team.id}`} value={team.id}>
-                                                    {team.name} ({team.league})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    {/* Only show team selection for Jersey category */}
+                    {category === "Jersey" && (
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700">Team</label>
+                                <Select value={teamId} onValueChange={setTeamId} required>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a team..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allTeams.map((group) => (
+                                            <SelectGroup key={group.label}>
+                                                <SelectLabel>{group.label}</SelectLabel>
+                                                {group.teams.map((team) => (
+                                                    <SelectItem key={`${group.label}-${team.id}`} value={team.id}>
+                                                        {team.name} ({team.league})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
+                    )}
+
+                    <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-zinc-700">Price</label>

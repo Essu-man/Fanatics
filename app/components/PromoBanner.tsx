@@ -6,8 +6,11 @@ import { useState, useEffect } from "react";
 
 export default function PromoBanner() {
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [slides, setSlides] = useState<{ image: string; label: string }[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const slides = [
+    // Default slides as fallback
+    const defaultSlides = [
         {
             image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/1.jpeg",
             label: "Jersey 1"
@@ -20,23 +23,33 @@ export default function PromoBanner() {
             image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/3.jpeg",
             label: "Jersey 3"
         },
-        {
-            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/4.jpeg",
-            label: "Jersey 4"
-        },
-        {
-            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/8.jpeg",
-            label: "Jersey 5"
-        },
-        {
-            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/7.jpeg",
-            label: "Jersey 6"
-        },
-        {
-            image: "https://vjhkurmmzgudtzgxgijb.supabase.co/storage/v1/object/public/banner/6.jpeg",
-            label: "Jersey 7"
-        }
     ];
+
+    useEffect(() => {
+        const fetchBannerImages = async () => {
+            try {
+                const response = await fetch("/api/admin/content?id=home_banner");
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.images.length > 0) {
+                    const fetchedSlides = result.data.images.map((url: string, index: number) => ({
+                        image: url,
+                        label: `Banner ${index + 1}`
+                    }));
+                    setSlides(fetchedSlides);
+                } else {
+                    setSlides(defaultSlides);
+                }
+            } catch (error) {
+                console.error("Error fetching banner images:", error);
+                setSlides(defaultSlides);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBannerImages();
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {

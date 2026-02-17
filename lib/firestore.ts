@@ -263,12 +263,67 @@ export const updateOrderStatus = async (
     }
 };
 
+// Add deleteOrder function
 export const deleteOrder = async (orderId: string) => {
     try {
         await deleteDoc(doc(db, "orders", orderId));
         return { success: true };
     } catch (error: any) {
         console.error("Error deleting order:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Site Content Operations
+export interface SiteContent {
+    id: string;
+    type: "banner" | "promo" | "feature";
+    images: string[];
+    updatedAt: Date;
+    updatedBy: string;
+}
+
+export const getSiteContent = async (contentId: string): Promise<{ success: boolean; data?: SiteContent; error?: string }> => {
+    try {
+        const contentDoc = await getDoc(doc(db, "site_content", contentId));
+
+        if (!contentDoc.exists()) {
+            return { success: true, data: undefined };
+        }
+
+        const data = contentDoc.data();
+        return {
+            success: true,
+            data: {
+                id: contentDoc.id,
+                type: data.type,
+                images: data.images || [],
+                updatedAt: data.updatedAt?.toDate() || new Date(),
+                updatedBy: data.updatedBy || "",
+            },
+        };
+    } catch (error: any) {
+        console.error("Error fetching site content:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const updateSiteContent = async (
+    contentId: string,
+    images: string[],
+    userId: string,
+    type: "banner" | "promo" | "feature" = "banner"
+): Promise<{ success: boolean; error?: string }> => {
+    try {
+        await setDoc(doc(db, "site_content", contentId), {
+            type,
+            images,
+            updatedAt: Timestamp.now(),
+            updatedBy: userId,
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating site content:", error);
         return { success: false, error: error.message };
     }
 };

@@ -81,7 +81,7 @@ export default function ShopYourTeams() {
                 <div className="mx-auto max-w-7xl px-4 md:px-6">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-2xl font-bold text-zinc-900">Shop Your Teams</h2>
-                        <Link href="#" className="text-sm font-medium text-zinc-700 hover:text-[var(--brand-red)]">
+                        <Link href="/teams" className="text-sm font-medium text-zinc-700 hover:text-[var(--brand-red)]">
                             See All
                         </Link>
                     </div>

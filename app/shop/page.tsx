@@ -44,6 +44,7 @@ function ShopPageContent() {
                             team: p.team,
                             teamId: p.teamId,
                             league: p.league,
+                            category: p.category,
                             price: p.price,
                             images: p.images || [],
                             colors: p.colors || [],
@@ -81,9 +82,10 @@ function ShopPageContent() {
 
         // Apply category filter
         if (selectedCategory !== "all") {
-            filtered = filtered.filter((p) =>
-                p.name.toLowerCase().includes(selectedCategory.toLowerCase())
-            );
+            filtered = filtered.filter((p) => {
+                if (!p.category) return false;
+                return p.category.toLowerCase() === selectedCategory.toLowerCase();
+            });
         }
 
         // Apply sorting
@@ -130,9 +132,7 @@ function ShopPageContent() {
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
                                 <SelectItem value="jersey">Jerseys</SelectItem>
-                                <SelectItem value="apparel">Apparel</SelectItem>
-                                <SelectItem value="accessories">Accessories</SelectItem>
-                                <SelectItem value="training">Training Gear</SelectItem>
+                                <SelectItem value="trainers">Training Kits</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

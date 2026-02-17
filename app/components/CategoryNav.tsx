@@ -1,114 +1,66 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-
-type MegaItem = {
-	name: string;
-	href?: string;
-};
-
-type Category = {
-	label: string;
-	items: MegaItem[];
-};
-
-const categories: Category[] = [
-	{
-		label: "Jerseys",
-		items: [
-			{ name: "Men's Jerseys" },
-			{ name: "Women's Jerseys" },
-			{ name: "Kids' Jerseys" },
-			{ name: "Authentic" },
-			{ name: "Replica" },
-			{ name: "Custom" }
-		]
-	},
-	{
-		label: "Teams",
-		items: [
-			{ name: "Premier League" },
-			{ name: "La Liga" },
-			{ name: "Bundesliga" },
-			{ name: "Serie A" },
-			{ name: "Ligue 1" },
-			{ name: "National Teams" }
-		]
-	},
-	{
-		label: "Apparel",
-		items: [
-			{ name: "Hoodies & Sweatshirts" },
-			{ name: "T-Shirts" },
-			{ name: "Jackets" },
-			{ name: "Tracksuits" },
-			{ name: "Shorts" }
-		]
-	},
-	{
-		label: "Accessories",
-		items: [
-			{ name: "Hats" },
-			{ name: "Scarves" },
-			{ name: "Bags" },
-			{ name: "Socks" }
-		]
-	},
-	{
-		label: "Sale",
-		items: [
-			{ name: "Clearance" },
-			{ name: "Last Chance" },
-			{ name: "Under ₵200" }
-		]
-	}
-];
+import { Shirt, Dumbbell } from "lucide-react";
 
 export default function CategoryNav() {
-	const [active, setActive] = useState<string | null>(null);
+	// Custom Football Icon (Soccer Ball)
+	const FootballIcon = (props: any) => (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			{...props}
+		>
+			<circle cx="12" cy="12" r="10" />
+			<path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+			<path d="M12 2c1-2 2-3 2-4" stroke="none" /> {/* Spacer/Hack removal if exists */}
+			<path d="M12 7l-4.5 3.5 1.5 5.5h6l1.5-5.5L12 7z" /> {/* Central pentagon */}
+			<path d="M12 2v5" />
+			<path d="M7.5 10.5L3.5 13" />
+			<path d="M16.5 10.5L20.5 13" />
+			<path d="M9 16l-4 4" />
+			<path d="M15 16l4 4" />
+		</svg>
+	);
+
+	const categories = [
+		{
+			id: "football",
+			name: "Football Jerseys",
+			icon: FootballIcon,
+			href: "/shop?category=jersey",
+		},
+		{
+			id: "training",
+			name: "Training Kits",
+			icon: Dumbbell,
+			href: "/shop?category=trainers",
+		},
+	];
 
 	return (
-		<div className="hidden md:block">
-			<div className="bg-white text-zinc-900 border-t border-b border-zinc-200">
-				<div className="mx-auto max-w-7xl px-6">
-					<ul className="flex h-12 items-stretch gap-2">
-						{categories.map((cat) => (
-							<li
-								key={cat.label}
-								className="group relative"
-								onMouseEnter={() => setActive(cat.label)}
-								onMouseLeave={() => setActive((curr) => (curr === cat.label ? null : curr))}
-							>
-								<button className="flex h-full items-center gap-1 px-3 text-sm font-semibold text-zinc-800 hover:text-[var(--brand-red)]">
-									{cat.label}
-									<ChevronDown className="h-4 w-4" />
-								</button>
-
-								{/* Mega panel */}
-								<div
-									className={`absolute left-0 top-full w-screen border-t border-zinc-200 bg-white text-zinc-900 shadow-xl transition-opacity ${active === cat.label ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
-								>
-									<div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-6 md:grid-cols-3">
-										{cat.items.map((item) => (
-											<Link
-												key={item.name}
-												href={item.href || "#"}
-												className="rounded-md p-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 hover:text-[var(--brand-red)]"
-											>
-												{item.name}
-											</Link>
-										))}
-									</div>
-								</div>
-							</li>
-						))}
-					</ul>
+		<section className="border-b border-zinc-200 bg-white">
+			<div className="mx-auto max-w-7xl px-4 md:px-6">
+				<div className="flex items-center justify-center gap-6 overflow-x-auto scrollbar-hide py-3">
+					{categories.map((category) => (
+						<Link
+							key={category.id}
+							href={category.href}
+							className="flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-100 hover:text-[var(--brand-red)]"
+						>
+							<category.icon className="h-4 w-4" />
+							<span>{category.name}</span>
+						</Link>
+					))}
 				</div>
 			</div>
-		</div>
+		</section>
 	);
 }
-
-
