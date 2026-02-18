@@ -189,7 +189,7 @@ function PaymentCallbackContent() {
                 const checkResponse = await fetch(`/api/orders/check-reference?reference=${encodeURIComponent(reference)}`);
                 const checkData = await checkResponse.json();
 
-                if (checkData.exists) {
+                if (checkData.exists && checkData.status !== "awaiting_payment") {
                     // Order already exists, redirect to success page
                     setStatus("success");
                     setMessage("Payment already processed. Redirecting...");

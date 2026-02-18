@@ -27,6 +27,7 @@ import {
 } from "../../components/ui/select";
 
 type OrderStatus =
+    | "awaiting_payment"
     | "submitted"
     | "confirmed"
     | "processing"
@@ -58,6 +59,7 @@ type AdminOrder = {
 };
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
+    awaiting_payment: { label: "Awaiting Payment", color: "bg-orange-100 text-orange-700", icon: Clock },
     submitted: { label: "Submitted", color: "bg-gray-100 text-gray-700", icon: Clock },
     confirmed: { label: "Confirmed", color: "bg-blue-100 text-blue-700", icon: Package },
     processing: { label: "Processing", color: "bg-yellow-100 text-yellow-700", icon: Clock },
@@ -151,6 +153,7 @@ export default function AdminOrdersPage() {
 
     const statusCounts = {
         all: orders.filter(o => o.status !== "delivered").length, // Active orders only
+        awaiting_payment: orders.filter((o) => o.status === "awaiting_payment").length,
         submitted: orders.filter((o) => o.status === "submitted").length,
         confirmed: orders.filter((o) => o.status === "confirmed").length,
         processing: orders.filter((o) => o.status === "processing").length,
@@ -169,7 +172,7 @@ export default function AdminOrdersPage() {
         })
         .reduce((sum, order) => sum + (order.total || 0), 0);
     const pendingOrders = orders.filter((o) =>
-        ["submitted", "confirmed", "processing", "in_transit", "out_for_delivery"].includes(o.status)
+        ["awaiting_payment", "submitted", "confirmed", "processing", "in_transit", "out_for_delivery"].includes(o.status)
     ).length;
     const deliveredCount = orders.filter(o => o.status === "delivered").length;
 
@@ -531,6 +534,7 @@ export default function AdminOrdersPage() {
                                 {!showDelivered ? (
                                     <>
                                         <SelectItem value="all">All Active ({statusCounts.all})</SelectItem>
+                                        <SelectItem value="awaiting_payment">Awaiting Payment ({statusCounts.awaiting_payment})</SelectItem>
                                         <SelectItem value="submitted">Submitted ({statusCounts.submitted})</SelectItem>
                                         <SelectItem value="confirmed">Confirmed ({statusCounts.confirmed})</SelectItem>
                                         <SelectItem value="processing">Processing ({statusCounts.processing})</SelectItem>

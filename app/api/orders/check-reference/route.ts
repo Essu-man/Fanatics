@@ -25,9 +25,11 @@ export async function GET(request: NextRequest) {
 
         if (!querySnapshot.empty) {
             const orderDoc = querySnapshot.docs[0];
+            const orderData = orderDoc.data();
             return NextResponse.json({
                 exists: true,
                 orderId: orderDoc.id,
+                status: orderData.status,
             });
         }
 

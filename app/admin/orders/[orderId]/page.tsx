@@ -39,6 +39,7 @@ export default function AdminOrderDetailPage() {
     const [error, setError] = useState("");
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [verifyingPayment, setVerifyingPayment] = useState(false);
 
     // Delivery price state
     const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
@@ -89,6 +90,37 @@ export default function AdminOrderDetailPage() {
             }
         } catch (error) {
             console.error("Failed to update status:", error);
+        }
+    };
+
+    const handleManualPaymentConfirmation = async () => {
+        if (!order || verifyingPayment) return;
+
+        if (!confirm("Are you sure you want to verify this payment with Paystack manually?")) {
+            return;
+        }
+
+        setVerifyingPayment(true);
+        try {
+            const response = await fetch("/api/orders/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.id }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("Payment verified successfully!");
+                await fetchOrder();
+            } else {
+                alert(data.error || "Failed to verify payment");
+            }
+        } catch (error) {
+            console.error("Failed to verify payment:", error);
+            alert("An error occurred while verifying payment");
+        } finally {
+            setVerifyingPayment(false);
         }
     };
 
@@ -188,13 +220,48 @@ export default function AdminOrderDetailPage() {
                                             ? "bg-purple-100 text-purple-700"
                                             : order.status === "processing" || order.status === "confirmed"
                                                 ? "bg-blue-100 text-blue-700"
-                                                : "bg-yellow-100 text-yellow-700"
+                                                : order.status === "awaiting_payment"
+                                                    ? "bg-orange-100 text-orange-700 font-bold border border-orange-200 animate-pulse"
+                                                    : "bg-yellow-100 text-yellow-700"
                                     }`}
                             >
                                 {order.status === "delivered" && <CheckCircle2 className="h-4 w-4" />}
-                                {order.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                {order.status === "awaiting_payment" ? "⚠️ Awaiting Payment" : order.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                             </span>
                         </div>
+                        {order.status === "awaiting_payment" && (
+                            <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex gap-3">
+                                        <Clock className="h-5 w-5 text-orange-600 mt-0.5" />
+                                        <div>
+                                            <p className="font-bold text-orange-900">Payment Confirmation Required</p>
+                                            <p className="text-sm text-orange-800">
+                                                This order was created but payment hasn't been confirmed yet.
+                                                If the customer claims they have paid, check Paystack manually or click the button to verify.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleManualPaymentConfirmation}
+                                        disabled={verifyingPayment}
+                                        className="flex-shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50 shadow-sm transition-all flex items-center gap-2"
+                                    >
+                                        {verifyingPayment ? (
+                                            <>
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                                Verifying...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CreditCard className="h-4 w-4" />
+                                                Confirm Payment with Paystack
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         <OrderProgressTracker
                             currentStage={order.status as any}
                             orderDate={new Date(orderDate).toLocaleDateString('en-GB')}

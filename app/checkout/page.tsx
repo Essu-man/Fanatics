@@ -198,15 +198,46 @@ export default function CheckoutPage() {
                 return;
             }
 
+            // Pre-create the order with "awaiting_payment" status
+            // This ensures if the customer pays but network fails during redirect,
+            // we have a record of the order to confirm manually.
+            const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
+
+            await fetch("/api/orders/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId,
+                    userId: null, // We'll update this in callback if they are logged in
+                    guestEmail: shipping.email,
+                    guestPhone: shipping.phone,
+                    customerName: `${shipping.firstName} ${shipping.lastName}`,
+                    items: items,
+                    shipping,
+                    payment: {
+                        method: "paystack",
+                        reference: paymentData.data.reference,
+                    },
+                    subtotal,
+                    shippingCost: estimatedShipping,
+                    tax,
+                    total,
+                    paystackReference: paymentData.data.reference,
+                    status: "awaiting_payment",
+                }),
+            });
+
             // Store shipping info, cart items, and payment reference for callback page
             // Use both sessionStorage and localStorage as backup
             sessionStorage.setItem("checkoutShipping", JSON.stringify(shipping));
             sessionStorage.setItem("checkoutItems", JSON.stringify(items));
             sessionStorage.setItem("paymentReference", paymentData.data.reference);
+            sessionStorage.setItem("pendingOrderId", orderId);
             // Also store in localStorage as backup (more persistent across redirects)
             localStorage.setItem("checkoutShipping", JSON.stringify(shipping));
             localStorage.setItem("checkoutItems", JSON.stringify(items));
             localStorage.setItem("paymentReference", paymentData.data.reference);
+            localStorage.setItem("pendingOrderId", orderId);
             // Store delivery price for restoration
             if (deliveryPrice) {
                 localStorage.setItem("deliveryPrice", JSON.stringify(deliveryPrice));

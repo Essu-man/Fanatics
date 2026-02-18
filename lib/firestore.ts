@@ -103,7 +103,7 @@ export interface Order {
     guestEmail: string | null;
     guestPhone: string | null;
     orderDate: Date;
-    status: "submitted" | "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
+    status: "awaiting_payment" | "submitted" | "confirmed" | "processing" | "in_transit" | "out_for_delivery" | "delivered" | "cancelled";
     items: any[];
     shipping: any;
     payment: any;

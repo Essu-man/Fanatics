@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, getProduct, updateProduct } from "@/lib/firestore";
 import { sendEmail, getOrderConfirmationEmail } from "@/lib/sendgrid";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export const runtime = "nodejs";
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
             tax,
             total,
             paystackReference,
+            status: requestedStatus,
         } = body;
 
         // Check if order with this paystack reference already exists
@@ -39,14 +40,37 @@ export async function POST(request: NextRequest) {
             const existingOrder = await getDocs(q);
 
             if (!existingOrder.empty) {
-                const existingOrderId = existingOrder.docs[0].id;
-                console.log("Order already exists with reference:", paystackReference, "Order ID:", existingOrderId);
-                return NextResponse.json({
-                    success: true,
-                    orderId: existingOrderId,
-                    message: "Order already exists",
-                    alreadyExists: true,
-                });
+                const existingOrderDoc = existingOrder.docs[0];
+                const existingOrderData = existingOrderDoc.data();
+                const existingOrderId = existingOrderDoc.id;
+
+                // If existing order is "awaiting_payment" and we are now "submitted", allow update
+                if (existingOrderData.status === "awaiting_payment" && requestedStatus !== "awaiting_payment") {
+                    console.log("Updating awaiting_payment order to submitted for reference:", paystackReference);
+
+                    const updateData: any = {
+                        status: requestedStatus || "submitted",
+                        payment: payment || { method: "paystack", reference: paystackReference },
+                        updatedAt: new Date().toISOString(),
+                    };
+
+                    if (userId) {
+                        updateData.userId = userId;
+                    }
+
+                    await updateDoc(doc(db, "orders", existingOrderId), updateData);
+
+                    // Proceed to send email since it's now confirmed
+                    // (The rest of the logic below will handle the response)
+                } else {
+                    console.log("Order already exists with reference:", paystackReference, "Order ID:", existingOrderId);
+                    return NextResponse.json({
+                        success: true,
+                        orderId: existingOrderId,
+                        message: "Order already exists",
+                        alreadyExists: true,
+                    });
+                }
             }
         }
 
@@ -83,7 +107,7 @@ export async function POST(request: NextRequest) {
             userId: userId || null,
             guestEmail: guestEmail || shipping?.email || null,
             guestPhone: guestPhone || shipping?.phone || null,
-            status: "submitted" as const,
+            status: (requestedStatus as any) || "submitted",
             items: Array.isArray(items) ? items : [],
             shipping: shipping || {},
             payment: payment || { method: "paystack", reference: paystackReference },
@@ -134,8 +158,9 @@ export async function POST(request: NextRequest) {
         const trackingLink = `${appUrl}/track/${orderId}`;
 
         // Send email notification via SendGrid (non-blocking - don't fail order if email fails)
+        // Only send if status is NOT awaiting_payment
         const emailRecipient = guestEmail || shipping?.email;
-        if (emailRecipient) {
+        if (emailRecipient && orderData.status !== "awaiting_payment") {
             try {
                 const emailHtml = getOrderConfirmationEmail(
                     customerName || shipping?.firstName || "Customer",
