@@ -25,7 +25,7 @@ export default function RecentlyViewed() {
                 .then(data => {
                     if (data.success && data.products) {
                         const viewed = data.products
-                            .filter((p: Product) => viewedIds.includes(p.id))
+                            .filter((p: Product) => viewedIds.includes(p.id) && p.available && (p.stock ?? 0) > 0)
                             .slice(0, 4);
                         setViewedProducts(viewed);
                     }

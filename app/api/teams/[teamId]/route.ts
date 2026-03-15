@@ -38,7 +38,11 @@ export async function GET(
     }
 
     const customProducts = await getProductsByTeam(teamId);
-    const formattedCustom = customProducts.map((product) => ({
+    
+    // Filter out unavailable or out of stock products
+    const availableCustomProducts = customProducts.filter(p => p.available && p.stock > 0);
+    
+    const formattedCustom = availableCustomProducts.map((product) => ({
         id: product.id,
         name: product.name,
         team: product.team || team.name,

@@ -148,9 +148,9 @@ export default function HomeProductSections() {
                 const data = await response.json();
 
                 if (data.success && data.products) {
-                    // Filter products with images
+                    // Filter products with images, available, and stock > 0
                     const availableProducts = data.products.filter(
-                        (p: any) => p.images && p.images.length > 0
+                        (p: any) => p.images && p.images.length > 0 && p.available && p.stock > 0
                     );
 
                     // Convert to Product type and filter by league

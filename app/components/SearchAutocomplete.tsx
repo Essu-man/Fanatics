@@ -68,8 +68,10 @@ export default function SearchAutocomplete() {
 		// Search products from real database
 		const matchingProducts = products
 			.filter((p) =>
-				p.name.toLowerCase().includes(q) ||
-				p.team?.toLowerCase().includes(q)
+				(p.name.toLowerCase().includes(q) ||
+				p.team?.toLowerCase().includes(q)) &&
+				p.available &&
+				(p.stock ?? 0) > 0
 			)
 			.slice(0, 3);
 

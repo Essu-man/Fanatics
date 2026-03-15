@@ -37,7 +37,7 @@ function ShopPageContent() {
 
                 if (data.success && data.products) {
                     const availableProducts = data.products
-                        .filter((p: any) => p.images && p.images.length > 0)
+                        .filter((p: any) => p.images && p.images.length > 0 && p.available && p.stock > 0)
                         .map((p: any) => ({
                             id: p.id,
                             name: p.name,

@@ -31,7 +31,7 @@ function SearchContent() {
                 .then(data => {
                     if (data.success && data.products) {
                         const matchingProducts = data.products.filter(
-                            (p: Product) => p.name.toLowerCase().includes(q) || p.team?.toLowerCase().includes(q)
+                            (p: Product) => (p.name.toLowerCase().includes(q) || p.team?.toLowerCase().includes(q)) && p.available && (p.stock ?? 0) > 0
                         );
 
                         const allTeams = [...footballTeams, ...basketballTeams];

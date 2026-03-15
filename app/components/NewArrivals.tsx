@@ -30,7 +30,7 @@ export default function NewArrivals() {
         if (data.success && data.products) {
           // Filter for available products, sort by newest first (createdAt), and limit to 5
           const availableProducts = data.products
-            .filter((p: any) => p.available && p.images && p.images.length > 0)
+            .filter((p: any) => p.available && p.stock > 0 && p.images && p.images.length > 0)
             .sort((a: any, b: any) => {
               // Sort by createdAt descending (newest first)
               const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() :
