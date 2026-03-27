@@ -344,6 +344,7 @@ export interface Product {
     description: string;
     colors?: Array<{ id: string; name: string; hex: string }>;
     sizes?: string[];
+    childrenSizes?: string[];
     similarProducts?: string[];
     createdAt?: Date | null;
     updatedAt?: Date | null;

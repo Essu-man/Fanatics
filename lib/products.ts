@@ -19,6 +19,7 @@ export type Product = {
     }>;
     // available sizes
     sizes?: string[];
+    childrenSizes?: string[];
     // inventory management
     stock?: number;
     available?: boolean;

@@ -12,6 +12,13 @@ import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWishlist } from "../providers/WishlistProvider";
 import { useToast } from "./ui/ToastContainer";
 import StockIndicator from "./StockIndicator";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/app/components/ui/select";
 
 export default function ProductCard({ product }: { product: PType }) {
     const router = useRouter();
@@ -23,7 +30,8 @@ export default function ProductCard({ product }: { product: PType }) {
     const [isAdded, setIsAdded] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(product.colors?.[0]?.id ?? null);
-    const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] ?? "");
+    const [selectedSize, setSelectedSize] = useState<string>("");
+    const [sizeCategory, setSizeCategory] = useState<"adults" | "children" | "">("");
     const [jerseyType, setJerseyType] = useState<"fan" | "player">("fan");
     const [customization, setCustomization] = useState({
         playerName: "",
@@ -40,7 +48,10 @@ export default function ProductCard({ product }: { product: PType }) {
                     if (data.success && data.product) {
                         setModalProduct(data.product);
                         // Set default size and color from fetched product
-                        setSelectedSize(data.product.sizes?.[0] ?? "");
+                        setModalProduct(data.product);
+                        // Reset category and size for clean start in modal
+                        setSizeCategory("");
+                        setSelectedSize("");
                         setSelectedColor(data.product.colors?.[0]?.id ?? null);
                     }
                 });
@@ -51,7 +62,9 @@ export default function ProductCard({ product }: { product: PType }) {
     const modalData = modalProduct || product;
     const images = modalData.images || [];
     const selectedImage = images[selectedImageIndex];
-    const sizes = Array.isArray(modalData.sizes) && modalData.sizes.length > 0 ? modalData.sizes : [];
+    const sizes = sizeCategory === "" ? [] : (sizeCategory === "adults"
+        ? (Array.isArray(modalData.sizes) ? modalData.sizes : [])
+        : (Array.isArray(modalData.childrenSizes) ? modalData.childrenSizes : []));
 
     // Check if product is out of stock
     const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
@@ -231,6 +244,25 @@ export default function ProductCard({ product }: { product: PType }) {
                         <h3 className="text-sm font-bold text-zinc-900 line-clamp-1">{product.name}</h3>
                         <p className="mt-0.5 text-xs text-zinc-500">{product.team}</p>
                     </Link>
+
+                    {/* Available Sizes Snapshot */}
+                    {(product.sizes?.length || product.childrenSizes?.length) && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            {product.sizes?.slice(0, 3).map((size) => (
+                                <span key={size} className="px-1 text-[9px] font-bold bg-zinc-100 text-zinc-600 rounded">
+                                    {size}
+                                </span>
+                            ))}
+                            {product.childrenSizes?.slice(0, 2).map((size) => (
+                                <span key={size} className="px-1 text-[9px] font-bold bg-blue-50 text-blue-600 rounded">
+                                    {size.split(' ')[0]}
+                                </span>
+                            ))}
+                            {(product.sizes?.length || 0) + (product.childrenSizes?.length || 0) > 5 && (
+                                <span className="text-[9px] text-zinc-400">+mor</span>
+                            )}
+                        </div>
+                    )}
 
                     {/* Price & Stock */}
                     <div className="mt-2 flex items-center justify-between">
@@ -414,21 +446,51 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         {/* Size Selection */}
                         <div className="mt-4 sm:mt-8">
-                            <div className="mb-2 sm:mb-3 text-xs sm:text-sm font-bold text-zinc-900">Select Size</div>
-                            <div className="flex flex-wrap gap-2 sm:gap-3">
-                                {sizes.map((size) => (
-                                    <button
-                                        key={size}
-                                        onClick={() => setSelectedSize(size)}
-                                        className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg border-2 text-xs sm:text-sm font-bold transition-all ${selectedSize === size
-                                            ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
-                                            : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                                            }`}
+                            <div className="flex flex-col gap-3 mb-4">
+                                <div className="text-xs sm:text-sm font-bold text-zinc-900 uppercase tracking-widest">1. Select Category</div>
+                                {modalData.sizes?.length || modalData.childrenSizes?.length ? (
+                                    <Select
+                                        value={sizeCategory}
+                                        onValueChange={(value) => {
+                                            const cat = value as "adults" | "children" | "";
+                                            setSizeCategory(cat);
+                                            setSelectedSize("");
+                                        }}
                                     >
-                                        {size}
-                                    </button>
-                                ))}
+                                        <SelectTrigger className="w-full h-12 rounded-xl border-2 border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-900 focus:border-[var(--brand-red)] focus:ring-4 focus:ring-[var(--brand-red)]/10 transition-all cursor-pointer shadow-sm hover:border-zinc-300">
+                                            <SelectValue placeholder="CHOOSE CATEGORY..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {modalData.sizes?.length ? <SelectItem value="adults">ADULTS</SelectItem> : null}
+                                            {modalData.childrenSizes?.length ? <SelectItem value="children">CHILDREN</SelectItem> : null}
+                                        </SelectContent>
+                                    </Select>
+                                ) : null}
                             </div>
+
+                            {sizeCategory ? (
+                                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="mb-3 text-xs sm:text-sm font-bold text-zinc-900 uppercase tracking-widest">2. Select Size: {selectedSize}</div>
+                                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                                        {sizes.map((size) => (
+                                            <button
+                                                key={size}
+                                                onClick={() => setSelectedSize(size)}
+                                                className={`flex h-10 sm:h-12 items-center justify-center rounded-lg border-2 text-xs sm:text-sm font-bold transition-all ${selectedSize === size
+                                                    ? (sizeCategory === "adults" ? "border-orange-500 bg-orange-50 text-orange-600 shadow-md" : "border-blue-500 bg-blue-50 text-blue-600 shadow-md")
+                                                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                                    } ${sizeCategory === "children" ? "px-4 min-w-[100px]" : "w-10 sm:w-12"}`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border-2 border-dashed border-zinc-200 p-6 text-center bg-zinc-50/50">
+                                    <p className="text-[10px] sm:text-xs text-zinc-500 font-medium">Please select a category above</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Color Selection */}

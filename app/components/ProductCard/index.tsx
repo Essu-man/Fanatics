@@ -125,11 +125,16 @@ export default function ProductCard({ product }: { product: PType }) {
                     </div>
                 )}
                 {/* Sizes */}
-                {product.sizes && product.sizes.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                        {product.sizes.map((size) => (
-                            <span key={size} className="px-2 py-0.5 rounded bg-zinc-100 text-xs font-semibold text-zinc-700 border border-zinc-200">
+                {(product.sizes?.length || product.childrenSizes?.length) && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                        {product.sizes?.map((size) => (
+                            <span key={size} className="px-1.5 py-0.5 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-700 border border-zinc-200">
                                 {size}
+                            </span>
+                        ))}
+                        {product.childrenSizes?.map((size) => (
+                            <span key={size} className="px-1.5 py-0.5 rounded bg-blue-50 text-[10px] font-semibold text-blue-700 border border-blue-100">
+                                {size.split(' ')[0]}
                             </span>
                         ))}
                     </div>
@@ -240,11 +245,25 @@ export default function ProductCard({ product }: { product: PType }) {
                         {product.sizes && product.sizes.length > 0 && (
                             <div className="mt-6">
                                 <h3 className="text-sm font-medium text-zinc-900">
-                                    Available Sizes
+                                    Adult Sizes
                                 </h3>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {product.sizes.map((size) => (
                                         <span key={size} className="px-2 py-0.5 rounded bg-zinc-100 text-xs font-semibold text-zinc-700 border border-zinc-200">
+                                            {size}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {product.childrenSizes && product.childrenSizes.length > 0 && (
+                            <div className="mt-4">
+                                <h3 className="text-sm font-medium text-zinc-900">
+                                    Children Sizes
+                                </h3>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {product.childrenSizes.map((size) => (
+                                        <span key={size} className="px-2 py-0.5 rounded bg-blue-50 text-xs font-semibold text-blue-700 border border-blue-100">
                                             {size}
                                         </span>
                                     ))}

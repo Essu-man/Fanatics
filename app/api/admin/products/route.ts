@@ -31,11 +31,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, price, stock, available = true, category, teamId, description, images, colors, sizes } = body;
+        const { name, price, stock, available = true, category, teamId, description, images, colors, sizes, childrenSizes } = body;
 
-        if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0 || !sizes || sizes.length === 0) {
+        if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0 || ((!sizes || sizes.length === 0) && (!childrenSizes || childrenSizes.length === 0))) {
             return NextResponse.json(
-                { success: false, error: "Name, price, team, at least one image, and at least one size are required" },
+                { success: false, error: "Name, price, team, at least one image, and at least one size (adult or children) are required" },
                 { status: 400 }
             );
         }
@@ -128,6 +128,7 @@ export async function POST(request: Request) {
             images,
             colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
             sizes: Array.isArray(sizes) && sizes.length > 0 ? sizes : undefined,
+            childrenSizes: Array.isArray(childrenSizes) && childrenSizes.length > 0 ? childrenSizes : undefined,
         };
 
         const result = await createProduct(payload);

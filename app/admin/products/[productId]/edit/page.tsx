@@ -30,7 +30,17 @@ export default function AdminEditProductPage() {
     const [stock, setStock] = useState("25");
     const [description, setDescription] = useState("");
     const [sizes, setSizes] = useState<string[]>([]);
+    const [childrenSizes, setChildrenSizes] = useState<string[]>([]);
     const allSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
+    const CHILDREN_SIZES = [
+        "1.5-2 yrs (16)",
+        "3 yrs (18)",
+        "4 yrs (20)",
+        "5-6 yrs (22)",
+        "7-8 yrs (24)",
+        "9-10 yrs (26)",
+        "11-12 yrs (28)",
+    ];
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -72,6 +82,7 @@ export default function AdminEditProductPage() {
                 setPreviewUrls(product.images || []);
                 setColors(product.colors || []);
                 setSizes(product.sizes || []);
+                setChildrenSizes(product.childrenSizes || []);
             } catch (error) {
                 console.error("Error fetching product:", error);
                 showToast("Failed to load product", "error");
@@ -261,6 +272,7 @@ export default function AdminEditProductPage() {
                     images: uploadedImages,
                     colors: colors.length > 0 ? colors : undefined,
                     sizes: sizes.length > 0 ? sizes : undefined,
+                    childrenSizes: childrenSizes.length > 0 ? childrenSizes : undefined,
                 }),
             });
 
@@ -409,25 +421,53 @@ export default function AdminEditProductPage() {
                         />
                     </div>
 
-                    {/* Color Options */}
                     {/* Sizes Selection */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700">Available Sizes</label>
-                        <div className="flex flex-wrap gap-2">
-                            {allSizes.map((size) => (
-                                <button
-                                    type="button"
-                                    key={size}
-                                    className={`px-3 py-1 rounded-lg border text-sm font-medium transition-colors ${sizes.includes(size) ? 'bg-[var(--brand-red)] text-white border-[var(--brand-red)]' : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'}`}
-                                    onClick={() => setSizes(sizes.includes(size) ? sizes.filter(s => s !== size) : [...sizes, size])}
-                                >
-                                    {size}
-                                </button>
-                            ))}
+                    <div className="space-y-4">
+                        <p className="text-sm font-semibold text-zinc-900">Available Sizes (select at least one from either category)</p>
+
+                        {/* Adult Sizes */}
+                        <div className="space-y-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4">
+                            <label className="text-sm font-semibold text-zinc-700">👔 Adult Sizes</label>
+                            <div className="flex flex-wrap gap-2">
+                                {allSizes.map((size) => (
+                                    <button
+                                        type="button"
+                                        key={size}
+                                        className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-colors ${sizes.includes(size) ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-zinc-700 border-zinc-300 hover:border-orange-400'}`}
+                                        onClick={() => setSizes(sizes.includes(size) ? sizes.filter(s => s !== size) : [...sizes, size])}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                            {sizes.length > 0 && (
+                                <div className="text-xs font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
+                                    ✓ Selected: {sizes.join(', ')}
+                                </div>
+                            )}
                         </div>
-                        {sizes.length > 0 && (
-                            <div className="text-xs text-zinc-500 mt-1">Selected: {sizes.join(', ')}</div>
-                        )}
+
+                        {/* Children Sizes */}
+                        <div className="space-y-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                            <label className="text-sm font-semibold text-zinc-700">🧒 Children Sizes</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {CHILDREN_SIZES.map((size) => (
+                                    <button
+                                        type="button"
+                                        key={size}
+                                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-colors text-center ${childrenSizes.includes(size) ? 'bg-blue-600 text-white border-2 border-blue-600' : 'bg-white text-zinc-900 border-2 border-zinc-200 hover:border-blue-400'}`}
+                                        onClick={() => setChildrenSizes(childrenSizes.includes(size) ? childrenSizes.filter(s => s !== size) : [...childrenSizes, size])}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                            {childrenSizes.length > 0 && (
+                                <div className="text-xs font-semibold text-blue-700 bg-white rounded-lg border border-blue-200 px-3 py-2">
+                                    ✓ Selected: {childrenSizes.join(', ')}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-700">

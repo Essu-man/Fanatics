@@ -121,12 +121,30 @@ export default function AdminNewProductPage() {
     const [newColorName, setNewColorName] = useState("");
     const [newColorHex, setNewColorHex] = useState("#000000");
     const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+    const [selectedChildrenSizes, setSelectedChildrenSizes] = useState<string[]>([]);
     const [customTeams, setCustomTeams] = useState<Team[]>([]);
 
     const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+    const CHILDREN_SIZES = [
+        "1.5-2 yrs (16)",
+        "3 yrs (18)",
+        "4 yrs (20)",
+        "5-6 yrs (22)",
+        "7-8 yrs (24)",
+        "9-10 yrs (26)",
+        "11-12 yrs (28)",
+    ];
 
     const toggleSize = (size: string) => {
         setSelectedSizes((prev) =>
+            prev.includes(size)
+                ? prev.filter((s) => s !== size)
+                : [...prev, size]
+        );
+    };
+
+    const toggleChildrenSize = (size: string) => {
+        setSelectedChildrenSizes((prev) =>
             prev.includes(size)
                 ? prev.filter((s) => s !== size)
                 : [...prev, size]
@@ -285,8 +303,13 @@ export default function AdminNewProductPage() {
         // Team is only required for Jersey category, not for Trainers
         const isTeamRequired = category === "Jersey";
 
-        if (!name || !price || imageFiles.length === 0 || selectedSizes.length === 0) {
-            showToast("Name, price, at least one image, and at least one size are required", "error");
+        if (!name || !price || imageFiles.length === 0) {
+            showToast("Name, price, and at least one image are required", "error");
+            return;
+        }
+
+        if (selectedSizes.length === 0 && selectedChildrenSizes.length === 0) {
+            showToast("Select at least one adult or children size", "error");
             return;
         }
 
@@ -334,6 +357,7 @@ export default function AdminNewProductPage() {
                     images: uploadedImages,
                     colors: colors.length > 0 ? colors : undefined,
                     sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
+                    childrenSizes: selectedChildrenSizes.length > 0 ? selectedChildrenSizes : undefined,
                 }),
             });
 
@@ -460,30 +484,58 @@ export default function AdminNewProductPage() {
                     </div>
 
                     {/* Available Sizes */}
-                    <div className="space-y-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4">
-                        <label className="text-sm font-semibold text-zinc-900">
-                            Available Sizes * (Select at least one)
-                        </label>
-                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                            {AVAILABLE_SIZES.map((size) => (
-                                <button
-                                    key={size}
-                                    type="button"
-                                    onClick={() => toggleSize(size)}
-                                    className={`py-2 px-3 rounded-lg text-sm font-bold transition-all text-center ${selectedSizes.includes(size)
-                                        ? "bg-orange-600 text-white border-2 border-orange-700 shadow-md hover:shadow-lg"
-                                        : "bg-white text-zinc-900 border-2 border-zinc-200 hover:border-orange-400 hover:shadow-sm"
-                                        }`}
-                                >
-                                    {size}
-                                </button>
-                            ))}
-                        </div>
-                        {selectedSizes.length > 0 && (
-                            <div className="text-sm font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
-                                ✓ Selected ({selectedSizes.length}): {selectedSizes.join(", ")}
+                    <div className="space-y-4">
+                        <p className="text-sm font-semibold text-zinc-900">Available Sizes * (Select at least one from either category)</p>
+
+                        {/* Adult Sizes */}
+                        <div className="space-y-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4">
+                            <label className="text-sm font-semibold text-zinc-700">👔 Adult Sizes</label>
+                            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                {AVAILABLE_SIZES.map((size) => (
+                                    <button
+                                        key={size}
+                                        type="button"
+                                        onClick={() => toggleSize(size)}
+                                        className={`py-2 px-3 rounded-lg text-sm font-bold transition-all text-center ${selectedSizes.includes(size)
+                                            ? "bg-orange-600 text-white border-2 border-orange-700 shadow-md"
+                                            : "bg-white text-zinc-900 border-2 border-zinc-200 hover:border-orange-400"
+                                            }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
                             </div>
-                        )}
+                            {selectedSizes.length > 0 && (
+                                <div className="text-sm font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
+                                    ✓ Selected ({selectedSizes.length}): {selectedSizes.join(", ")}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Children Sizes */}
+                        <div className="space-y-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                            <label className="text-sm font-semibold text-zinc-700">🧒 Children Sizes</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {CHILDREN_SIZES.map((size) => (
+                                    <button
+                                        key={size}
+                                        type="button"
+                                        onClick={() => toggleChildrenSize(size)}
+                                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center ${selectedChildrenSizes.includes(size)
+                                            ? "bg-blue-600 text-white border-2 border-blue-700 shadow-md"
+                                            : "bg-white text-zinc-900 border-2 border-zinc-200 hover:border-blue-400"
+                                            }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                            {selectedChildrenSizes.length > 0 && (
+                                <div className="text-sm font-semibold text-blue-700 bg-white rounded-lg border border-blue-200 px-3 py-2">
+                                    ✓ Selected ({selectedChildrenSizes.length}): {selectedChildrenSizes.join(", ")}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Color Options */}
