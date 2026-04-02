@@ -7,7 +7,8 @@ export function generateTeamProducts(teamId: string, teamName: string, league: s
             id: `${teamId}-home-jersey`,
             name: `${teamName} Home Jersey`,
             team: teamName,
-            price: 89.99,
+            price: 169.99,
+            childrenPrice: 139.99,
             images: [
                 "https://images.unsplash.com/photo-1637089760728-0707413a1a03?w=500&h=600&fit=crop",
                 "https://images.unsplash.com/photo-1616124619460-ff4ed8f4683c?w=500&h=600&fit=crop",
@@ -20,7 +21,8 @@ export function generateTeamProducts(teamId: string, teamName: string, league: s
             id: `${teamId}-away-jersey`,
             name: `${teamName} Away Jersey`,
             team: teamName,
-            price: 89.99,
+            price: 169.99,
+            childrenPrice: 139.99,
             images: [
                 "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=500&h=600&fit=crop",
                 "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=500&h=600&fit=crop",

@@ -47,10 +47,14 @@ export async function GET(
         name: product.name,
         team: product.team || team.name,
         price: product.price,
+        childrenPrice: product.childrenPrice,
         images: product.images || [],
         colors: product.colors,
         stock: product.stock,
+        childrenStock: product.childrenStock,
         available: product.available,
+        sizes: product.sizes,
+        childrenSizes: product.childrenSizes,
     }));
 
     // Only use fallback products if no custom products exist
