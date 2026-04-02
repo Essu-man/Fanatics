@@ -99,11 +99,20 @@ export default function ProductCard({ product }: { product: PType }) {
 
                 <div className="mt-2 flex items-center gap-2">
                     {product.childrenPrice && product.childrenPrice !== product.price ? (
-                        <div className="flex flex-col text-left">
-                            <span className="text-base font-black text-zinc-900 tracking-tight">
-                                ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
-                            </span>
-                            <span className="text-[10px] font-bold text-zinc-500 -mt-0.5">(Kids - Adults)</span>
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center leading-tight">
+                                <span className="text-sm font-bold text-zinc-900 tracking-tight">
+                                    ₵{product.price.toFixed(2)}
+                                </span>
+                                <span className="text-[10px] font-bold text-zinc-500">(Adults)</span>
+                            </div>
+                            <div className="w-3 h-[2px] bg-zinc-400 self-center translate-y-[-5px] rounded-full"></div>
+                            <div className="flex flex-col items-center leading-tight">
+                                <span className="text-sm font-bold text-zinc-900 tracking-tight">
+                                    ₵{product.childrenPrice.toFixed(2)}
+                                </span>
+                                <span className="text-[10px] font-bold text-zinc-500">(Kids)</span>
+                            </div>
                         </div>
                     ) : (
                         <span className="text-lg font-medium text-zinc-900">
@@ -213,11 +222,20 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         <div className="mt-4 flex items-center gap-2">
                             {product.childrenPrice && product.childrenPrice !== product.price ? (
-                                <div className="flex flex-col text-left">
-                                    <span className="text-xl font-black text-zinc-900 tracking-tight">
-                                        ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
-                                    </span>
-                                    <span className="text-[12px] font-bold text-zinc-500 -mt-1">(Kids - Adults)</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-lg font-bold text-zinc-900 tracking-tight">
+                                            ₵{product.price.toFixed(2)}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-zinc-500">(Adults)</span>
+                                    </div>
+                                    <div className="w-3 h-[2px] bg-zinc-400 self-center mb-4 rounded-full"></div>
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-lg font-bold text-zinc-900 tracking-tight">
+                                            ₵{product.childrenPrice.toFixed(2)}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-zinc-500">(Kids)</span>
+                                    </div>
                                 </div>
                             ) : (
                                 <span className="text-2xl font-medium text-zinc-900">

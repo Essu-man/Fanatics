@@ -134,9 +134,16 @@ export default function RecommendedProducts({
                                     <div className="flex items-center justify-between">
                                         <div className="text-lg font-bold text-[var(--brand-red)]">
                                             {product.childrenPrice && product.childrenPrice !== product.price ? (
-                                                <div className="flex flex-col items-start leading-tight">
-                                                    <span className="text-sm">₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
-                                                    <span className="text-[10px] font-bold text-zinc-500">(Kids - Adults)</span>
+                                                <div className="flex items-center gap-2 leading-tight">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-sm font-bold">₵{product.price.toFixed(2)}</span>
+                                                        <span className="text-[9px] text-zinc-500 font-bold">(Adults)</span>
+                                                    </div>
+                                                    <div className="w-3 h-[2px] bg-zinc-300 self-center translate-y-[-4px] rounded-full"></div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-sm font-bold">₵{product.childrenPrice.toFixed(2)}</span>
+                                                        <span className="text-[9px] text-zinc-500 font-bold">(Kids)</span>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <span>₵{product.price.toFixed(2)}</span>

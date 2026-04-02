@@ -279,13 +279,22 @@ export default function ProductCard({ product }: { product: PType }) {
 
                     {/* Price & Stock */}
                     <div className="mt-3 flex items-center justify-between">
-                        <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
                             {product.childrenPrice && product.childrenPrice !== product.price ? (
                                 <>
-                                    <span className="text-base font-black text-zinc-900 tracking-tight">
-                                        ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-zinc-500 -mt-0.5">(Kids - Adults)</span>
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-sm font-bold text-zinc-900 tracking-tight">
+                                            ₵{product.price.toFixed(2)}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-zinc-500">(Adults)</span>
+                                    </div>
+                                    <div className="w-3 h-[2px] bg-zinc-400 self-center translate-y-[-5px] rounded-full"></div>
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-sm font-bold text-zinc-900 tracking-tight">
+                                            ₵{product.childrenPrice.toFixed(2)}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-zinc-500">(Kids)</span>
+                                    </div>
                                 </>
                             ) : (
                                 <span className="text-base font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
@@ -445,11 +454,20 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         <div className="mt-4 sm:mt-6 flex items-center gap-4">
                             {!sizeCategory && modalData.childrenPrice && modalData.childrenPrice !== modalData.price ? (
-                                <div className="flex flex-col">
-                                    <span className="text-xl sm:text-2xl font-black text-zinc-900">
-                                        ₵{modalData.childrenPrice.toFixed(2)} - ₵{modalData.price.toFixed(2)}
-                                    </span>
-                                    <span className="text-sm font-semibold text-zinc-500 -mt-1">(Kids - Adults)</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-lg sm:text-2xl font-black text-zinc-900 leading-tight">
+                                            ₵{modalData.price.toFixed(2)}
+                                        </span>
+                                        <span className="text-xs font-bold text-[var(--brand-red)]">(Adults)</span>
+                                    </div>
+                                    <div className="w-6 h-[2.5px] bg-zinc-400 self-center translate-y-[-10px] rounded-full"></div>
+                                    <div className="flex flex-col items-center leading-tight">
+                                        <span className="text-lg sm:text-2xl font-black text-zinc-900 leading-tight">
+                                            ₵{modalData.childrenPrice.toFixed(2)}
+                                        </span>
+                                        <span className="text-xs font-bold text-zinc-500">(Kids)</span>
+                                    </div>
                                 </div>
                             ) : (
                                 <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{currentPrice.toFixed(2)}</span>

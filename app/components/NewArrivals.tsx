@@ -175,11 +175,16 @@ export default function NewArrivals() {
                       </p>
                       <div className="mt-1">
                         {product.childrenPrice && product.childrenPrice !== product.price ? (
-                          <div className="flex flex-col">
-                            <p className="text-base font-semibold">
-                              ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
-                            </p>
-                            <span className="text-[10px] font-medium text-white/70">(Kids - Adults)</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col items-center leading-tight">
+                              <p className="text-sm font-bold">₵{product.price.toFixed(2)}</p>
+                              <span className="text-[9px] font-medium text-white/70 tracking-tighter">(Adults)</span>
+                            </div>
+                            <div className="w-3 h-[2px] bg-white/40 self-center translate-y-[-4px] rounded-full"></div>
+                            <div className="flex flex-col items-center leading-tight">
+                              <p className="text-sm font-bold">₵{product.childrenPrice.toFixed(2)}</p>
+                              <span className="text-[9px] font-medium text-white/70 tracking-tighter">(Kids)</span>
+                            </div>
                           </div>
                         ) : (
                           <p className="text-base font-semibold">₵{product.price.toFixed(2)}</p>

@@ -317,9 +317,16 @@ export default function AdminProductsPage() {
                                     <td className="p-4 text-zinc-600">{product.category?.replace(/^\$/, "")}</td>
                                     <td className="p-4 font-semibold text-zinc-900">
                                         {product.childrenPrice && product.childrenPrice !== product.price ? (
-                                            <div className="flex flex-col">
-                                                <span>₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
-                                                <span className="text-[10px] text-zinc-500 font-normal mt-0.5">Kids - Adults</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-col items-center leading-tight">
+                                                    <span className="font-bold">₵{product.price.toFixed(2)}</span>
+                                                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">(Adults)</span>
+                                                </div>
+                                                <div className="w-2.5 h-[1.5px] bg-zinc-300 self-center translate-y-[-4px] rounded-full"></div>
+                                                <div className="flex flex-col items-center leading-tight">
+                                                    <span className="font-bold">₵{product.childrenPrice.toFixed(2)}</span>
+                                                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">(Kids)</span>
+                                                </div>
                                             </div>
                                         ) : (
                                             <span>₵{product.price.toFixed(2)}</span>

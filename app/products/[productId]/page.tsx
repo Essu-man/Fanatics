@@ -338,10 +338,21 @@ export default function ProductDetailPage() {
 
                         <div className="mb-6 flex items-center gap-3">
                             {!sizeCategory && product.childrenPrice && product.childrenPrice !== product.price && !product.salePrice ? (
-                                <span className="text-2xl sm:text-3xl font-black text-zinc-900">
-                                    ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
-                                    <span className="text-sm sm:text-base font-semibold text-zinc-500 ml-2">(Kids - Adults)</span>
-                                </span>
+                                <div className="flex items-center gap-6 sm:gap-10">
+                                    <div className="flex flex-col items-center sm:items-start group">
+                                        <span className="text-2xl sm:text-4xl font-black text-zinc-900 leading-tight">
+                                            ₵{product.price.toFixed(2)}
+                                        </span>
+                                        <span className="text-sm sm:text-base font-bold text-[var(--brand-red)] mt-1 uppercase tracking-wider">(Adults)</span>
+                                    </div>
+                                    <div className="w-8 h-[3px] bg-zinc-300 self-center translate-y-[-10px] rounded-full"></div>
+                                    <div className="flex flex-col items-center sm:items-start group">
+                                        <span className="text-2xl sm:text-4xl font-black text-zinc-900 leading-tight">
+                                            ₵{product.childrenPrice.toFixed(2)}
+                                        </span>
+                                        <span className="text-sm sm:text-base font-bold text-zinc-500 mt-1 uppercase tracking-wider">(Kids)</span>
+                                    </div>
+                                </div>
                             ) : (
                                 <>
                                     <span className="text-3xl font-bold text-zinc-900">
