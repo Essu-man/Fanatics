@@ -195,10 +195,12 @@ export default function ProductDetailPage() {
     const handleAddToCart = () => {
         if (isOutOfStock) return;
 
+        const currentPrice = sizeCategory === "children" && product.childrenPrice ? product.childrenPrice : product.price;
+
         addItem({
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: currentPrice,
             colorId: selectedColor,
             size: selectedSize,
             jerseyType,
@@ -218,7 +220,22 @@ export default function ProductDetailPage() {
         setIsAdded(true);
     };
 
-    const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
+    const noAdultStock = product.stock !== undefined && product.stock === 0;
+    const noChildrenStock = product.childrenStock !== undefined && product.childrenStock === 0;
+    
+    const hasAdultSizes = product.sizes && product.sizes.length > 0;
+    const hasChildrenSizes = product.childrenSizes && product.childrenSizes.length > 0;
+    const adultCategoryExists = !hasChildrenSizes || hasAdultSizes;
+    
+    const adultOutOfStock = adultCategoryExists && noAdultStock;
+    const childrenOutOfStock = hasChildrenSizes && noChildrenStock;
+    
+    const isGloballyOutOfStock = (product.available === false) || 
+        ((!adultCategoryExists || adultOutOfStock) && (!hasChildrenSizes || childrenOutOfStock));
+
+    const currentPrice = sizeCategory === "children" && product.childrenPrice !== undefined ? product.childrenPrice : product.price;
+    const currentStock = sizeCategory === "children" && product.childrenStock !== undefined ? product.childrenStock : product.stock;
+    const isOutOfStock = product.available === false || (currentStock !== undefined && currentStock === 0) || (sizeCategory === "" && isGloballyOutOfStock);
 
     return (
         <div className="min-h-screen bg-white text-zinc-900">
@@ -320,17 +337,26 @@ export default function ProductDetailPage() {
                         )}
 
                         <div className="mb-6 flex items-center gap-3">
-                            <span className="text-3xl font-bold text-zinc-900">
-                                ₵{product.salePrice ? product.salePrice.toFixed(2) : product.price.toFixed(2)}
-                            </span>
-                            {product.salePrice && (
+                            {!sizeCategory && product.childrenPrice && product.childrenPrice !== product.price && !product.salePrice ? (
+                                <span className="text-2xl sm:text-3xl font-black text-zinc-900">
+                                    ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
+                                    <span className="text-sm sm:text-base font-semibold text-zinc-500 ml-2">(Kids - Adults)</span>
+                                </span>
+                            ) : (
                                 <>
-                                    <span className="text-xl text-zinc-500 line-through">
-                                        ₵{product.price.toFixed(2)}
+                                    <span className="text-3xl font-bold text-zinc-900">
+                                        ₵{product.salePrice ? product.salePrice.toFixed(2) : currentPrice.toFixed(2)}
                                     </span>
-                                    <span className="rounded bg-red-100 px-2 py-1 text-sm font-medium text-red-700">
-                                        {Math.round(((product.price - product.salePrice) / product.price) * 100)}% OFF
-                                    </span>
+                                    {product.salePrice && (
+                                        <>
+                                            <span className="text-xl text-zinc-500 line-through">
+                                                ₵{currentPrice.toFixed(2)}
+                                            </span>
+                                            <span className="rounded bg-red-100 px-2 py-1 text-sm font-medium text-red-700">
+                                                {Math.round(((currentPrice - product.salePrice) / currentPrice) * 100)}% OFF
+                                            </span>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -618,8 +644,8 @@ export default function ProductDetailPage() {
                         {/* Stock Indicator & Social Proof */}
                         <div className="mb-6 space-y-3">
                             <div className="flex items-center gap-3">
-                                <StockIndicator stock={product.stock ?? 0} />
-                                {product.available !== false && product.stock !== 0 && (
+                                <StockIndicator stock={currentStock ?? 0} />
+                                {product.available !== false && currentStock !== 0 && (
                                     <span className="text-sm text-zinc-500">
                                         Usually ships within 2-3 business days
                                     </span>

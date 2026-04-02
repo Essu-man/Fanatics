@@ -66,14 +66,29 @@ export default function ProductCard({ product }: { product: PType }) {
         ? (Array.isArray(modalData.sizes) ? modalData.sizes : [])
         : (Array.isArray(modalData.childrenSizes) ? modalData.childrenSizes : []));
 
-    // Check if product is out of stock
-    const isOutOfStock = (product.available === false) || (product.stock !== undefined && product.stock === 0);
+    // Check if product is globally out of stock
+    const noAdultStock = product.stock !== undefined && product.stock === 0;
+    const noChildrenStock = product.childrenStock !== undefined && product.childrenStock === 0;
+    
+    const hasAdultSizes = product.sizes && product.sizes.length > 0;
+    const hasChildrenSizes = product.childrenSizes && product.childrenSizes.length > 0;
+    const adultCategoryExists = !hasChildrenSizes || hasAdultSizes;
+    
+    const adultOutOfStock = adultCategoryExists && noAdultStock;
+    const childrenOutOfStock = hasChildrenSizes && noChildrenStock;
+    
+    const isOutOfStock = (product.available === false) || 
+        ((!adultCategoryExists || adultOutOfStock) && (!hasChildrenSizes || childrenOutOfStock));
+
+    const currentPrice = sizeCategory === "children" && modalData.childrenPrice !== undefined ? modalData.childrenPrice : modalData.price;
+    const currentStock = sizeCategory === "children" && modalData.childrenStock !== undefined ? modalData.childrenStock : modalData.stock;
+    const isModalOutOfStock = modalData.available === false || (currentStock !== undefined && currentStock === 0);
 
     function addToCart() {
         addItem({
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: currentPrice,
             colorId: selectedColor,
             size: selectedSize,
             jerseyType,
@@ -246,27 +261,36 @@ export default function ProductCard({ product }: { product: PType }) {
                     </Link>
 
                     {/* Available Sizes Snapshot */}
-                    {(product.sizes?.length || product.childrenSizes?.length) && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                            {product.sizes?.slice(0, 3).map((size) => (
-                                <span key={size} className="px-1 text-[9px] font-bold bg-zinc-100 text-zinc-600 rounded">
-                                    {size}
-                                </span>
-                            ))}
-                            {product.childrenSizes?.slice(0, 2).map((size) => (
-                                <span key={size} className="px-1 text-[9px] font-bold bg-blue-50 text-blue-600 rounded">
-                                    {size.split(' ')[0]}
-                                </span>
-                            ))}
-                            {(product.sizes?.length || 0) + (product.childrenSizes?.length || 0) > 5 && (
-                                <span className="text-[9px] text-zinc-400">+mor</span>
-                            )}
-                        </div>
-                    )}
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {hasAdultSizes && hasChildrenSizes ? (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 rounded inline-flex items-center">
+                                Adult & Kids Sizes
+                            </span>
+                        ) : hasAdultSizes ? (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-zinc-100 text-zinc-700 rounded inline-flex items-center">
+                                Adult Sizes
+                            </span>
+                        ) : hasChildrenSizes ? (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded inline-flex items-center">
+                                Kids Sizes
+                            </span>
+                        ) : null}
+                    </div>
 
                     {/* Price & Stock */}
-                    <div className="mt-2 flex items-center justify-between">
-                        <span className="text-base font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
+                    <div className="mt-3 flex items-center justify-between">
+                        <div className="flex flex-col">
+                            {product.childrenPrice && product.childrenPrice !== product.price ? (
+                                <>
+                                    <span className="text-base font-black text-zinc-900 tracking-tight">
+                                        ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-zinc-500 -mt-0.5">(Kids - Adults)</span>
+                                </>
+                            ) : (
+                                <span className="text-base font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
+                            )}
+                        </div>
                         <StockIndicator stock={product.stock ?? 0} />
                     </div>
 
@@ -295,7 +319,6 @@ export default function ProductCard({ product }: { product: PType }) {
                         </div>
                     )}
 
-                    {/* Quantity and Add to Cart */}
                     <div className="mt-2 space-y-1.5">
                         {isOutOfStock ? (
                             <div className="rounded-lg border-2 border-red-200 bg-red-50 px-3 py-2 text-center">
@@ -421,8 +444,17 @@ export default function ProductCard({ product }: { product: PType }) {
                         <p className="mt-2 text-sm sm:text-base text-zinc-500">{product.team}</p>
 
                         <div className="mt-4 sm:mt-6 flex items-center gap-4">
-                            <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{product.price.toFixed(2)}</span>
-                            <StockIndicator stock={modalData.stock ?? 0} />
+                            {!sizeCategory && modalData.childrenPrice && modalData.childrenPrice !== modalData.price ? (
+                                <div className="flex flex-col">
+                                    <span className="text-xl sm:text-2xl font-black text-zinc-900">
+                                        ₵{modalData.childrenPrice.toFixed(2)} - ₵{modalData.price.toFixed(2)}
+                                    </span>
+                                    <span className="text-sm font-semibold text-zinc-500 -mt-1">(Kids - Adults)</span>
+                                </div>
+                            ) : (
+                                <span className="text-2xl sm:text-3xl font-black text-zinc-900">₵{currentPrice.toFixed(2)}</span>
+                            )}
+                            <StockIndicator stock={currentStock ?? 0} />
                         </div>
 
                         {/* Jersey Type */}
@@ -632,7 +664,7 @@ export default function ProductCard({ product }: { product: PType }) {
 
                         {/* Action Buttons */}
                         <div className="mt-4 sm:mt-8 flex flex-col gap-2 sm:gap-3">
-                            {isOutOfStock ? (
+                            {isModalOutOfStock ? (
                                 <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4 text-center">
                                     <p className="text-base font-bold text-red-600">OUT OF STOCK</p>
                                     <p className="mt-1 text-xs text-red-500">This item is currently unavailable</p>

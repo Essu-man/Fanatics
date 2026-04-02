@@ -98,9 +98,18 @@ export default function ProductCard({ product }: { product: PType }) {
                 </p>
 
                 <div className="mt-2 flex items-center gap-2">
-                    <span className="text-lg font-medium text-zinc-900">
-                        ₵{product.price.toFixed(2)}
-                    </span>
+                    {product.childrenPrice && product.childrenPrice !== product.price ? (
+                        <div className="flex flex-col text-left">
+                            <span className="text-base font-black text-zinc-900 tracking-tight">
+                                ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-500 -mt-0.5">(Kids - Adults)</span>
+                        </div>
+                    ) : (
+                        <span className="text-lg font-medium text-zinc-900">
+                            ₵{product.price.toFixed(2)}
+                        </span>
+                    )}
                     {product.salePrice && (
                         <span className="text-sm text-zinc-500 line-through">
                             ₵{product.salePrice.toFixed(2)}
@@ -203,9 +212,18 @@ export default function ProductCard({ product }: { product: PType }) {
                         </p>
 
                         <div className="mt-4 flex items-center gap-2">
-                            <span className="text-2xl font-medium text-zinc-900">
-                                ₵{product.price.toFixed(2)}
-                            </span>
+                            {product.childrenPrice && product.childrenPrice !== product.price ? (
+                                <div className="flex flex-col text-left">
+                                    <span className="text-xl font-black text-zinc-900 tracking-tight">
+                                        ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
+                                    </span>
+                                    <span className="text-[12px] font-bold text-zinc-500 -mt-1">(Kids - Adults)</span>
+                                </div>
+                            ) : (
+                                <span className="text-2xl font-medium text-zinc-900">
+                                    ₵{product.price.toFixed(2)}
+                                </span>
+                            )}
                             {product.salePrice && (
                                 <span className="text-lg text-zinc-500 line-through">
                                     ₵{product.salePrice.toFixed(2)}

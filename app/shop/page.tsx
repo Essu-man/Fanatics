@@ -46,9 +46,13 @@ function ShopPageContent() {
                             league: p.league,
                             category: p.category,
                             price: p.price,
+                            childrenPrice: p.childrenPrice,
                             images: p.images || [],
                             colors: p.colors || [],
+                            sizes: p.sizes || [],
+                            childrenSizes: p.childrenSizes || [],
                             stock: p.stock,
+                            childrenStock: p.childrenStock,
                             available: p.available,
                         }));
 

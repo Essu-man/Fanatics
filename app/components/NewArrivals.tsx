@@ -8,6 +8,7 @@ interface Product {
   name: string;
   team?: string;
   price: number;
+  childrenPrice?: number;
   images: string[];
   category?: string;
 }
@@ -45,6 +46,7 @@ export default function NewArrivals() {
               name: p.name,
               team: p.team,
               price: p.price,
+              childrenPrice: p.childrenPrice,
               images: p.images || [],
               category: p.category,
             }));
@@ -171,7 +173,18 @@ export default function NewArrivals() {
                       <p className="text-sm text-white/90">
                         {product.team ? `${product.team} • ` : ""}{(product.category || "Jersey").replace(/^\$/, "")}
                       </p>
-                      <p className="mt-1 text-base font-semibold">₵{product.price.toFixed(2)}</p>
+                      <div className="mt-1">
+                        {product.childrenPrice && product.childrenPrice !== product.price ? (
+                          <div className="flex flex-col">
+                            <p className="text-base font-semibold">
+                              ₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}
+                            </p>
+                            <span className="text-[10px] font-medium text-white/70">(Kids - Adults)</span>
+                          </div>
+                        ) : (
+                          <p className="text-base font-semibold">₵{product.price.toFixed(2)}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>

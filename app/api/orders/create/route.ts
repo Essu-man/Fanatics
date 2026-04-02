@@ -125,12 +125,23 @@ export async function POST(request: NextRequest) {
             try {
                 const product = await getProduct(item.id);
                 if (product) {
-                    const newStock = Math.max(0, product.stock - item.quantity);
-                    await updateProduct(item.id, {
-                        stock: newStock,
-                        available: newStock > 0 ? product.available : false,
-                    });
-                    console.log(`Updated stock for product ${item.id}: ${product.stock} -> ${newStock}`);
+                    const isChildrenSize = product.childrenSizes?.includes(item.size);
+                    
+                    if (isChildrenSize) {
+                        const currentStock = product.childrenStock ?? 0;
+                        const newStock = Math.max(0, currentStock - item.quantity);
+                        await updateProduct(item.id, {
+                            childrenStock: newStock,
+                        });
+                        console.log(`Updated children stock for product ${item.id}: ${currentStock} -> ${newStock}`);
+                    } else {
+                        const newStock = Math.max(0, product.stock - item.quantity);
+                        await updateProduct(item.id, {
+                            stock: newStock,
+                            available: newStock > 0 ? product.available : false,
+                        });
+                        console.log(`Updated adult stock for product ${item.id}: ${product.stock} -> ${newStock}`);
+                    }
                 }
             } catch (stockError) {
                 console.error(`Failed to update stock for product ${item.id}:`, stockError);

@@ -404,9 +404,16 @@ export default function AccountPage() {
                                                 <p className="mt-2 text-sm font-medium text-zinc-900 line-clamp-1">
                                                     {product.name}
                                                 </p>
-                                                <p className="text-sm font-bold text-zinc-900">
-                                                    ₵{product.price.toFixed(2)}
-                                                </p>
+                                                <div className="text-sm font-bold text-zinc-900">
+                                                    {product.childrenPrice && product.childrenPrice !== product.price ? (
+                                                        <div className="flex flex-col leading-tight">
+                                                            <span>₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
+                                                            <span className="text-[10px] font-bold text-zinc-500">(Kids - Adults)</span>
+                                                        </div>
+                                                    ) : (
+                                                        <>₵{product.price.toFixed(2)}</>
+                                                    )}
+                                                </div>
                                             </Link>
                                         ))}
                                     </div>

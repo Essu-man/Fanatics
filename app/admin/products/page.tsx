@@ -17,6 +17,7 @@ type AdminProduct = {
     id: string;
     name: string;
     price: number;
+    childrenPrice?: number;
     stock: number;
     available: boolean;
     category?: string;
@@ -59,6 +60,7 @@ export default function AdminProductsPage() {
                     id: product.id,
                     name: product.name,
                     price: Number(product.price || 0),
+                    childrenPrice: product.childrenPrice ? Number(product.childrenPrice) : undefined,
                     stock: Number(product.stock || 0),
                     available: Boolean(product.available),
                     category: product.category,
@@ -313,7 +315,16 @@ export default function AdminProductsPage() {
                                         </div>
                                     </td>
                                     <td className="p-4 text-zinc-600">{product.category?.replace(/^\$/, "")}</td>
-                                    <td className="p-4 font-semibold text-zinc-900">₵{product.price.toFixed(2)}</td>
+                                    <td className="p-4 font-semibold text-zinc-900">
+                                        {product.childrenPrice && product.childrenPrice !== product.price ? (
+                                            <div className="flex flex-col">
+                                                <span>₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
+                                                <span className="text-[10px] text-zinc-500 font-normal mt-0.5">Kids - Adults</span>
+                                            </div>
+                                        ) : (
+                                            <span>₵{product.price.toFixed(2)}</span>
+                                        )}
+                                    </td>
                                     <td className="p-4">
                                         <span
                                             className={`inline-flex items-center gap-1 ${product.stock === 0

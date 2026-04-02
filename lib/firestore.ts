@@ -345,6 +345,8 @@ export interface Product {
     colors?: Array<{ id: string; name: string; hex: string }>;
     sizes?: string[];
     childrenSizes?: string[];
+    childrenPrice?: number;
+    childrenStock?: number;
     similarProducts?: string[];
     createdAt?: Date | null;
     updatedAt?: Date | null;

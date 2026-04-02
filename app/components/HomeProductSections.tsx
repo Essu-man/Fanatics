@@ -161,9 +161,13 @@ export default function HomeProductSections() {
                         teamId: p.teamId,
                         league: p.league,
                         price: p.price,
+                        childrenPrice: p.childrenPrice,
                         images: p.images || [],
                         colors: p.colors || [],
+                        sizes: p.sizes || [],
+                        childrenSizes: p.childrenSizes || [],
                         stock: p.stock,
+                        childrenStock: p.childrenStock,
                         available: p.available,
                     }));
 

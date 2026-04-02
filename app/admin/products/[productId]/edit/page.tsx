@@ -27,7 +27,9 @@ export default function AdminEditProductPage() {
     const [teamId, setTeamId] = useState("");
     const [category, setCategory] = useState("Jersey");
     const [price, setPrice] = useState("");
+    const [childrenPrice, setChildrenPrice] = useState("");
     const [stock, setStock] = useState("25");
+    const [childrenStock, setChildrenStock] = useState("");
     const [description, setDescription] = useState("");
     const [sizes, setSizes] = useState<string[]>([]);
     const [childrenSizes, setChildrenSizes] = useState<string[]>([]);
@@ -76,7 +78,9 @@ export default function AdminEditProductPage() {
                 setTeamId(product.teamId || product.team || "");
                 setCategory(product.category || "Jersey");
                 setPrice(String(product.price || ""));
+                setChildrenPrice(product.childrenPrice ? String(product.childrenPrice) : "");
                 setStock(String(product.stock || "25"));
+                setChildrenStock(product.childrenStock ? String(product.childrenStock) : "");
                 setDescription(product.description || "");
                 setExistingImages(product.images || []);
                 setPreviewUrls(product.images || []);
@@ -265,7 +269,9 @@ export default function AdminEditProductPage() {
                 body: JSON.stringify({
                     name,
                     price: Number(price),
+                    childrenPrice: childrenPrice ? Number(childrenPrice) : undefined,
                     stock: Number(stock || 0),
+                    childrenStock: childrenStock ? Number(childrenStock) : undefined,
                     ...(teamId && { teamId }), // Only include teamId if it exists
                     category,
                     description,
@@ -383,29 +389,55 @@ export default function AdminEditProductPage() {
                     )}
 
                     <div className="grid gap-5 md:grid-cols-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700">Price</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                    placeholder="450"
-                                    required
-                                />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-700">Adult Price</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                        placeholder="450"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-700">Adult Stock</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={stock}
+                                        onChange={(e) => setStock(e.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700">Stock</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={stock}
-                                    onChange={(e) => setStock(e.target.value)}
-                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-700">Children Price (Optional)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={childrenPrice}
+                                        onChange={(e) => setChildrenPrice(e.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                        placeholder="250"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-700">Children Stock</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={childrenStock}
+                                        onChange={(e) => setChildrenStock(e.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

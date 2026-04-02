@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, price, stock, available = true, category, teamId, description, images, colors, sizes, childrenSizes } = body;
+        const { name, price, childrenPrice, stock, childrenStock, available = true, category, teamId, description, images, colors, sizes, childrenSizes } = body;
 
         if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0 || ((!sizes || sizes.length === 0) && (!childrenSizes || childrenSizes.length === 0))) {
             return NextResponse.json(
@@ -118,7 +118,9 @@ export async function POST(request: Request) {
         const payload = {
             name: name.trim(),
             price: Number(price),
+            childrenPrice: childrenPrice ? Number(childrenPrice) : undefined,
             stock: Number(stock ?? 0),
+            childrenStock: childrenStock !== undefined && childrenStock !== null && childrenStock !== "" ? Number(childrenStock) : undefined,
             available: Boolean(available),
             category: category || "Jersey",
             team: teamName,

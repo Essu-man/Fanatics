@@ -132,9 +132,16 @@ export default function RecommendedProducts({
                                         <p className="mb-2 text-xs text-zinc-500">{product.team}</p>
                                     )}
                                     <div className="flex items-center justify-between">
-                                        <p className="text-lg font-bold text-[var(--brand-red)]">
-                                            ₵{product.price.toFixed(2)}
-                                        </p>
+                                        <div className="text-lg font-bold text-[var(--brand-red)]">
+                                            {product.childrenPrice && product.childrenPrice !== product.price ? (
+                                                <div className="flex flex-col items-start leading-tight">
+                                                    <span className="text-sm">₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
+                                                    <span className="text-[10px] font-bold text-zinc-500">(Kids - Adults)</span>
+                                                </div>
+                                            ) : (
+                                                <span>₵{product.price.toFixed(2)}</span>
+                                            )}
+                                        </div>
                                         <StockIndicator stock={product.stock ?? 0} />
                                     </div>
                                 </div>

@@ -260,7 +260,9 @@ export interface Product {
     id: string;
     name: string;
     price: number;
+    childrenPrice?: number;
     stock: number;
+    childrenStock?: number;
     available: boolean;
     category: string;
     team?: string;

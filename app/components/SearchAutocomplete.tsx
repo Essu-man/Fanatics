@@ -172,7 +172,16 @@ export default function SearchAutocomplete() {
 										</div>
 										<div className="min-w-0 flex-1">
 											<div className="truncate font-medium">{product.name}</div>
-											<div className="text-xs text-zinc-500">₵{product.price.toFixed(2)}</div>
+											<div className="text-xs text-zinc-500">
+												{product.childrenPrice && product.childrenPrice !== product.price ? (
+													<div className="flex flex-col items-start leading-tight">
+														<span className="text-sm font-semibold text-zinc-900">₵{product.childrenPrice.toFixed(2)} - ₵{product.price.toFixed(2)}</span>
+														<span className="text-[10px] font-bold text-zinc-500">(Kids - Adults)</span>
+													</div>
+												) : (
+													<span className="font-semibold text-zinc-900">₵{product.price.toFixed(2)}</span>
+												)}
+											</div>
 										</div>
 									</Link>
 								))}

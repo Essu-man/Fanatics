@@ -7,6 +7,7 @@ export type Product = {
     description?: string;
     // prices in Ghana Cedi
     price: number;
+    childrenPrice?: number;
     salePrice?: number;
     // primary image + gallery
     images: string[];
@@ -20,8 +21,8 @@ export type Product = {
     // available sizes
     sizes?: string[];
     childrenSizes?: string[];
-    // inventory management
     stock?: number;
+    childrenStock?: number;
     available?: boolean;
 };
 
