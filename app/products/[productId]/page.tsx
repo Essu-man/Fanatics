@@ -22,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/app/components/ui/select";
+import { sortSizes, formatSize } from "@/lib/sizes";
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -454,7 +455,7 @@ export default function ProductDetailPage() {
                                             2. Select Size: {selectedSize}
                                         </label>
                                         <div className="flex flex-wrap gap-3">
-                                            {(sizeCategory === "adults" ? product.sizes ?? [] : product.childrenSizes ?? []).map((size) => (
+                                            {sortSizes(sizeCategory === "adults" ? product.sizes ?? [] : product.childrenSizes ?? []).map((size) => (
                                                 <button
                                                     key={size}
                                                     onClick={() => setSelectedSize(size)}
@@ -463,7 +464,7 @@ export default function ProductDetailPage() {
                                                         : "border-zinc-200 hover:border-zinc-300 bg-white hover:shadow-sm"
                                                         } ${sizeCategory === "children" ? "min-w-[140px]" : "min-w-[70px]"}`}
                                                 >
-                                                    {size}
+                                            {formatSize(size)}
                                                 </button>
                                             ))}
                                         </div>

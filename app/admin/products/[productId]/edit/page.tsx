@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { UploadCloud, ArrowLeft, Plus, X } from "lucide-react";
 import { useToast } from "../../../../components/ui/ToastContainer";
 import { footballTeams, basketballTeams, internationalTeams, type Team } from "@/lib/teams";
+import { sortSizes, formatSize } from "@/lib/sizes";
 import {
     Select,
     SelectContent,
@@ -468,13 +469,13 @@ export default function AdminEditProductPage() {
                                         className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-colors ${sizes.includes(size) ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-zinc-700 border-zinc-300 hover:border-orange-400'}`}
                                         onClick={() => setSizes(sizes.includes(size) ? sizes.filter(s => s !== size) : [...sizes, size])}
                                     >
-                                        {size}
+                                        {formatSize(size)}
                                     </button>
                                 ))}
                             </div>
                             {sizes.length > 0 && (
                                 <div className="text-xs font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
-                                    ✓ Selected: {sizes.join(', ')}
+                                    ✓ Selected: {sortSizes(sizes).map(formatSize).join(', ')}
                                 </div>
                             )}
                         </div>

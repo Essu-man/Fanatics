@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/app/components/ui/select";
+import { sortSizes, formatSize } from "@/lib/sizes";
 
 export default function ProductCard({ product }: { product: PType }) {
     const router = useRouter();
@@ -63,8 +64,8 @@ export default function ProductCard({ product }: { product: PType }) {
     const images = modalData.images || [];
     const selectedImage = images[selectedImageIndex];
     const sizes = sizeCategory === "" ? [] : (sizeCategory === "adults"
-        ? (Array.isArray(modalData.sizes) ? modalData.sizes : [])
-        : (Array.isArray(modalData.childrenSizes) ? modalData.childrenSizes : []));
+        ? (Array.isArray(modalData.sizes) ? sortSizes(modalData.sizes) : [])
+        : (Array.isArray(modalData.childrenSizes) ? sortSizes(modalData.childrenSizes) : []));
 
     // Check if product is globally out of stock
     const noAdultStock = product.stock !== undefined && product.stock === 0;
@@ -539,7 +540,7 @@ export default function ProductCard({ product }: { product: PType }) {
                                                     : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                                     } ${sizeCategory === "children" ? "px-4 min-w-[100px]" : "w-10 sm:w-12"}`}
                                             >
-                                                {size}
+                                                {formatSize(size)}
                                             </button>
                                         ))}
                                     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UploadCloud, ArrowLeft, Plus, X } from "lucide-react";
 import { useToast } from "../../../components/ui/ToastContainer";
 import { footballTeams, basketballTeams, internationalTeams, type Team } from "@/lib/teams";
+import { sortSizes, formatSize } from "@/lib/sizes";
 import {
     Select,
     SelectContent,
@@ -126,7 +127,7 @@ export default function AdminNewProductPage() {
     const [selectedChildrenSizes, setSelectedChildrenSizes] = useState<string[]>([]);
     const [customTeams, setCustomTeams] = useState<Team[]>([]);
 
-    const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+    const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
     const CHILDREN_SIZES = [
         "1.5-2 yrs (16)",
         "3 yrs (18)",
@@ -537,7 +538,7 @@ export default function AdminNewProductPage() {
                             </div>
                             {selectedSizes.length > 0 && (
                                 <div className="text-sm font-semibold text-orange-700 bg-white rounded-lg border border-orange-200 px-3 py-2">
-                                    ✓ Selected ({selectedSizes.length}): {selectedSizes.join(", ")}
+                                    ✓ Selected ({selectedSizes.length}): {sortSizes(selectedSizes).join(", ")}
                                 </div>
                             )}
                         </div>
