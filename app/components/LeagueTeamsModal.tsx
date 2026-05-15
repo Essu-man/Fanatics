@@ -356,7 +356,7 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
                                     {/* League Logo */}
                                     {currentLeague.logoUrl && (
                                         <div className="flex-shrink-0">
-                                            <div className="relative w-24 h-24 md:w-32 md:h-32 bg-white/20 backdrop-blur-sm rounded-xl p-2 border border-white/30 overflow-hidden shadow-lg">
+                                            <div className="relative w-24 h-24 md:w-32 md:h-32 bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 overflow-hidden shadow-lg">
                                                 <img
                                                     src={currentLeague.logoUrl}
                                                     alt={currentLeague.name}
@@ -388,7 +388,7 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
                                         <button
                                             key={league.id}
                                             onClick={() => setCurrentLeagueIndex(index)}
-                                            className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${index === currentLeagueIndex
+                                            className={`flex-shrink-0 px-5 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap ${index === currentLeagueIndex
                                                 ? "bg-[var(--brand-red)] text-white shadow-lg scale-105"
                                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                                 }`}
@@ -478,13 +478,13 @@ export default function LeagueTeamsModal({ isOpen, onClose, selectedLeagueId }: 
                                             >
                                                 <div
                                                     onClick={() => handleTeamClick(team.id)}
-                                                    className="relative h-full rounded-xl overflow-hidden border-2 border-slate-200 bg-white transition-all duration-300 hover:border-[var(--brand-red)] hover:shadow-lg hover:scale-105"
+                                                    className="relative h-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-white transition-all duration-300 hover:border-[var(--brand-red)] hover:shadow-lg hover:scale-105"
                                                 >
                                                     {/* Background with gradient overlay on hover */}
                                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/5 group-hover:to-slate-900/20 transition-all" />
 
                                                     {/* Team Logo Container */}
-                                                    <div className="flex h-32 md:h-40 items-center justify-center bg-slate-50 p-3 overflow-hidden">
+                                                    <div className="flex h-32 md:h-40 items-center justify-center bg-slate-50 p-4 overflow-hidden rounded-t-2xl">
                                                         {team.logo || team.logoUrl ? (
                                                             <img
                                                                 src={team.logo || team.logoUrl}

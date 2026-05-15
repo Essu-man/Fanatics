@@ -21,7 +21,9 @@ export interface UserProfile {
     email: string;
     firstName: string;
     lastName: string;
-    role: "admin" | "customer" | "delivery";
+    role: "admin" | "customer" | "delivery" | "vendor";
+    /** Set when role is vendor; points to vendors/{vendorId} */
+    vendorId?: string;
     phone?: string;
     createdAt: Date;
     emailVerified: boolean;
@@ -43,6 +45,9 @@ export const createUserProfile = async (uid: string, data: Omit<UserProfile, "ui
         // Only include phone if it's defined
         if (data.phone !== undefined && data.phone !== null) {
             profileData.phone = data.phone;
+        }
+        if (data.vendorId !== undefined && data.vendorId !== null) {
+            profileData.vendorId = data.vendorId;
         }
 
         await setDoc(doc(db, "users", uid), profileData);
@@ -86,6 +91,9 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
         // Handle phone separately - can be null or string, but not undefined
         if (data.phone !== undefined) {
             updateData.phone = data.phone; // Can be null or string
+        }
+        if (data.vendorId !== undefined) {
+            updateData.vendorId = data.vendorId;
         }
 
         await updateDoc(doc(db, "users", uid), updateData as DocumentData);
@@ -328,6 +336,130 @@ export const updateSiteContent = async (
     }
 };
 
+// Vendor Operations (multi-vendor marketplace)
+export type VendorStatus = "pending" | "active" | "suspended";
+
+export interface Vendor {
+    id: string;
+    slug: string;
+    businessName: string;
+    ownerUserId: string;
+    status: VendorStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    description?: string;
+    logoUrl?: string;
+}
+
+export const createVendor = async (
+    data: Omit<Vendor, "id" | "createdAt" | "updatedAt">
+): Promise<{ success: boolean; id?: string; error?: string }> => {
+    try {
+        const docRef = doc(collection(db, "vendors"));
+        const ts = Timestamp.now();
+        await setDoc(docRef, {
+            ...data,
+            slug: data.slug.trim().toLowerCase(),
+            createdAt: ts,
+            updatedAt: ts,
+        });
+        return { success: true, id: docRef.id };
+    } catch (error: any) {
+        console.error("Error creating vendor:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, "id" | "createdAt">>) => {
+    try {
+        const updatePayload: Record<string, unknown> = { updatedAt: Timestamp.now() };
+        if (data.slug !== undefined) updatePayload.slug = data.slug.trim().toLowerCase();
+        if (data.businessName !== undefined) updatePayload.businessName = data.businessName;
+        if (data.ownerUserId !== undefined) updatePayload.ownerUserId = data.ownerUserId;
+        if (data.status !== undefined) updatePayload.status = data.status;
+        if (data.description !== undefined) updatePayload.description = data.description;
+        if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
+        await updateDoc(doc(db, "vendors", vendorId), updatePayload as DocumentData);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating vendor:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const getVendor = async (vendorId: string): Promise<Vendor | null> => {
+    try {
+        const docSnap = await getDoc(doc(db, "vendors", vendorId));
+        if (!docSnap.exists()) return null;
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        } as Vendor;
+    } catch (error) {
+        console.error("Error getting vendor:", error);
+        return null;
+    }
+};
+
+export const getVendorBySlug = async (slug: string): Promise<Vendor | null> => {
+    try {
+        const q = query(collection(db, "vendors"), where("slug", "==", slug.trim().toLowerCase()), limit(1));
+        const snap = await getDocs(q);
+        if (snap.empty) return null;
+        const d = snap.docs[0];
+        const data = d.data();
+        return {
+            id: d.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        } as Vendor;
+    } catch (error) {
+        console.error("Error getVendorBySlug:", error);
+        return null;
+    }
+};
+
+export const getVendorByOwnerUserId = async (ownerUserId: string): Promise<Vendor | null> => {
+    try {
+        const q = query(collection(db, "vendors"), where("ownerUserId", "==", ownerUserId), limit(1));
+        const snap = await getDocs(q);
+        if (snap.empty) return null;
+        const d = snap.docs[0];
+        const data = d.data();
+        return {
+            id: d.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        } as Vendor;
+    } catch (error) {
+        console.error("Error getVendorByOwnerUserId:", error);
+        return null;
+    }
+};
+
+export const getAllVendors = async (): Promise<Vendor[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, "vendors"));
+        return querySnapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                updatedAt: data.updatedAt?.toDate?.() || new Date(),
+            } as Vendor;
+        });
+    } catch (error) {
+        console.error("Error getAllVendors:", error);
+        return [];
+    }
+};
+
 // Product Operations
 export interface Product {
     id: string;
@@ -337,6 +469,12 @@ export interface Product {
     stock: number;
     available: boolean;
     category: string;
+    /** Marketplace seller; omit on legacy platform-managed inventory (treat missing vendorId as platform-era catalog). */
+    vendorId?: string;
+    /** Denormalized for storefront display (avoids N+1 vendor reads on lists) */
+    vendorName?: string;
+    /** Denormalized vendors.slug for linking to /store/[slug] */
+    vendorSlug?: string;
     team?: string;
     teamId?: string;
     league?: string;
@@ -348,6 +486,8 @@ export interface Product {
     childrenPrice?: number;
     childrenStock?: number;
     similarProducts?: string[];
+    approved?: boolean;
+    status?: "pending" | "approved" | "rejected";
     createdAt?: Date | null;
     updatedAt?: Date | null;
 }
@@ -355,6 +495,33 @@ export interface Product {
 export const getProducts = async (): Promise<Product[]> => {
     try {
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const products = querySnapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null,
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : null,
+            } as Product;
+        });
+
+        // Filter out unapproved products (if status is explicitly 'pending' or 'rejected')
+        // We allow products with no status (legacy) to show
+        return products.filter(p => p.status !== "pending" && p.status !== "rejected");
+    } catch (error) {
+        console.error("Error getting products:", error);
+        return [];
+    }
+};
+
+export const getProductsByVendorId = async (vendorId: string): Promise<Product[]> => {
+    try {
+        const q = query(
+            collection(db, "products"),
+            where("vendorId", "==", vendorId),
+            orderBy("createdAt", "desc")
+        );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map((docSnap) => {
             const data = docSnap.data();
@@ -366,7 +533,7 @@ export const getProducts = async (): Promise<Product[]> => {
             } as Product;
         });
     } catch (error) {
-        console.error("Error getting products:", error);
+        console.error("Error getting vendor products:", error);
         return [];
     }
 };
@@ -749,5 +916,86 @@ export const syncWishlistToDatabase = async (userId: string, productIds: string[
     } catch (error) {
         console.error("Error syncing wishlist to database:", error);
         return false;
+    }
+};
+
+// Store Category Operations
+export interface StoreCategory {
+    id: string;
+    name: string;
+    slug: string;
+    icon?: string;
+    description?: string;
+    order: number;
+    createdAt: Date;
+}
+
+export const getStoreCategories = async (): Promise<StoreCategory[]> => {
+    try {
+        const q = query(collection(db, "store_categories"), orderBy("order", "asc"));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate() || new Date(),
+        })) as StoreCategory[];
+    } catch (error) {
+        console.error("Error getStoreCategories:", error);
+        return [];
+    }
+};
+
+export const createStoreCategory = async (data: Omit<StoreCategory, "id" | "createdAt">) => {
+    try {
+        const docRef = doc(collection(db, "store_categories"));
+        await setDoc(docRef, {
+            ...data,
+            createdAt: Timestamp.now(),
+        });
+        return { success: true, id: docRef.id };
+    } catch (error: any) {
+        console.error("Error createStoreCategory:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Admin Operations for Approvals
+export const getPendingProducts = async (): Promise<Product[]> => {
+    try {
+        const q = query(
+            collection(db, "products"),
+            where("status", "==", "pending"),
+            orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate() || null,
+            updatedAt: d.data().updatedAt?.toDate() || null,
+        })) as Product[];
+    } catch (error) {
+        console.error("Error getPendingProducts:", error);
+        return [];
+    }
+};
+
+export const getPendingVendors = async (): Promise<Vendor[]> => {
+    try {
+        const q = query(
+            collection(db, "vendors"),
+            where("status", "==", "pending"),
+            orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate() || new Date(),
+            updatedAt: d.data().updatedAt?.toDate() || new Date(),
+        })) as Vendor[];
+    } catch (error) {
+        console.error("Error getPendingVendors:", error);
+        return [];
     }
 };

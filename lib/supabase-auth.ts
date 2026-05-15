@@ -12,8 +12,9 @@ export interface AuthUser {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'customer' | 'admin' | 'delivery';
+    role: 'customer' | 'admin' | 'delivery' | 'vendor';
     phone?: string;
+    vendorId?: string;
 }
 
 /**

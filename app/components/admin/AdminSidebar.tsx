@@ -12,13 +12,15 @@ import {
     ChevronLeft,
     ChevronRight,
     Shield,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Store,
 } from "lucide-react";
 import { useState } from "react";
 
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
+    { name: "Vendors", href: "/admin/vendors", icon: Store },
     { name: "Teams & Leagues", href: "/admin/teams", icon: Shield },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Customers", href: "/admin/customers", icon: Users },

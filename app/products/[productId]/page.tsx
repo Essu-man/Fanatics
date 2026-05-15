@@ -333,6 +333,24 @@ export default function ProductDetailPage() {
                     {/* Product Info */}
                     <div>
                         <h1 className="text-3xl font-bold text-zinc-900 mb-2">{product.name}</h1>
+                        {product.vendorName && (
+                            <p className="text-sm text-zinc-600 mb-2">
+                                Sold by{" "}
+                                <span className="font-semibold text-zinc-800">{product.vendorName}</span>
+                                {product.vendorSlug && (
+                                    <>
+                                        {" "}
+                                        ·{" "}
+                                        <Link
+                                            href={`/store/${product.vendorSlug}`}
+                                            className="font-medium text-[var(--brand-red)] hover:underline"
+                                        >
+                                            Visit store
+                                        </Link>
+                                    </>
+                                )}
+                            </p>
+                        )}
                         {product.team && (
                             <p className="text-lg text-zinc-600 mb-4">{product.team}</p>
                         )}

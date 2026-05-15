@@ -4,6 +4,10 @@ export type Product = {
     team?: string;
     league?: string;
     category?: string;
+    /** Denormalized seller display name (multi-vendor) */
+    vendorName?: string;
+    vendorId?: string;
+    vendorSlug?: string;
     description?: string;
     // prices in Ghana Cedi
     price: number;

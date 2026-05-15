@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getProducts, getProductsByTeam, createProduct } from "@/lib/firestore";
-import { footballTeams, basketballTeams, internationalTeams } from "@/lib/teams";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-
-const allTeams = [...footballTeams, ...basketballTeams, ...internationalTeams];
+import { getProducts, getProductsByTeam, createProduct, getVendor } from "@/lib/firestore";
+import {
+    buildProductFirestorePayload,
+    validateProductCreateBase,
+    vendorDisplayName,
+} from "@/lib/products-shared";
 
 export const runtime = "nodejs";
 
@@ -31,114 +31,76 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, price, childrenPrice, stock, childrenStock, available = true, category, teamId, description, images, colors, sizes, childrenSizes } = body;
+        const {
+            name,
+            price,
+            childrenPrice,
+            stock,
+            childrenStock,
+            available = true,
+            category,
+            teamId,
+            description,
+            images,
+            colors,
+            sizes,
+            childrenSizes,
+            vendorId: bodyVendorId,
+        } = body;
 
-        if (!name || typeof price === "undefined" || !teamId || !images || images.length === 0 || ((!sizes || sizes.length === 0) && (!childrenSizes || childrenSizes.length === 0))) {
-            return NextResponse.json(
-                { success: false, error: "Name, price, team, at least one image, and at least one size (adult or children) are required" },
-                { status: 400 }
-            );
+        const base = validateProductCreateBase({
+            name,
+            price,
+            images,
+            sizes,
+            childrenSizes,
+            category,
+            teamId,
+        });
+        if (!base.ok) {
+            return NextResponse.json({ success: false, error: base.error }, { status: 400 });
         }
 
-        let teamName: string;
-        let league: string;
-        let actualTeamId: string;
-        let isHardcodedTeam = false;
+        let vendorId: string | undefined =
+            typeof bodyVendorId === "string" && bodyVendorId.trim() ? bodyVendorId.trim() : undefined;
+        let vendorName: string | undefined;
 
-        console.log(`[Product Creation] Received teamId: ${teamId}`);
-        console.log(`[Product Creation] Total hardcoded teams available: ${allTeams.length}`);
-
-        let team = allTeams.find((t) => t.id === teamId);
-
-        if (team) {
-            teamName = team.name;
-            league = team.league;
-            actualTeamId = team.id;
-            isHardcodedTeam = true;
-            console.log(`[Product Creation] ✅ Found hardcoded team: ${team.name} (${team.id})`);
-        } else {
-            console.log(`[Product Creation] Team not in hardcoded list, checking custom_teams collection...`);
-            // Try to find in custom teams (Firestore)
-            let customTeamSnap = await getDoc(doc(db, "custom_teams", teamId));
-
-            if (!customTeamSnap.exists()) {
-                console.error(`[Product Creation] ❌ Team ${teamId} not found in hardcoded or custom teams`);
-                return NextResponse.json(
-                    { success: false, error: "Selected team is not recognized" },
-                    { status: 400 }
-                );
+        let vendorSlug: string | undefined;
+        if (vendorId) {
+            const v = await getVendor(vendorId);
+            if (!v) {
+                return NextResponse.json({ success: false, error: "Vendor not found" }, { status: 400 });
             }
-
-            const customTeam = customTeamSnap.data();
-            teamName = customTeam.name;
-            league = customTeam.league;
-            actualTeamId = customTeamSnap.id;
-            console.log(`[Product Creation] ✅ Found custom team: ${customTeam.name} (${actualTeamId})`);
+            vendorName = vendorDisplayName(v);
+            vendorSlug = v.slug;
         }
 
-        // Enable the team when product is created for it
-        try {
-            if (isHardcodedTeam) {
-                // Enable hardcoded team in "teams" collection
-                const teamRef = doc(db, "teams", actualTeamId);
-                const teamSnap = await getDoc(teamRef);
-                if (teamSnap.exists()) {
-                    const currentData = teamSnap.data();
-                    console.log(`[Enable Team] Hardcoded team ${actualTeamId} found. Current enabled: ${currentData.enabled}`);
-                    if (!currentData.enabled) {
-                        await updateDoc(teamRef, { enabled: true });
-                        console.log(`[Enable Team] ✅ Enabled hardcoded team: ${actualTeamId}`);
-                    } else {
-                        console.log(`[Enable Team] Team already enabled: ${actualTeamId}`);
-                    }
-                } else {
-                    console.error(`[Enable Team] ❌ Hardcoded team ${actualTeamId} NOT found in teams collection!`);
-                }
-            } else {
-                // Enable custom team in "custom_teams" collection
-                const teamRef = doc(db, "custom_teams", actualTeamId);
-                const teamSnap = await getDoc(teamRef);
-                if (teamSnap.exists()) {
-                    const currentData = teamSnap.data();
-                    console.log(`[Enable Team] Custom team ${actualTeamId} found. Current enabled: ${currentData.enabled}`);
-                    if (currentData.enabled === false) {
-                        await updateDoc(teamRef, { enabled: true });
-                        console.log(`[Enable Team] ✅ Enabled custom team: ${actualTeamId}`);
-                    } else {
-                        console.log(`[Enable Team] Team already enabled: ${actualTeamId}`);
-                    }
-                } else {
-                    console.error(`[Enable Team] ❌ Custom team ${actualTeamId} NOT found in custom_teams collection!`);
-                }
-            }
-        } catch (error) {
-            console.error("[Enable Team] Error enabling team:", error);
-        }
-
-        const payload = {
-            name: name.trim(),
+        const payload = await buildProductFirestorePayload({
+            name,
             price: Number(price),
             childrenPrice: childrenPrice ? Number(childrenPrice) : undefined,
             stock: Number(stock ?? 0),
-            childrenStock: childrenStock !== undefined && childrenStock !== null && childrenStock !== "" ? Number(childrenStock) : undefined,
+            childrenStock:
+                childrenStock !== undefined && childrenStock !== null && childrenStock !== ""
+                    ? Number(childrenStock)
+                    : undefined,
             available: Boolean(available),
             category: category || "Jersey",
-            team: teamName,
-            teamId: actualTeamId,
-            league: league,
-            description: description?.trim() || `${teamName} official merchandise`,
+            teamId: typeof teamId === "string" ? teamId : undefined,
+            description,
             images,
             colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
             sizes: Array.isArray(sizes) && sizes.length > 0 ? sizes : undefined,
             childrenSizes: Array.isArray(childrenSizes) && childrenSizes.length > 0 ? childrenSizes : undefined,
-        };
+            vendorId,
+            vendorName,
+            vendorSlug,
+        });
 
         const result = await createProduct(payload);
         if (!result.success) {
             throw new Error(result.error || "Failed to create product");
         }
-
-        console.log(`[Product Creation] ✅ Successfully created product: ${result.id} for team: ${actualTeamId} (${teamName})`);
 
         return NextResponse.json({
             success: true,
@@ -152,5 +114,3 @@ export async function POST(request: Request) {
         );
     }
 }
-
-

@@ -6,10 +6,11 @@ export interface UserProfile {
     email: string;
     first_name: string;
     last_name: string;
-    role: "admin" | "customer" | "delivery";
+    role: "admin" | "customer" | "delivery" | "vendor";
     phone?: string;
     created_at: string;
     email_verified: boolean;
+    vendor_id?: string;
 }
 
 export const createUserProfile = async (userId: string, data: Omit<UserProfile, "id" | "created_at">) => {
@@ -265,6 +266,9 @@ export interface Product {
     childrenStock?: number;
     available: boolean;
     category: string;
+    vendor_id?: string;
+    vendor_name?: string;
+    vendor_slug?: string;
     team?: string;
     images: string[];
     description: string;

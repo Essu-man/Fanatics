@@ -1,5 +1,5 @@
 import { initializeApp, getApps, cert, type ServiceAccount } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { getAuth, type DecodedIdToken } from 'firebase-admin/auth';
 import { existsSync, readFileSync } from 'fs';
 
 // Helper to get service account
@@ -54,3 +54,8 @@ export const adminAuth = {
     },
     // Add other methods as needed
 };
+
+export async function verifyFirebaseIdToken(idToken: string): Promise<DecodedIdToken> {
+    const auth = getAuth(getAdminApp());
+    return auth.verifyIdToken(idToken);
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "../components/Header";
 import SportsNav from "../components/SportsNav";
@@ -9,6 +9,8 @@ import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import { TeamPageSkeleton } from "../components/ui/Skeleton";
 import type { Product } from "@/lib/products";
+import HomeProductSections from "../components/HomeProductSections";
+import NewArrivals from "../components/NewArrivals";
 import { Filter, SortAsc, Grid3x3 } from "lucide-react";
 import {
     Select,
@@ -23,6 +25,7 @@ import {
 function ShopPageContent() {
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<{name: string, slug: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [sortBy, setSortBy] = useState("newest");
@@ -30,8 +33,16 @@ function ShopPageContent() {
     const leagueParam = searchParams.get("league") || "";
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchInitialData = async () => {
+            setLoading(true);
             try {
+                // Fetch categories
+                const catRes = await fetch("/api/categories");
+                const catData = await catRes.json();
+                if (catData.success) {
+                    setCategories(catData.categories);
+                }
+
                 const response = await fetch("/api/admin/products");
                 const data = await response.json();
 
@@ -58,21 +69,23 @@ function ShopPageContent() {
 
                     setProducts(availableProducts);
                     setFilteredProducts(availableProducts);
-                } else {
-                    setProducts([]);
-                    setFilteredProducts([]);
                 }
             } catch (error) {
-                console.error("Error fetching products:", error);
-                setProducts([]);
-                setFilteredProducts([]);
+                console.error("Error fetching shop data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProducts();
+        fetchInitialData();
     }, []);
+
+    useEffect(() => {
+        const raw = (searchParams.get("category") || "").toLowerCase();
+        if (raw) {
+            setSelectedCategory(raw);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         let filtered = [...products];
@@ -100,7 +113,6 @@ function ShopPageContent() {
         } else if (sortBy === "name") {
             filtered.sort((a, b) => a.name.localeCompare(b.name));
         }
-        // newest is default order
 
         setFilteredProducts(filtered);
     }, [selectedCategory, sortBy, products, leagueParam]);
@@ -135,8 +147,11 @@ function ShopPageContent() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
-                                <SelectItem value="jersey">Jerseys</SelectItem>
-                                <SelectItem value="trainers">Training Kits</SelectItem>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.slug} value={cat.name.toLowerCase()}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -171,20 +186,19 @@ function ShopPageContent() {
                     ))}
                 </div>
             ) : (
-                <div className="py-16 text-center">
+                <div className="py-24 text-center">
                     <Grid3x3 className="h-16 w-16 text-zinc-300 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-zinc-900 mb-2">No products found</h3>
                     <p className="text-zinc-600 mb-6">
                         Try adjusting your filters or browse all teams to find what you're looking for.
                     </p>
-                    <Link
-                        href="/teams"
-                        className="inline-block bg-[var(--brand-red)] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[var(--brand-red-dark)] transition-colors"
-                    >
-                        Browse Teams
-                    </Link>
                 </div>
             )}
+
+            <div className="mt-24 space-y-24">
+                <NewArrivals />
+                <HomeProductSections />
+            </div>
         </div>
     );
 }

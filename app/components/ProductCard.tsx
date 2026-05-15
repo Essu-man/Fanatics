@@ -258,7 +258,14 @@ export default function ProductCard({ product }: { product: PType }) {
                 <div className="flex flex-col px-3 py-2">
                     <Link href={`/products/${product.id}`} className="hover:text-[var(--brand-red)] transition-colors">
                         <h3 className="text-sm font-bold text-zinc-900 line-clamp-1">{product.name}</h3>
-                        <p className="mt-0.5 text-xs text-zinc-500">{product.team}</p>
+                        {product.vendorName && (
+                            <p className="mt-0.5 text-xs text-zinc-600">
+                                Sold by <span className="font-medium">{product.vendorName}</span>
+                            </p>
+                        )}
+                        {product.team ? (
+                            <p className="mt-0.5 text-xs text-zinc-500">{product.team}</p>
+                        ) : null}
                     </Link>
 
                     {/* Available Sizes Snapshot */}
@@ -454,7 +461,14 @@ export default function ProductCard({ product }: { product: PType }) {
                     {/* Product Details */}
                     <div className="flex flex-col">
                         <h3 className="text-xl sm:text-2xl font-black text-zinc-900">{product.name}</h3>
-                        <p className="mt-2 text-sm sm:text-base text-zinc-500">{product.team}</p>
+                        {modalData.vendorName && (
+                            <p className="mt-2 text-sm text-zinc-600">
+                                Sold by <span className="font-semibold">{modalData.vendorName}</span>
+                            </p>
+                        )}
+                        {modalData.team ? (
+                            <p className="mt-2 text-sm sm:text-base text-zinc-500">{modalData.team}</p>
+                        ) : null}
 
                         {!sizeCategory && modalData.childrenPrice && modalData.childrenPrice !== modalData.price ? (
                             <div className="mt-4 sm:mt-6 flex flex-col items-center sm:items-start gap-4">

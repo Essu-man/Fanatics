@@ -12,99 +12,11 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-    SelectGroup,
-    SelectLabel,
 } from "../../../components/ui/select";
-import { Search } from "lucide-react";
+import TeamSearchInput from "../../../components/product-form/TeamSearchInput";
+import { MARKETPLACE_CATEGORIES } from "@/lib/product-category";
 
-const categories = ["Jersey", "Trainers"];
-
-interface TeamSearchInputProps {
-    teams: Array<{ label: string; teams: Team[] }>;
-    value: string;
-    onChange: (value: string) => void;
-}
-
-function TeamSearchInput({ teams, value, onChange }: TeamSearchInputProps) {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isOpen, setIsOpen] = useState(false);
-
-    // Flatten teams for filtering
-    const allTeamsFlat = teams.flatMap((group) =>
-        group.teams.map((team) => ({ ...team, groupLabel: group.label }))
-    );
-
-    // Filter teams based on search query - show all if search is empty
-    const filteredTeams = searchQuery.trim() === ""
-        ? allTeamsFlat
-        : allTeamsFlat.filter((team) =>
-            team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            team.league.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-    // Find the selected team
-    const selectedTeam = allTeamsFlat.find((t) => t.id === value);
-
-    return (
-        <div className="relative">
-            <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
-                <input
-                    type="text"
-                    placeholder="Search teams..."
-                    value={searchQuery || selectedTeam?.name || ""}
-                    onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setIsOpen(true);
-                    }}
-                    onFocus={() => setIsOpen(true)}
-                    className="w-full pl-10 pr-9 py-2 rounded-lg border border-zinc-200 text-sm focus:border-[var(--brand-red)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20"
-                />
-                {value && (
-                    <button
-                        onClick={() => {
-                            onChange("");
-                            setSearchQuery("");
-                            setIsOpen(false);
-                        }}
-                        className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                )}
-            </div>
-
-            {/* Dropdown */}
-            {isOpen && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg">
-                    {filteredTeams.length === 0 ? (
-                        <div className="px-3 py-6 text-center text-sm text-zinc-500">
-                            No teams found
-                        </div>
-                    ) : (
-                        filteredTeams.map((team) => (
-                            <button
-                                key={`${team.groupLabel}-${team.id}`}
-                                onClick={() => {
-                                    onChange(team.id);
-                                    setSearchQuery("");
-                                    setIsOpen(false);
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-zinc-50 flex justify-between items-center border-b border-zinc-100 last:border-b-0"
-                            >
-                                <div>
-                                    <div className="text-sm font-medium text-zinc-900">{team.name}</div>
-                                    <div className="text-xs text-zinc-500">{team.league}</div>
-                                </div>
-                                <div className="text-xs text-zinc-400">{team.groupLabel}</div>
-                            </button>
-                        ))
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
+const categories = [...MARKETPLACE_CATEGORIES];
 
 export default function AdminNewProductPage() {
     const router = useRouter();
@@ -328,7 +240,7 @@ export default function AdminNewProductPage() {
             for (const file of imageFiles) {
                 const formData = new FormData();
                 formData.append("file", file);
-                formData.append("folder", `teams/${teamId}`);
+                formData.append("folder", teamId ? `teams/${teamId}` : "products/general");
 
                 const response = await fetch("/api/admin/upload-image", {
                     method: "POST",

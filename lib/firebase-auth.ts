@@ -23,8 +23,10 @@ export interface AuthUser {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'admin' | 'customer' | 'delivery';
+    role: 'admin' | 'customer' | 'delivery' | 'vendor';
     phone?: string;
+    /** Present when role is vendor */
+    vendorId?: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export const signUp = async (
     password: string,
     firstName: string,
     lastName: string,
+    role: 'customer' | 'vendor' = 'customer',
     phone?: string
 ) => {
     try {
@@ -66,7 +69,7 @@ export const signUp = async (
             email,
             firstName,
             lastName,
-            role: 'customer',
+            role,
             emailVerified: firebaseUser.emailVerified,
             // Only include phone if it's provided (not undefined)
             ...(phone && { phone }),
@@ -181,6 +184,7 @@ export const signUp = async (
                 lastName: profile.lastName,
                 role: profile.role,
                 phone: profile.phone,
+                ...(profile.vendorId ? { vendorId: profile.vendorId } : {}),
             } as AuthUser : null,
         };
     } catch (error: any) {
@@ -238,6 +242,7 @@ export const signIn = async (email: string, password: string) => {
                 lastName: profile.lastName,
                 role: profile.role,
                 phone: profile.phone,
+                ...(profile.vendorId ? { vendorId: profile.vendorId } : {}),
             } as AuthUser,
         };
     } catch (error: any) {
@@ -352,14 +357,15 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
             };
         }
 
-        return {
-            id: profile.uid,
-            email: profile.email,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            role: profile.role,
-            phone: profile.phone,
-        };
+            return {
+                id: profile.uid,
+                email: profile.email,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                role: profile.role,
+                phone: profile.phone,
+                ...(profile.vendorId ? { vendorId: profile.vendorId } : {}),
+            };
     } catch (error) {
         console.error('Error getting current user:', error);
         return null;
@@ -382,6 +388,7 @@ export const onAuthStateChange = (callback: (user: AuthUser | null) => void) => 
                         lastName: profile.lastName,
                         role: profile.role,
                         phone: profile.phone,
+                        ...(profile.vendorId ? { vendorId: profile.vendorId } : {}),
                     });
                 } else {
                     // Profile not found, but Firebase user exists - use metadata as fallback
@@ -491,6 +498,7 @@ export const updateUserProfile = async (updates: Partial<AuthUser>) => {
         if (updates.lastName !== undefined) firestoreUpdates.lastName = updates.lastName;
         if (updates.phone !== undefined) firestoreUpdates.phone = updates.phone;
         if (updates.role !== undefined) firestoreUpdates.role = updates.role;
+        if (updates.vendorId !== undefined) firestoreUpdates.vendorId = updates.vendorId;
 
         const result = await updateFirestoreProfile(firebaseUser.uid, firestoreUpdates);
 

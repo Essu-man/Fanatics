@@ -8,6 +8,8 @@ type AuthContextValue = {
     loading: boolean;
     isAuthenticated: boolean;
     isAdmin: boolean;
+    isVendor: boolean;
+    vendorId: string | undefined;
     refreshUser: () => Promise<void>;
     logout: () => Promise<void>;
 };
@@ -69,6 +71,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         loading,
         isAuthenticated: !!user,
         isAdmin: user?.role === "admin",
+        isVendor: user?.role === "vendor",
+        vendorId: user?.vendorId,
         refreshUser,
         logout,
     };

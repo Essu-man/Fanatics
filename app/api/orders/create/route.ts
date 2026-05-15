@@ -102,13 +102,48 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Enrich line items with vendor attribution (server-side; supports legacy carts without vendor fields)
+        const rawItems = Array.isArray(items) ? items : [];
+        const enrichedItems = await Promise.all(
+            rawItems.map(async (item: Record<string, unknown>) => {
+                const productId = typeof item.id === "string" ? item.id : String(item.id ?? "");
+                let vendorId: string | null | undefined = item.vendorId as string | null | undefined;
+                let vendorName: string | null | undefined = item.vendorName as string | null | undefined;
+                let platformFee: number | undefined;
+                let vendorAmount: number | undefined;
+
+                if (productId) {
+                    try {
+                        const product = await getProduct(productId);
+                        if (product) {
+                            vendorId = product.vendorId ?? null;
+                            vendorName = product.vendorName ?? null;
+                            // Reserved for Paystack split / settlement (Phase 2+)
+                            platformFee = undefined;
+                            vendorAmount = undefined;
+                        }
+                    } catch {
+                        /* keep client-sent values if any */
+                    }
+                }
+
+                return {
+                    ...item,
+                    vendorId: vendorId ?? null,
+                    vendorName: vendorName ?? null,
+                    ...(platformFee !== undefined ? { platformFee } : {}),
+                    ...(vendorAmount !== undefined ? { vendorAmount } : {}),
+                };
+            })
+        );
+
         // Create order in Firestore
         const orderData = {
             userId: userId || null,
             guestEmail: guestEmail || shipping?.email || null,
             guestPhone: guestPhone || shipping?.phone || null,
             status: (requestedStatus as any) || "submitted",
-            items: Array.isArray(items) ? items : [],
+            items: enrichedItems,
             shipping: shipping || {},
             payment: payment || { method: "paystack", reference: paystackReference },
             subtotal: Number(subtotal) || 0,
@@ -121,7 +156,7 @@ export async function POST(request: NextRequest) {
         console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
         // Decrease stock for each item in the order
-        for (const item of items) {
+        for (const item of rawItems) {
             try {
                 const product = await getProduct(item.id);
                 if (product) {
