@@ -3,37 +3,33 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/components/ui/ToastContainer";
 import type { Vendor } from "@/lib/firestore";
-import { 
-    Users, 
-    Clock, 
-    CheckCircle2, 
-    XCircle, 
+import VendorApplicationDetail, {
+    type VendorApplicationRecord,
+} from "@/app/components/admin/VendorApplicationDetail";
+import {
+    Users,
+    Clock,
+    CheckCircle2,
+    XCircle,
     ExternalLink,
     Mail,
     Phone,
     Info,
-    Plus
+    Plus,
+    Eye,
 } from "lucide-react";
-
-interface Application {
-    id: string;
-    businessName: string;
-    email: string;
-    phone: string;
-    category: string;
-    description: string;
-    website?: string;
-    instagram?: string;
-    status: "pending" | "approved" | "rejected";
-    appliedAt: any;
-}
 
 export default function AdminVendorsPage() {
     const [activeTab, setActiveTab] = useState<"vendors" | "applications">("vendors");
+    const [applicationFilter, setApplicationFilter] = useState<
+        "all" | "pending" | "approved" | "rejected"
+    >("all");
     const [vendors, setVendors] = useState<Vendor[]>([]);
-    const [applications, setApplications] = useState<Application[]>([]);
+    const [applications, setApplications] = useState<VendorApplicationRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [selectedApplication, setSelectedApplication] = useState<VendorApplicationRecord | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
     
     // Form state for manual add
     const [slug, setSlug] = useState("");
@@ -106,23 +102,42 @@ export default function AdminVendorsPage() {
     }
 
     const handleApplicationAction = async (id: string, action: "approve" | "reject") => {
+        setActionLoading(true);
         try {
             const res = await fetch(`/api/admin/vendors/applications/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: action === "approve" ? "approved" : "rejected" })
+                body: JSON.stringify({ status: action === "approve" ? "approved" : "rejected" }),
             });
             const data = await res.json();
             if (data.success) {
-                showToast(`Application ${action}ed`, "success");
+                showToast(
+                    action === "approve"
+                        ? "Application approved — vendor is now active"
+                        : "Application rejected",
+                    "success"
+                );
+                setSelectedApplication(null);
+                if (action === "approve") setActiveTab("vendors");
                 loadData();
             } else {
                 showToast(data.error || "Failed to update application", "error");
             }
-        } catch (err) {
+        } catch {
             showToast("An error occurred", "error");
+        } finally {
+            setActionLoading(false);
         }
     };
+
+    const activeVendors = vendors.filter((v) => v.status === "active");
+    const pendingCount = applications.filter((a) => a.status === "pending").length;
+    const approvedCount = applications.filter((a) => a.status === "approved").length;
+    const rejectedCount = applications.filter((a) => a.status === "rejected").length;
+    const filteredApplications =
+        applicationFilter === "all"
+            ? applications
+            : applications.filter((a) => a.status === applicationFilter);
 
     return (
         <div className="space-y-8 pb-20">
@@ -148,7 +163,7 @@ export default function AdminVendorsPage() {
                 >
                     <Users className="h-4 w-4" />
                     Active Vendors
-                    <span className="ml-1 px-2 py-0.5 rounded-md bg-zinc-100 text-[10px]">{vendors.length}</span>
+                    <span className="ml-1 px-2 py-0.5 rounded-md bg-zinc-100 text-[10px]">{activeVendors.length}</span>
                 </button>
                 <button 
                     onClick={() => setActiveTab("applications")}
@@ -156,9 +171,14 @@ export default function AdminVendorsPage() {
                 >
                     <Clock className="h-4 w-4" />
                     Applications
-                    <span className="ml-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-black">
-                        {applications.filter(a => a.status === "pending").length}
+                    <span className="ml-1 px-2 py-0.5 rounded-md bg-zinc-200 text-zinc-700 text-[10px] font-black">
+                        {applications.length}
                     </span>
+                    {pendingCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-black">
+                            {pendingCount} pending
+                        </span>
+                    )}
                 </button>
             </div>
 
@@ -245,7 +265,7 @@ export default function AdminVendorsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-50">
-                                {vendors.map((v) => (
+                                {activeVendors.map((v) => (
                                     <tr key={v.id} className="group hover:bg-zinc-50/30 transition-all">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
@@ -279,10 +299,10 @@ export default function AdminVendorsPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {vendors.length === 0 && !loading && (
+                                {activeVendors.length === 0 && !loading && (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-12 text-center text-zinc-500 font-medium">
-                                            No vendors found.
+                                            No active vendors yet. Approve an application to add one here.
                                         </td>
                                     </tr>
                                 )}
@@ -290,57 +310,145 @@ export default function AdminVendorsPage() {
                         </table>
                     </div>
                 ) : (
-                    <div className="p-6 grid gap-6">
-                        {applications.length === 0 && !loading && (
+                    <div className="p-6 space-y-6">
+                        <div className="flex flex-wrap gap-2">
+                            {(
+                                [
+                                    { key: "all" as const, label: "All", count: applications.length },
+                                    { key: "pending" as const, label: "Pending", count: pendingCount },
+                                    { key: "approved" as const, label: "Approved", count: approvedCount },
+                                    { key: "rejected" as const, label: "Rejected", count: rejectedCount },
+                                ] as const
+                            ).map(({ key, label, count }) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setApplicationFilter(key)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                        applicationFilter === key
+                                            ? "bg-zinc-900 text-white"
+                                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                                    }`}
+                                >
+                                    {label} ({count})
+                                </button>
+                            ))}
+                        </div>
+                        <div className="grid gap-6">
+                        {filteredApplications.length === 0 && !loading && (
                             <div className="py-20 text-center">
                                 <Clock className="h-12 w-12 text-zinc-200 mx-auto mb-4" />
-                                <p className="text-zinc-500 font-medium">No pending applications</p>
+                                <p className="text-zinc-500 font-medium">
+                                    {applications.length === 0
+                                        ? "No applications yet"
+                                        : `No ${applicationFilter === "all" ? "" : applicationFilter} applications`}
+                                </p>
                             </div>
                         )}
-                        {applications.map((app) => (
-                            <div key={app.id} className="p-6 rounded-3xl bg-zinc-50/50 border border-zinc-100 flex flex-col md:flex-row gap-6 justify-between items-start">
-                                <div className="space-y-4 flex-1">
-                                    <div className="flex items-center gap-3">
+                        {filteredApplications.map((app) => (
+                            <div
+                                key={app.id}
+                                className="p-6 rounded-3xl bg-zinc-50/50 border border-zinc-100 flex flex-col md:flex-row gap-6 justify-between items-start"
+                            >
+                                <div className="space-y-4 flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-3">
                                         <h3 className="text-xl font-black text-zinc-900">{app.businessName}</h3>
-                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                                            app.status === "pending" ? "bg-amber-100 text-amber-700" :
-                                            app.status === "approved" ? "bg-emerald-100 text-emerald-700" :
-                                            "bg-red-100 text-red-700"
-                                        }`}>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                                                app.status === "pending"
+                                                    ? "bg-amber-100 text-amber-700"
+                                                    : app.status === "approved"
+                                                      ? "bg-emerald-100 text-emerald-700"
+                                                      : "bg-red-100 text-red-700"
+                                            }`}
+                                        >
                                             {app.status}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-4 text-sm text-zinc-500 font-medium">
-                                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4" /> {app.email}</span>
-                                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4" /> {app.phone}</span>
-                                        <span className="flex items-center gap-1.5"><Info className="h-4 w-4" /> {app.category}</span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Mail className="h-4 w-4" /> {app.email}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Phone className="h-4 w-4" /> {app.phone}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Info className="h-4 w-4" />{" "}
+                                            {app.category === "Other" && app.categoryOther
+                                                ? `Other — ${app.categoryOther}`
+                                                : app.category}
+                                        </span>
                                     </div>
-                                    <p className="text-sm text-zinc-600 bg-white p-4 rounded-2xl border border-zinc-100">
+                                    <p className="text-sm text-zinc-600 bg-white p-4 rounded-2xl border border-zinc-100 line-clamp-2">
                                         {app.description}
                                     </p>
+                                    {(app.sampleProductImageUrl || app.registrationCertificateUrl) && (
+                                        <p className="text-xs font-semibold text-emerald-700">
+                                            Includes uploaded sample & certificate — review before approving
+                                        </p>
+                                    )}
+                                    {app.status === "approved" && app.vendorId && (
+                                        <p className="text-xs font-semibold text-zinc-500">
+                                            Linked vendor ID: <span className="font-mono">{app.vendorId}</span>
+                                        </p>
+                                    )}
                                 </div>
-                                {app.status === "pending" && (
-                                    <div className="flex gap-2 w-full md:w-auto">
-                                        <button 
-                                            onClick={() => handleApplicationAction(app.id, "reject")}
-                                            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white border border-red-100 text-red-600 rounded-2xl font-bold hover:bg-red-50 transition-all"
-                                        >
-                                            <XCircle className="h-4 w-4" /> Reject
-                                        </button>
-                                        <button 
+                                <div className="flex flex-col gap-2 w-full md:w-auto shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedApplication(app)}
+                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-zinc-900 rounded-2xl font-bold hover:bg-zinc-50 transition-all"
+                                    >
+                                        <Eye className="h-4 w-4" /> View details
+                                    </button>
+                                    {app.status === "pending" && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplicationAction(app.id, "reject")}
+                                                disabled={actionLoading}
+                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-red-100 text-red-600 rounded-2xl font-bold hover:bg-red-50 transition-all disabled:opacity-50"
+                                            >
+                                                <XCircle className="h-4 w-4" /> Reject
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplicationAction(app.id, "approve")}
+                                                disabled={actionLoading}
+                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50"
+                                            >
+                                                <CheckCircle2 className="h-4 w-4" /> Approve
+                                            </button>
+                                        </>
+                                    )}
+                                    {app.status === "approved" && !app.vendorId && (
+                                        <button
+                                            type="button"
                                             onClick={() => handleApplicationAction(app.id, "approve")}
-                                            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all"
+                                            disabled={actionLoading}
+                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
                                         >
-                                            <CheckCircle2 className="h-4 w-4" /> Approve
+                                            <CheckCircle2 className="h-4 w-4" /> Activate vendor
                                         </button>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         ))}
+                        </div>
                     </div>
                 )}
             </div>
             {loading && <p className="text-center py-10 text-zinc-400 font-medium">Loading marketplace data...</p>}
+
+            {selectedApplication && (
+                <VendorApplicationDetail
+                    application={selectedApplication}
+                    onClose={() => setSelectedApplication(null)}
+                    onApprove={() => handleApplicationAction(selectedApplication.id, "approve")}
+                    onReject={() => handleApplicationAction(selectedApplication.id, "reject")}
+                    actionLoading={actionLoading}
+                />
+            )}
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, User, LogOut, Settings, Package } from "lucide-react";
+import { ShoppingBag, User, LogOut, Settings, Package, Store } from "lucide-react";
 import { useCart } from "../providers/CartProvider";
 import { useAuth } from "../providers/AuthProvider";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import SearchAutocomplete from "./SearchAutocomplete";
 
 export default function Header() {
     const { items } = useCart();
-    const { user, isAdmin, logout } = useAuth();
+    const { user, isAdmin, isVendor, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [cartOpen, setCartOpen] = useState(false);
@@ -75,6 +75,16 @@ export default function Header() {
                                                 >
                                                     <Settings className="h-4 w-4" />
                                                     Admin Dashboard
+                                                </Link>
+                                            )}
+                                            {isVendor && (
+                                                <Link
+                                                    href="/vendor"
+                                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
+                                                    onClick={() => setUserDropdownOpen(false)}
+                                                >
+                                                    <Store className="h-4 w-4" />
+                                                    Seller dashboard
                                                 </Link>
                                             )}
                                             <Link

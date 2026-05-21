@@ -4,10 +4,10 @@ import { doc, updateDoc, Timestamp } from "firebase/firestore";
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
-        const { id } = params;
+        const { id } = await Promise.resolve(params);
         const body = await req.json();
         const { action } = body;
 

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useMemo } from "react";
 import {
     MapPin,
     ChevronRight,
@@ -16,101 +15,66 @@ import {
     LayoutGrid,
     Truck,
     Clock,
-    Star,
-    ArrowRight,
 } from "lucide-react";
-import { MARKETPLACE_CATEGORIES } from "@/lib/product-category";
+import StoreCardGrid, {
+    CEDIMAN_OFFICIAL_STORE,
+    vendorToStoreListing,
+} from "@/app/components/home/StoreCardGrid";
 
-const categoryChips: { label: string; href: string; icon: any }[] = [
+const categoryChips: { label: string; href: string; icon: typeof Shirt }[] = [
     { label: "Jerseys", href: "/shop?category=jersey", icon: Shirt },
     { label: "Training", href: "/shop?category=trainers", icon: Dumbbell },
     { label: "Cosmetics", href: "/shop?category=cosmetics", icon: Sparkles },
     { label: "Gadgets", href: "/shop?category=gadgets", icon: Cpu },
     { label: "Other", href: "/shop?category=other", icon: LayoutGrid },
-    { label: "All stores", href: "/shop", icon: Store },
+    { label: "All stores", href: "/stores", icon: Store },
 ];
 
-type StoreCard = {
+type VendorSummary = {
     id: string;
-    name: string;
-    subtitle: string;
-    href: string;
-    badge?: string;
-    featured?: boolean;
-    rating?: number;
-    deliveryTime?: string;
-    gradient: string;
-    image?: string;
+    slug: string;
+    businessName: string;
+    description?: string;
+    logoUrl?: string;
 };
-
-const stores: StoreCard[] = [
-    {
-        id: "cediman-jerseys",
-        name: "Cediman Jersey Store",
-        subtitle: "Authentic kits & fan gear",
-        href: "/teams",
-        badge: "Official Store",
-        featured: true,
-        rating: 4.9,
-        deliveryTime: "24-48h",
-        gradient: "from-[#7f1d1d] via-[var(--brand-red)] to-rose-600",
-        image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80",
-    },
-    {
-        id: "trainers",
-        name: "Pro Training Hub",
-        subtitle: "Elite athletic apparel",
-        href: "/shop?category=trainers",
-        rating: 4.7,
-        deliveryTime: "1-3 days",
-        gradient: "from-emerald-900 via-teal-800 to-cyan-700",
-        image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80",
-    },
-    {
-        id: "beauty",
-        name: "Radiance & Glow",
-        subtitle: "Premium skincare & beauty",
-        href: "/shop?category=cosmetics",
-        badge: "New",
-        rating: 4.8,
-        deliveryTime: "2-4 days",
-        gradient: "from-fuchsia-900 via-purple-800 to-violet-700",
-        image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&q=80",
-    },
-    {
-        id: "tech",
-        name: "Digital Horizon",
-        subtitle: "Next-gen tech gadgets",
-        href: "/shop?category=gadgets",
-        rating: 4.6,
-        deliveryTime: "1-2 days",
-        gradient: "from-slate-900 via-blue-950 to-indigo-900",
-        image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&q=80",
-    },
-];
 
 export default function MarketplaceHome() {
     const router = useRouter();
     const [q, setQ] = useState("");
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
+    const [dynamicCategories, setDynamicCategories] = useState<
+        { label?: string; name?: string; href?: string; icon?: typeof Shirt }[]
+    >([]);
+    const [vendors, setVendors] = useState<VendorSummary[]>([]);
+    const [storesLoading, setStoresLoading] = useState(true);
 
     useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 20);
+        const handleScroll = () => {};
         window.addEventListener("scroll", handleScroll);
 
-        // Fetch categories
         fetch("/api/categories")
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
                 if (data.success && data.categories) {
                     setDynamicCategories(data.categories);
                 }
             })
             .catch(() => {});
 
+        fetch("/api/vendors", { cache: "no-store" })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) setVendors(data.vendors || []);
+            })
+            .catch(() => setVendors([]))
+            .finally(() => setStoresLoading(false));
+
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    const featuredStores = useMemo(() => {
+        const marketplace = vendors.map(vendorToStoreListing);
+        return [CEDIMAN_OFFICIAL_STORE, ...marketplace].slice(0, 6);
+    }, [vendors]);
 
     const getIcon = (name: string) => {
         const lower = name.toLowerCase();
@@ -124,13 +88,12 @@ export default function MarketplaceHome() {
     function onSearch(e: FormEvent) {
         e.preventDefault();
         const trimmed = q.trim();
-        if (trimmed) router.push(`/search?q=${encodeURIComponent(trimmed)}`);
-        else router.push("/shop");
+        if (trimmed) router.push(`/stores?q=${encodeURIComponent(trimmed)}`);
+        else router.push("/stores");
     }
 
     return (
         <div className="bg-[#fcfcfc] pb-20">
-            {/* Delivery Status Bar */}
             <div className="bg-emerald-50 py-2 border-b border-emerald-100">
                 <div className="mx-auto max-w-7xl px-4 md:px-6 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
@@ -139,19 +102,22 @@ export default function MarketplaceHome() {
                         <ChevronRight className="h-3 w-3 opacity-50" />
                     </div>
                     <div className="hidden md:flex items-center gap-4 text-[10px] uppercase tracking-wider text-emerald-600 font-bold">
-                        <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> Same day dispatch</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 24/7 Support</span>
+                        <span className="flex items-center gap-1">
+                            <Truck className="h-3 w-3" /> Same day dispatch
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> 24/7 Support
+                        </span>
                     </div>
                 </div>
             </div>
 
-            {/* Hero Section with Search */}
             <section className="relative pt-12 pb-16 overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-emerald-50/50 to-transparent pointer-events-none" />
                 <div className="mx-auto max-w-7xl px-4 md:px-6 relative">
                     <div className="max-w-2xl">
                         <h1 className="text-4xl md:text-6xl font-black tracking-tight text-zinc-900 leading-[1.1]">
-                            Everything you love, <br/>
+                            Everything you love, <br />
                             <span className="text-emerald-600">delivered.</span>
                         </h1>
                         <p className="mt-4 text-lg text-zinc-600 font-medium">
@@ -159,10 +125,7 @@ export default function MarketplaceHome() {
                         </p>
                     </div>
 
-                    <form
-                        onSubmit={onSearch}
-                        className="mt-10 max-w-2xl group"
-                    >
+                    <form onSubmit={onSearch} className="mt-10 max-w-2xl group">
                         <div className="relative flex items-center transition-all duration-300">
                             <div className="absolute left-5 text-zinc-400 group-focus-within:text-emerald-600 transition-colors">
                                 <Search className="h-6 w-6" />
@@ -171,7 +134,7 @@ export default function MarketplaceHome() {
                                 type="search"
                                 value={q}
                                 onChange={(e) => setQ(e.target.value)}
-                                placeholder="Search for stores or items..."
+                                placeholder="Search stores by name..."
                                 className="w-full h-16 pl-14 pr-32 rounded-2xl bg-white border-2 border-zinc-100 shadow-xl shadow-zinc-200/50 text-lg font-medium placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all"
                             />
                             <button
@@ -185,15 +148,15 @@ export default function MarketplaceHome() {
                 </div>
             </section>
 
-            {/* Categories Rail */}
             <section className="mb-12">
                 <div className="mx-auto max-w-7xl px-4 md:px-6">
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                        {(dynamicCategories.length > 0 ? dynamicCategories : categoryChips).map((cat: any) => {
-                            const Icon = cat.icon || getIcon(cat.label || cat.name);
-                            const label = cat.label || cat.name;
-                            const href = cat.href || `/shop?category=${cat.name.toLowerCase()}`;
-                            
+                        {(dynamicCategories.length > 0 ? dynamicCategories : categoryChips).map((cat) => {
+                            const name = "name" in cat ? cat.name : undefined;
+                            const Icon = cat.icon || getIcon(cat.label || name || "");
+                            const label = cat.label || name || "";
+                            const href = cat.href || `/shop?category=${(name || label).toLowerCase()}`;
+
                             return (
                                 <Link
                                     key={label}
@@ -211,89 +174,56 @@ export default function MarketplaceHome() {
                 </div>
             </section>
 
-            {/* Featured Stores */}
             <section className="mb-16">
                 <div className="mx-auto max-w-7xl px-4 md:px-6">
                     <div className="flex items-end justify-between mb-8">
                         <div>
                             <h2 className="text-2xl font-black text-zinc-900">Featured Stores</h2>
-                            <p className="text-zinc-500 font-medium">Handpicked for quality and speed</p>
+                            <p className="text-zinc-500 font-medium">
+                                Official Cediman plus active marketplace sellers
+                            </p>
                         </div>
-                        <Link href="/shop" className="text-sm font-bold text-emerald-600 flex items-center gap-1 hover:underline">
+                        <Link
+                            href="/stores"
+                            className="text-sm font-bold text-emerald-600 flex items-center gap-1 hover:underline"
+                        >
                             See all stores <ChevronRight className="h-4 w-4" />
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {stores.map((store) => (
-                            <Link
-                                key={store.id}
-                                href={store.href}
-                                className="group relative flex flex-col rounded-[2.5rem] overflow-hidden bg-white border border-zinc-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500"
-                            >
-                                <div className="relative aspect-[16/9] overflow-hidden">
-                                    <img
-                                        src={store.image}
-                                        alt={store.name}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                                    
-                                    {store.badge && (
-                                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur shadow-sm px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                                            {store.badge}
-                                        </div>
-                                    )}
-
-                                    <div className="absolute bottom-4 left-6 right-6">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="flex items-center gap-0.5 bg-emerald-500 text-white px-1.5 py-0.5 rounded-md text-[10px] font-bold">
-                                                <Star className="h-2.5 w-2.5 fill-current" /> {store.rating}
-                                            </div>
-                                            <span className="text-[10px] font-bold text-white uppercase tracking-wider bg-black/30 backdrop-blur-md px-2 py-0.5 rounded-md">
-                                                {store.deliveryTime}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-2xl font-black text-white drop-shadow-md">
-                                            {store.name}
-                                        </h3>
-                                    </div>
-                                </div>
-                                <div className="p-6 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-bold text-zinc-800">{store.subtitle}</p>
-                                        <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
-                                            <MapPin className="h-3 w-3" /> Standard Delivery
-                                        </p>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                                        <ArrowRight className="h-5 w-5" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                    {storesLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[1, 2, 3].map((i) => (
+                                <div
+                                    key={i}
+                                    className="h-72 rounded-[2.5rem] bg-zinc-100 animate-pulse border border-zinc-100"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <StoreCardGrid stores={featuredStores} />
+                    )}
                 </div>
             </section>
 
-            {/* Vendor CTA */}
             <section className="mx-auto max-w-7xl px-4 md:px-6">
                 <div className="relative rounded-[3rem] bg-zinc-900 p-8 md:p-16 overflow-hidden">
                     <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/20 to-transparent pointer-events-none" />
                     <div className="relative z-10 max-w-xl">
                         <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
-                            Ready to grow your <br/>
+                            Ready to grow your <br />
                             <span className="text-emerald-400">business?</span>
                         </h2>
                         <p className="mt-4 text-zinc-400 text-lg">
-                            Join Ghana's fastest growing marketplace and start selling to thousands of customers today.
+                            Join Ghana&apos;s fastest growing marketplace and start selling to thousands of customers
+                            today.
                         </p>
                         <Link
-                            href="/vendor/apply"
+                            href="/signup?role=vendor"
                             className="mt-8 inline-flex items-center gap-3 bg-white text-zinc-900 px-8 py-4 rounded-2xl font-black hover:bg-emerald-400 transition-colors"
                         >
                             Become a Seller
-                            <ArrowRight className="h-5 w-5" />
+                            <ChevronRight className="h-5 w-5" />
                         </Link>
                     </div>
                 </div>

@@ -16,6 +16,12 @@ export default function VendorHomePage() {
                 </p>
             </div>
 
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/80 px-5 py-4 text-sm text-emerald-900">
+                <strong>How it works:</strong> Add products here. New listings may need admin approval before they appear
+                in the shop. Your public store is at{" "}
+                <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">/store/your-slug</code> after onboarding.
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
                 <Link
                     href="/vendor/products"

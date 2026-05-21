@@ -460,6 +460,26 @@ export const getAllVendors = async (): Promise<Vendor[]> => {
     }
 };
 
+export const getActiveVendors = async (): Promise<Vendor[]> => {
+    try {
+        const q = query(collection(db, "vendors"), where("status", "==", "active"));
+        const snap = await getDocs(q);
+        const vendors = snap.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                updatedAt: data.updatedAt?.toDate?.() || new Date(),
+            } as Vendor;
+        });
+        return vendors.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    } catch (error) {
+        console.error("Error getActiveVendors:", error);
+        return [];
+    }
+};
+
 // Product Operations
 export interface Product {
     id: string;

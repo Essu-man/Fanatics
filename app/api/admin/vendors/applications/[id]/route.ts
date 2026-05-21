@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { approveVendorApplication, rejectVendorApplication } from "@/lib/vendor-applications";
+
+export const runtime = "nodejs";
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
     try {
-        const { id } = params;
+        const { id } = await Promise.resolve(params);
         const body = await req.json();
         const { status } = body;
 
@@ -15,12 +16,25 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
         }
 
-        const docRef = doc(db, "vendor_applications", id);
-        await updateDoc(docRef, { status });
+        const result =
+            status === "approved"
+                ? await approveVendorApplication(id)
+                : await rejectVendorApplication(id);
 
-        return NextResponse.json({ success: true });
-    } catch (error: any) {
+        if (!result.success) {
+            return NextResponse.json(
+                { success: false, error: result.error || "Update failed" },
+                { status: 400 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            vendorId: "vendorId" in result ? result.vendorId : undefined,
+        });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Server error";
         console.error("Error updating vendor application:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

@@ -70,6 +70,44 @@ export const uploadImage = async (
     }
 };
 
+const VENDOR_DOC_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+
+/**
+ * Upload vendor application assets (product sample images or registration PDFs/images).
+ */
+export const uploadVendorAsset = async (
+    file: File,
+    path: string
+): Promise<{ success: boolean; url?: string; error?: string }> => {
+    try {
+        const isImage = file.type.startsWith('image/');
+        const isPdf = file.type === 'application/pdf';
+        if (!isImage && !isPdf) {
+            return { success: false, error: 'File must be an image or PDF' };
+        }
+        if (file.size > VENDOR_DOC_MAX_BYTES) {
+            return { success: false, error: 'File must be less than 10MB' };
+        }
+
+        const client = supabaseServiceKey ? supabaseAdmin : supabase;
+        const { data, error } = await client.storage.from(STORAGE_BUCKET).upload(path, file, {
+            cacheControl: '3600',
+            upsert: false,
+        });
+
+        if (error) {
+            console.error('Error uploading vendor asset:', error);
+            return { success: false, error: error.message };
+        }
+
+        const { data: urlData } = client.storage.from(STORAGE_BUCKET).getPublicUrl(data.path);
+        return { success: true, url: urlData.publicUrl };
+    } catch (error: any) {
+        console.error('Error uploading vendor asset:', error);
+        return { success: false, error: error.message || 'Failed to upload file' };
+    }
+};
+
 /**
  * Upload multiple images for a product
  * @param files - Array of files to upload
