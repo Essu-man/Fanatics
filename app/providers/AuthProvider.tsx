@@ -1,7 +1,27 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { auth } from "@/lib/firebase";
 import { AuthUser, getCurrentUser, onAuthStateChange } from "@/lib/firebase-auth";
+
+async function fetchUserFromApi(): Promise<AuthUser | null> {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return null;
+    try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch("/api/user/me", {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+            return data.user as AuthUser;
+        }
+    } catch {
+        /* fall back to client Firestore */
+    }
+    return null;
+}
 
 type AuthContextValue = {
     user: AuthUser | null;
@@ -11,10 +31,25 @@ type AuthContextValue = {
     isVendor: boolean;
     vendorId: string | undefined;
     refreshUser: () => Promise<void>;
+    /** Update in-memory user without client Firestore (e.g. after /api/vendor/session). */
+    syncUser: (user: AuthUser) => void;
     logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function usersEqual(a: AuthUser | null, b: AuthUser | null): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    return (
+        a.id === b.id &&
+        a.email === b.email &&
+        a.role === b.role &&
+        a.firstName === b.firstName &&
+        a.lastName === b.lastName &&
+        a.vendorId === b.vendorId
+    );
+}
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -33,10 +68,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         };
     }, []);
 
-    const refreshUser = async () => {
+    const refreshUser = useCallback(async () => {
+        const fromApi = await fetchUserFromApi();
+        if (fromApi) {
+            setUser((prev) => (usersEqual(prev, fromApi) ? prev : fromApi));
+            return;
+        }
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
-    };
+        setUser((prev) => (usersEqual(prev, currentUser) ? prev : currentUser));
+    }, []);
+
+    const syncUser = useCallback((next: AuthUser) => {
+        setUser((prev) => (usersEqual(prev, next) ? prev : next));
+    }, []);
 
     const logout = async () => {
         try {
@@ -74,6 +118,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         isVendor: user?.role === "vendor",
         vendorId: user?.vendorId,
         refreshUser,
+        syncUser,
         logout,
     };
 

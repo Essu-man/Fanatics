@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import ProductGrid from "@/app/components/ProductGrid/index";
+import VendorStorefrontBanner from "@/app/components/vendor/VendorStorefrontBanner";
 import type { Product as ShopProduct } from "@/lib/products";
 import type { Vendor } from "@/lib/firestore";
 
@@ -19,7 +20,7 @@ export default function VendorStorefrontPage() {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
-        fetch(`/api/vendors/${encodeURIComponent(slug)}`)
+        fetch(`/api/vendors/${encodeURIComponent(slug)}`, { cache: "no-store" })
             .then((res) => res.json())
             .then((data) => {
                 if (cancelled) return;
@@ -57,23 +58,8 @@ export default function VendorStorefrontPage() {
                     </div>
                 ) : (
                     <>
-                        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-                            {vendor.logoUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={vendor.logoUrl}
-                                    alt=""
-                                    className="h-20 w-20 rounded-xl border border-zinc-200 object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-zinc-100 text-2xl font-bold text-zinc-500">
-                                    {vendor.businessName.slice(0, 1).toUpperCase()}
-                                </div>
-                            )}
-                            <div>
-                                <h1 className="text-3xl font-bold text-zinc-900">{vendor.businessName}</h1>
-                                {vendor.description && <p className="mt-2 max-w-2xl text-sm text-zinc-600">{vendor.description}</p>}
-                            </div>
+                        <div className="mb-10">
+                            <VendorStorefrontBanner vendor={vendor} />
                         </div>
                         <ProductGrid products={products} />
                     </>

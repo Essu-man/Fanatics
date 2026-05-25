@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { buildStoragePath, prepareImageBufferForStorage } from '@/lib/prepare-upload-image';
 
 // Supabase Storage configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -39,12 +40,15 @@ export const uploadImage = async (
         // Use admin client for server-side uploads (bypasses RLS)
         const client = supabaseServiceKey ? supabaseAdmin : supabase;
 
-        // Upload file to Supabase Storage
+        const prepared = await prepareImageBufferForStorage(file);
+        const storagePath = buildStoragePath(path, prepared.fileName);
+
         const { data, error } = await client.storage
             .from(STORAGE_BUCKET)
-            .upload(path, file, {
+            .upload(storagePath, prepared.data, {
                 cacheControl: '3600',
-                upsert: false, // Don't overwrite existing files
+                upsert: false,
+                contentType: prepared.contentType,
             });
 
         if (error) {
@@ -90,9 +94,22 @@ export const uploadVendorAsset = async (
         }
 
         const client = supabaseServiceKey ? supabaseAdmin : supabase;
-        const { data, error } = await client.storage.from(STORAGE_BUCKET).upload(path, file, {
+
+        let uploadBody: Buffer | File = file;
+        let storagePath = path;
+        let contentType = file.type;
+
+        if (isImage) {
+            const prepared = await prepareImageBufferForStorage(file);
+            uploadBody = prepared.data;
+            storagePath = buildStoragePath(path, prepared.fileName);
+            contentType = prepared.contentType;
+        }
+
+        const { data, error } = await client.storage.from(STORAGE_BUCKET).upload(storagePath, uploadBody, {
             cacheControl: '3600',
             upsert: false,
+            contentType,
         });
 
         if (error) {

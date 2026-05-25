@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getProductsByVendorId, getVendorBySlug } from "@/lib/firestore";
+import { getProductsByVendorId } from "@/lib/firestore";
+import { adminGetVendorBySlug } from "@/lib/firestore-admin";
+import { serializePublicVendor } from "@/lib/vendor-public";
 
 export const runtime = "nodejs";
 
@@ -9,7 +11,7 @@ export async function GET(
 ) {
     try {
         const { slug } = await Promise.resolve(params);
-        const vendor = await getVendorBySlug(slug);
+        const vendor = await adminGetVendorBySlug(slug);
 
         if (!vendor || vendor.status !== "active") {
             return NextResponse.json({ success: false, error: "Store not found" }, { status: 404 });
@@ -19,14 +21,12 @@ export async function GET(
 
         return NextResponse.json({
             success: true,
-            vendor,
+            vendor: serializePublicVendor(vendor),
             products,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unable to load store";
         console.error("GET /api/vendors/[slug]:", error);
-        return NextResponse.json(
-            { success: false, error: error.message || "Unable to load store" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

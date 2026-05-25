@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, getProduct, updateProduct } from "@/lib/firestore";
+import { decrementVariantStock, usesVariantStock } from "@/lib/stock-variants";
 import { sendEmail, getOrderConfirmationEmail } from "@/lib/sendgrid";
 import { collection, query, where, getDocs, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -160,22 +161,33 @@ export async function POST(request: NextRequest) {
             try {
                 const product = await getProduct(item.id);
                 if (product) {
-                    const isChildrenSize = product.childrenSizes?.includes(item.size);
-                    
-                    if (isChildrenSize) {
-                        const currentStock = product.childrenStock ?? 0;
-                        const newStock = Math.max(0, currentStock - item.quantity);
-                        await updateProduct(item.id, {
-                            childrenStock: newStock,
-                        });
-                        console.log(`Updated children stock for product ${item.id}: ${currentStock} -> ${newStock}`);
+                    const variantUpdate = decrementVariantStock(
+                        product,
+                        item.colorId,
+                        item.size,
+                        item.quantity
+                    );
+                    if (usesVariantStock(product) && variantUpdate) {
+                        await updateProduct(item.id, variantUpdate);
+                        console.log(`Updated variant stock for product ${item.id}`);
                     } else {
-                        const newStock = Math.max(0, product.stock - item.quantity);
-                        await updateProduct(item.id, {
-                            stock: newStock,
-                            available: newStock > 0 ? product.available : false,
-                        });
-                        console.log(`Updated adult stock for product ${item.id}: ${product.stock} -> ${newStock}`);
+                        const isChildrenSize = product.childrenSizes?.includes(item.size);
+
+                        if (isChildrenSize) {
+                            const currentStock = product.childrenStock ?? 0;
+                            const newStock = Math.max(0, currentStock - item.quantity);
+                            await updateProduct(item.id, {
+                                childrenStock: newStock,
+                            });
+                            console.log(`Updated children stock for product ${item.id}: ${currentStock} -> ${newStock}`);
+                        } else {
+                            const newStock = Math.max(0, product.stock - item.quantity);
+                            await updateProduct(item.id, {
+                                stock: newStock,
+                                available: newStock > 0 ? product.available : false,
+                            });
+                            console.log(`Updated adult stock for product ${item.id}: ${product.stock} -> ${newStock}`);
+                        }
                     }
                 }
             } catch (stockError) {

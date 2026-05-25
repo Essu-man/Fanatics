@@ -25,23 +25,18 @@ export default function NewArrivals() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/api/admin/products");
+        const response = await fetch("/api/shop/products", { cache: "no-store" });
         const data = await response.json();
 
         if (data.success && data.products) {
-          // Filter for available products, sort by newest first (createdAt), and limit to 5
-          const availableProducts = data.products
-            .filter((p: any) => p.available && p.stock > 0 && p.images && p.images.length > 0)
-            .sort((a: any, b: any) => {
-              // Sort by createdAt descending (newest first)
-              const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() :
-                (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-              const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() :
-                (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          const availableProducts = [...data.products]
+            .sort((a: { createdAt?: string | null }, b: { createdAt?: string | null }) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
               return dateB - dateA;
             })
             .slice(0, 5)
-            .map((p: any) => ({
+            .map((p: { id: string; name: string; team?: string; price: number; childrenPrice?: number; images: string[]; category?: string }) => ({
               id: p.id,
               name: p.name,
               team: p.team,

@@ -20,6 +20,7 @@ import StoreCardGrid, {
     CEDIMAN_OFFICIAL_STORE,
     vendorToStoreListing,
 } from "@/app/components/home/StoreCardGrid";
+import MarketplaceProductsCarousel from "@/app/components/home/MarketplaceProductsCarousel";
 
 const categoryChips: { label: string; href: string; icon: typeof Shirt }[] = [
     { label: "Jerseys", href: "/shop?category=jersey", icon: Shirt },
@@ -205,6 +206,8 @@ export default function MarketplaceHome() {
                     )}
                 </div>
             </section>
+
+            <MarketplaceProductsCarousel />
 
             <section className="mx-auto max-w-7xl px-4 md:px-6">
                 <div className="relative rounded-[3rem] bg-zinc-900 p-8 md:p-16 overflow-hidden">

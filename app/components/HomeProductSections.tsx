@@ -144,21 +144,14 @@ export default function HomeProductSections() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch("/api/admin/products");
+                const response = await fetch("/api/shop/products", { cache: "no-store" });
                 const data = await response.json();
 
                 if (data.success && data.products) {
-                    // Filter products with images, available, and stock > 0
-                    const availableProducts = data.products.filter(
-                        (p: any) => p.images && p.images.length > 0 && p.available && p.stock > 0
-                    );
-
-                    // Convert to Product type and filter by league
-                    const allProducts: any[] = availableProducts.map((p: any) => ({
+                    const allProducts: Product[] = data.products.map((p: Product) => ({
                         id: p.id,
                         name: p.name,
                         team: p.team,
-                        teamId: p.teamId,
                         league: p.league,
                         price: p.price,
                         childrenPrice: p.childrenPrice,

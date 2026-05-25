@@ -23,6 +23,12 @@ import {
     SelectValue,
 } from "@/app/components/ui/select";
 import { sortSizes, formatSize } from "@/lib/sizes";
+import { getVariantStock, totalVariantStock, usesVariantStock } from "@/lib/stock-variants";
+import {
+    isApparelJerseyCategory,
+    showsProductColorPicker,
+    usesAdultChildSizePicker,
+} from "@/lib/product-category";
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -60,9 +66,19 @@ export default function ProductDetailPage() {
                     setSelectedImage(data.product.images?.[0] || "");
                     setSelectedImageIndex(0);
                     setSelectedColor(data.product.colors?.[0]?.id || null);
-                    // Reset size category to empty if loading new product
-                    setSizeCategory("");
-                    setSelectedSize("");
+                    const cat = data.product.category;
+                    if (isApparelJerseyCategory(cat)) {
+                        setSizeCategory("");
+                        setSelectedSize("");
+                    } else if (data.product.sizes?.length) {
+                        setSizeCategory("adults");
+                        setSelectedSize(data.product.sizes[0]);
+                    } else {
+                        setSizeCategory("");
+                        setSelectedSize("");
+                    }
+                    setJerseyType("fan");
+                    setCustomization({ playerName: "", playerNumber: "" });
                     setLoading(false);
                 } else {
                     // Fallback: Try to fetch from team products API
@@ -193,6 +209,11 @@ export default function ProductDetailPage() {
         );
     }
 
+    const isJersey = isApparelJerseyCategory(product.category);
+    const showColorPicker = showsProductColorPicker(product.colors);
+    const useSizeCategoryPicker = usesAdultChildSizePicker(product.category, product);
+    const flatSizes = sortSizes(product.sizes ?? []);
+
     const handleAddToCart = () => {
         if (isOutOfStock) return;
 
@@ -204,15 +225,16 @@ export default function ProductDetailPage() {
             price: currentPrice,
             colorId: selectedColor,
             size: selectedSize,
-            jerseyType,
+            jerseyType: isJersey ? jerseyType : undefined,
             quantity,
             image: selectedImage,
-            customization: customization.playerName || customization.playerNumber
-                ? {
-                    playerName: customization.playerName,
-                    playerNumber: customization.playerNumber,
-                }
-                : undefined,
+            customization:
+                isJersey && (customization.playerName || customization.playerNumber)
+                    ? {
+                          playerName: customization.playerName,
+                          playerNumber: customization.playerNumber,
+                      }
+                    : undefined,
         });
         const customText = customization.playerName || customization.playerNumber
             ? ` with ${[customization.playerName, customization.playerNumber].filter(Boolean).join(' #')}`
@@ -221,8 +243,13 @@ export default function ProductDetailPage() {
         setIsAdded(true);
     };
 
-    const noAdultStock = product.stock !== undefined && product.stock === 0;
-    const noChildrenStock = product.childrenStock !== undefined && product.childrenStock === 0;
+    const variantTotal = usesVariantStock(product) ? totalVariantStock(product.stockVariants!) : null;
+    const noAdultStock =
+        variantTotal !== null ? variantTotal === 0 : product.stock !== undefined && product.stock === 0;
+    const noChildrenStock =
+        variantTotal !== null
+            ? variantTotal === 0
+            : product.childrenStock !== undefined && product.childrenStock === 0;
     
     const hasAdultSizes = product.sizes && product.sizes.length > 0;
     const hasChildrenSizes = product.childrenSizes && product.childrenSizes.length > 0;
@@ -235,8 +262,25 @@ export default function ProductDetailPage() {
         ((!adultCategoryExists || adultOutOfStock) && (!hasChildrenSizes || childrenOutOfStock));
 
     const currentPrice = sizeCategory === "children" && product.childrenPrice !== undefined ? product.childrenPrice : product.price;
-    const currentStock = sizeCategory === "children" && product.childrenStock !== undefined ? product.childrenStock : product.stock;
-    const isOutOfStock = product.available === false || (currentStock !== undefined && currentStock === 0) || (sizeCategory === "" && isGloballyOutOfStock);
+    const stockSizeCategory =
+        sizeCategory === "adults" ? "adult" : sizeCategory === "children" ? "children" : "";
+    const currentStock = usesVariantStock(product)
+        ? getVariantStock(product, selectedColor, selectedSize, stockSizeCategory)
+        : sizeCategory === "children" && product.childrenStock !== undefined
+          ? product.childrenStock
+          : product.stock;
+    const needsSizeSelection =
+        useSizeCategoryPicker ||
+        flatSizes.length > 0 ||
+        Boolean(isJersey && (product.sizes?.length || product.childrenSizes?.length));
+    const isOutOfStock =
+        product.available === false ||
+        (needsSizeSelection && !selectedSize) ||
+        (needsSizeSelection
+            ? currentStock !== undefined && currentStock === 0
+            : usesVariantStock(product)
+              ? totalVariantStock(product.stockVariants!) === 0
+              : (product.stock ?? 0) === 0);
 
     return (
         <div className="min-h-screen bg-white text-zinc-900">
@@ -351,8 +395,13 @@ export default function ProductDetailPage() {
                                 )}
                             </p>
                         )}
-                        {product.team && (
+                        {isJersey && product.team && (
                             <p className="text-lg text-zinc-600 mb-4">{product.team}</p>
+                        )}
+                        {product.category && !isJersey && (
+                            <p className="text-sm font-medium uppercase tracking-wide text-zinc-500 mb-4">
+                                {product.category}
+                            </p>
                         )}
 
                         <div className="mb-6 flex items-center gap-3">
@@ -392,7 +441,7 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Color Selection */}
-                        {product.colors && product.colors.length > 0 && (
+                        {showColorPicker && product.colors && (
                             <div className="mb-6">
                                 <label className="mb-2 block text-sm font-medium text-zinc-900">
                                     Color: {product.colors.find((c) => c.id === selectedColor)?.name || "Select"}
@@ -418,33 +467,31 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
-                        {/* Jersey Type */}
-                        <div className="mb-6">
-                            <label className="mb-2 block text-sm font-medium text-zinc-900">
-                                Jersey Type
-                            </label>
-                            <div className="flex gap-2">
-                                <button
-                                    className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === 'fan' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
-                                    onClick={() => setJerseyType('fan')}
-                                    type="button"
-                                >
-                                    Fan Version
-                                </button>
-                                <button
-                                    className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === 'player' ? 'border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]' : 'border-zinc-200 hover:border-zinc-300'}`}
-                                    onClick={() => setJerseyType('player')}
-                                    type="button"
-                                >
-                                    Player Version
-                                </button>
+                        {isJersey && (
+                            <div className="mb-6">
+                                <label className="mb-2 block text-sm font-medium text-zinc-900">Jersey Type</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === "fan" ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]" : "border-zinc-200 hover:border-zinc-300"}`}
+                                        onClick={() => setJerseyType("fan")}
+                                        type="button"
+                                    >
+                                        Fan Version
+                                    </button>
+                                    <button
+                                        className={`px-3 py-2 rounded-md border-2 text-sm font-semibold transition-all ${jerseyType === "player" ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]" : "border-zinc-200 hover:border-zinc-300"}`}
+                                        onClick={() => setJerseyType("player")}
+                                        type="button"
+                                    >
+                                        Player Version
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Size Selection */}
-                        {(product.sizes?.length || product.childrenSizes?.length) ? (
+                        {useSizeCategoryPicker ? (
                             <div className="mb-6 space-y-4">
-                                {/* Category Dropdown */}
                                 <div>
                                     <label className="mb-2 block text-base font-bold text-zinc-900 uppercase tracking-wide">
                                         1. Select Category
@@ -462,7 +509,9 @@ export default function ProductDetailPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             {product.sizes?.length ? <SelectItem value="adults">ADULTS</SelectItem> : null}
-                                            {product.childrenSizes?.length ? <SelectItem value="children">CHILDREN</SelectItem> : null}
+                                            {product.childrenSizes?.length ? (
+                                                <SelectItem value="children">CHILDREN</SelectItem>
+                                            ) : null}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -473,7 +522,9 @@ export default function ProductDetailPage() {
                                             2. Select Size: {selectedSize}
                                         </label>
                                         <div className="flex flex-wrap gap-3">
-                                            {sortSizes(sizeCategory === "adults" ? product.sizes ?? [] : product.childrenSizes ?? []).map((size) => (
+                                            {sortSizes(
+                                                sizeCategory === "adults" ? product.sizes ?? [] : product.childrenSizes ?? []
+                                            ).map((size) => (
                                                 <button
                                                     key={size}
                                                     onClick={() => setSelectedSize(size)}
@@ -482,20 +533,66 @@ export default function ProductDetailPage() {
                                                         : "border-zinc-200 hover:border-zinc-300 bg-white hover:shadow-sm"
                                                         } ${sizeCategory === "children" ? "min-w-[140px]" : "min-w-[70px]"}`}
                                                 >
-                                            {formatSize(size)}
+                                                    {formatSize(size)}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="rounded-xl border-2 border-dashed border-zinc-200 p-8 text-center bg-zinc-50/50">
-                                        <p className="text-zinc-500 font-medium">Please select a category above to view available sizes</p>
+                                        <p className="text-zinc-500 font-medium">
+                                            Please select a category above to view available sizes
+                                        </p>
                                     </div>
                                 )}
                             </div>
+                        ) : flatSizes.length > 0 ? (
+                            <div className="mb-6">
+                                <label className="mb-3 block text-sm font-medium text-zinc-900">Size</label>
+                                <div className="flex flex-wrap gap-3">
+                                    {flatSizes.map((size) => (
+                                        <button
+                                            key={size}
+                                            onClick={() => {
+                                                setSizeCategory("adults");
+                                                setSelectedSize(size);
+                                            }}
+                                            type="button"
+                                            className={`h-12 min-w-[70px] rounded-xl border-2 px-4 text-sm font-bold transition-all ${selectedSize === size
+                                                ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)]"
+                                                : "border-zinc-200 hover:border-zinc-300"}`}
+                                        >
+                                            {formatSize(size)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : isJersey && (product.sizes?.length || product.childrenSizes?.length) ? (
+                            <div className="mb-6 space-y-4">
+                                <label className="mb-3 block text-base font-bold text-zinc-900 uppercase tracking-wide">
+                                    Select Size: {selectedSize}
+                                </label>
+                                <div className="flex flex-wrap gap-3">
+                                    {sortSizes(product.sizes ?? product.childrenSizes ?? []).map((size) => (
+                                        <button
+                                            key={size}
+                                            onClick={() => {
+                                                setSizeCategory(product.sizes?.length ? "adults" : "children");
+                                                setSelectedSize(size);
+                                            }}
+                                            type="button"
+                                            className={`h-14 px-6 rounded-xl border-3 text-base font-black transition-all ${selectedSize === size
+                                                ? "border-[var(--brand-red)] bg-red-50 text-[var(--brand-red)] shadow-md"
+                                                : "border-zinc-200 hover:border-zinc-300 bg-white"}`}
+                                        >
+                                            {formatSize(size)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         ) : null}
 
-                        {/* Jersey Customization - Show for all products */}
+                        {isJersey && (
                         <div className="mb-6 rounded-lg border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-4 sm:p-5">
                             <h3 className="mb-4 text-sm font-semibold text-zinc-900 flex items-center gap-2">
                                 <span className="text-lg">⚽</span>
@@ -584,6 +681,7 @@ export default function ProductDetailPage() {
                                 </div>
                             </div>
                         </div>
+                        )}
 
                         {/* Quantity */}
                         <div className="mb-6">

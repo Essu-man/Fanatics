@@ -1,42 +1,21 @@
-import { initializeApp, getApps, cert, type ServiceAccount } from 'firebase-admin/app';
-import { getAuth, type DecodedIdToken } from 'firebase-admin/auth';
-import { existsSync, readFileSync } from 'fs';
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
+import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
+import {
+    FirebaseAdminConfigError,
+    getFirebaseServiceAccount,
+    isFirebaseAdminConfigError,
+} from "@/lib/get-firebase-service-account";
 
-// Helper to get service account
-function getServiceAccount(): ServiceAccount {
-    // 1. Try environment variable (JSON string)
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-        try {
-            return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        } catch (e) {
-            console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON');
-        }
-    }
+let app: App | null = null;
 
-    // 2. Try local file (Legacy/Dev path)
-    const localPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || 'C:/Keys/cediman.json';
-    if (existsSync(localPath)) {
-        try {
-            return JSON.parse(readFileSync(localPath, 'utf-8'));
-        } catch (e) {
-            console.error(`Failed to read service account from ${localPath}`);
-        }
-    }
-
-    throw new Error('Firebase Service Account not found. Set FIREBASE_SERVICE_ACCOUNT_JSON or ensure file exists.');
-}
-
-
-let app: any = null;
-
-function getAdminApp() {
+function getAdminApp(): App {
     if (app) return app;
     if (getApps().length > 0) {
-        app = getApps()[0];
+        app = getApps()[0]!;
         return app;
     }
 
-    const serviceAccount = getServiceAccount();
+    const serviceAccount = getFirebaseServiceAccount();
 
     app = initializeApp({
         credential: cert(serviceAccount),
@@ -52,10 +31,20 @@ export const adminAuth = {
     get getUserByEmail() {
         return getAuth(getAdminApp()).getUserByEmail.bind(getAuth(getAdminApp()));
     },
-    // Add other methods as needed
 };
 
 export async function verifyFirebaseIdToken(idToken: string): Promise<DecodedIdToken> {
-    const auth = getAuth(getAdminApp());
-    return auth.verifyIdToken(idToken);
+    try {
+        const auth = getAuth(getAdminApp());
+        return auth.verifyIdToken(idToken);
+    } catch (error) {
+        if (isFirebaseAdminConfigError(error)) throw error;
+        throw error;
+    }
 }
+
+export function getFirebaseAdminApp() {
+    return getAdminApp();
+}
+
+export { FirebaseAdminConfigError, isFirebaseAdminConfigError };

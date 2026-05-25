@@ -14,12 +14,14 @@ import {
     Shield,
     Image as ImageIcon,
     Store,
+    ClipboardList,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
+    { name: "Pending products", href: "/admin/products/pending", icon: ClipboardList },
     { name: "Vendors", href: "/admin/vendors", icon: Store },
     { name: "Teams & Leagues", href: "/admin/teams", icon: Shield },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
@@ -32,6 +34,18 @@ const navigation = [
 export default function AdminSidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    useEffect(() => {
+        fetch("/api/admin/products/pending", { cache: "no-store" })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success && Array.isArray(data.products)) {
+                    setPendingCount(data.products.length);
+                }
+            })
+            .catch(() => setPendingCount(0));
+    }, [pathname]);
 
     return (
         <aside
@@ -60,21 +74,40 @@ export default function AdminSidebar() {
             {/* Navigation */}
             <nav className="flex-1 space-y-1 p-4">
                 {navigation.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isPendingNav = item.href === "/admin/products/pending";
+                    const active = isPendingNav
+                        ? pathname === "/admin/products/pending"
+                        : item.href === "/admin/products"
+                          ? pathname.startsWith("/admin/products") && pathname !== "/admin/products/pending"
+                          : pathname === item.href;
                     const Icon = item.icon;
+                    const showBadge = isPendingNav && pendingCount > 0;
 
                     return (
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
                                 ? "bg-[var(--brand-red)] text-white"
                                 : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                                 } ${collapsed ? "justify-center" : ""}`}
                             title={collapsed ? item.name : undefined}
                         >
                             <Icon className="h-5 w-5 flex-shrink-0" />
-                            {!collapsed && <span>{item.name}</span>}
+                            {!collapsed && (
+                                <>
+                                    <span className="flex-1">{item.name}</span>
+                                    {showBadge && (
+                                        <span
+                                            className={`min-w-[1.25rem] rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${
+                                                active ? "bg-white text-[var(--brand-red)]" : "bg-amber-100 text-amber-800"
+                                            }`}
+                                        >
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </>
+                            )}
                         </Link>
                     );
                 })}

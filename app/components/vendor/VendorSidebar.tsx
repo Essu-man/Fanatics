@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Package, PlusCircle, Boxes, Settings } from "lucide-react";
 
 const navigation = [
     { name: "Overview", href: "/vendor", icon: LayoutDashboard },
     { name: "My products", href: "/vendor/products", icon: Package },
+    { name: "Stock", href: "/vendor/stock", icon: Boxes },
     { name: "Add product", href: "/vendor/products/new", icon: PlusCircle },
+    { name: "Settings", href: "/vendor/settings", icon: Settings },
 ];
 
 export default function VendorSidebar() {
@@ -22,7 +24,10 @@ export default function VendorSidebar() {
             </div>
             <nav className="space-y-1 p-4">
                 {navigation.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive =
+                        item.href === "/vendor"
+                            ? pathname === "/vendor"
+                            : pathname === item.href || pathname.startsWith(`${item.href}/`);
                     const Icon = item.icon;
                     return (
                         <Link

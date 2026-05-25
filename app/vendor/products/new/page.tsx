@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UploadCloud, ArrowLeft, Plus, X } from "lucide-react";
 import { useToast } from "@/app/components/ui/ToastContainer";
@@ -15,18 +16,18 @@ import {
     SelectValue,
 } from "@/app/components/ui/select";
 import TeamSearchInput from "@/app/components/product-form/TeamSearchInput";
-import { MARKETPLACE_CATEGORIES } from "@/lib/product-category";
-import { isApparelJerseyCategory } from "@/lib/product-category";
-
-const categories = [...MARKETPLACE_CATEGORIES];
+import {
+    MARKETPLACE_CATEGORIES,
+    categoryNamesFromOptions,
+    isApparelJerseyCategory,
+} from "@/lib/product-category";
+import VendorSizePicker, { ONE_SIZE } from "@/app/components/vendor/VendorSizePicker";
+import { sortSizes } from "@/lib/sizes";
 
 export default function VendorNewProductPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const { vendorId } = useAuth();
-
-    const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
-    const ONE_SIZE = "One Size";
 
     const [name, setName] = useState("");
     const [teamId, setTeamId] = useState("");
@@ -40,19 +41,24 @@ export default function VendorNewProductPage() {
     const [colors, setColors] = useState<Array<{ id: string; name: string; hex: string }>>([]);
     const [newColorName, setNewColorName] = useState("");
     const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-    const [categories, setCategories] = useState<string[]>(MARKETPLACE_CATEGORIES as any);
+    const [customSizes, setCustomSizes] = useState<string[]>([]);
+    const [categories, setCategories] = useState<string[]>([...MARKETPLACE_CATEGORIES]);
     const [customTeams, setCustomTeams] = useState<Team[]>([]);
 
     useEffect(() => {
         // Fetch categories
-        fetch("/api/categories")
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.categories) {
-                    setCategories(data.categories.map((c: any) => c.name));
+        fetch("/api/categories", { cache: "no-store" })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) {
+                    const names = categoryNamesFromOptions(data.categories);
+                    setCategories(names);
+                    setCategory((current) => (names.includes(current) ? current : names[0]));
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                setCategories([...MARKETPLACE_CATEGORIES]);
+            });
 
         fetch("/api/admin/teams")
             .then((res) => res.json())
@@ -76,9 +82,10 @@ export default function VendorNewProductPage() {
         return groups;
     }, [customTeams]);
 
-    const toggleSize = (size: string) => {
-        setSelectedSizes((prev) => (prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]));
-    };
+    const allSizes = useMemo(
+        () => sortSizes([...new Set([...selectedSizes, ...customSizes])]),
+        [selectedSizes, customSizes]
+    );
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
@@ -123,16 +130,8 @@ export default function VendorNewProductPage() {
             showToast("Name, price, and at least one image are required", "error");
             return;
         }
-        if (selectedSizes.length === 0) {
-            showToast("Select at least one size (or use One Size)", "error");
-            return;
-        }
         if (needTeam && !teamId) {
             showToast("Team is required for jersey products", "error");
-            return;
-        }
-        if (needTeam && colors.length === 0) {
-            showToast("Add at least one color for jerseys", "error");
             return;
         }
 
@@ -166,7 +165,8 @@ export default function VendorNewProductPage() {
                 description,
                 images: uploadedImages,
                 teamId: needTeam ? teamId : undefined,
-                sizes: selectedSizes,
+                sizes: allSizes.length > 0 ? allSizes : undefined,
+                customSizes: customSizes.length > 0 ? customSizes : undefined,
                 colors: colors.length > 0 ? colors : undefined,
             };
 
@@ -180,9 +180,11 @@ export default function VendorNewProductPage() {
             });
 
             const result = await res.json();
-            if (!res.ok || !result.success) throw new Error(result.error || "Failed to create product");
+            if (!res.ok || !result.success) {
+                throw new Error(result.error || "Failed to create product");
+            }
 
-            showToast("Product created!", "success");
+            showToast("Product submitted for admin approval", "success");
             router.push("/vendor/products");
         } catch (error: any) {
             console.error(error);
@@ -206,7 +208,11 @@ export default function VendorNewProductPage() {
             <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                 <h1 className="text-2xl font-bold text-zinc-900">New listing</h1>
                 <p className="mt-1 text-sm text-zinc-600">
-                    Your product will be reviewed by an admin before it goes live.
+                    Your product will be reviewed by an admin before it goes live. After creating it, use{" "}
+                    <Link href="/vendor/stock" className="font-medium text-[var(--brand-red)] hover:underline">
+                        Stock
+                    </Link>{" "}
+                    to set quantities per color and size.
                 </p>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-6">
@@ -224,7 +230,7 @@ export default function VendorNewProductPage() {
                             <label className="text-sm font-medium text-zinc-700">Category</label>
                             <Select value={category} onValueChange={setCategory}>
                                 <SelectTrigger>
-                                    <SelectValue />
+                                    <SelectValue placeholder="Select category" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {categories.map((cat) => (
@@ -279,41 +285,34 @@ export default function VendorNewProductPage() {
                         />
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-zinc-900">Sizes</p>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedSizes([ONE_SIZE])}
-                                className="text-xs font-medium text-[var(--brand-red)] hover:underline"
-                            >
-                                Use &quot;One Size&quot; only
-                            </button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {AVAILABLE_SIZES.map((size) => (
-                                <button
-                                    key={size}
-                                    type="button"
-                                    onClick={() => toggleSize(size)}
-                                    className={`rounded-lg border-2 px-3 py-2 text-sm font-medium ${
-                                        selectedSizes.includes(size)
-                                            ? "border-[var(--brand-red)] bg-[var(--brand-red)] text-white"
-                                            : "border-zinc-200 bg-white text-zinc-800"
-                                    }`}
-                                >
-                                    {size}
-                                </button>
-                            ))}
-                        </div>
-                        {selectedSizes.length > 0 && (
-                            <p className="text-xs text-zinc-500">Selected: {selectedSizes.join(", ")}</p>
-                        )}
-                    </div>
+                    <p className="text-xs text-zinc-500">
+                        Sizes are optional. Skip if you sell by unit only — set stock on the Stock page or below.
+                    </p>
+                    <VendorSizePicker
+                        selectedSizes={selectedSizes}
+                        customSizes={customSizes}
+                        onTogglePreset={(size) =>
+                            setSelectedSizes((prev) =>
+                                prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+                            )
+                        }
+                        onAddCustomSize={(size) => {
+                            if (customSizes.includes(size) || selectedSizes.includes(size)) {
+                                showToast("Size already added", "error");
+                                return;
+                            }
+                            setCustomSizes((prev) => [...prev, size]);
+                        }}
+                        onRemoveCustomSize={(size) => setCustomSizes((prev) => prev.filter((s) => s !== size))}
+                        onUseOneSize={() => {
+                            setSelectedSizes([ONE_SIZE]);
+                            setCustomSizes([]);
+                        }}
+                    />
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-700">
-                            Colors {isApparelJerseyCategory(category) ? "(required for jerseys)" : "(optional)"}
+                            Colors (optional)
                         </label>
                         <div className="flex gap-2">
                             <input

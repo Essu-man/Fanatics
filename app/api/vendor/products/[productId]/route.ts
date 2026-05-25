@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteProduct, getProduct, updateProduct } from "@/lib/firestore";
-import { requireVendorAuth } from "@/lib/api-auth";
+import { requireVendorAuthDetailed } from "@/lib/api-auth";
 import { buildProductFirestorePayload, validateProductCreateBase, vendorDisplayName } from "@/lib/products-shared";
 export const runtime = "nodejs";
 
@@ -8,10 +8,14 @@ export async function GET(
     request: Request,
     { params }: { params: Promise<{ productId: string }> | { productId: string } }
 ) {
-    const auth = await requireVendorAuth(request);
-    if (!auth) {
-        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
     }
+    const auth = authResult.auth;
 
     try {
         const { productId } = await Promise.resolve(params);
@@ -38,10 +42,14 @@ export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ productId: string }> | { productId: string } }
 ) {
-    const auth = await requireVendorAuth(request);
-    if (!auth) {
-        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
     }
+    const auth = authResult.auth;
 
     try {
         const { productId } = await Promise.resolve(params);
@@ -67,7 +75,9 @@ export async function PATCH(
             images,
             colors,
             sizes,
+            customSizes,
             childrenSizes,
+            stockVariants,
         } = body;
 
         const mergedForValidation = {
@@ -108,7 +118,9 @@ export async function PATCH(
             images: Array.isArray(mergedForValidation.images) ? mergedForValidation.images : existing.images,
             colors: colors ?? existing.colors,
             sizes: mergedForValidation.sizes,
+            customSizes: customSizes ?? existing.customSizes,
             childrenSizes: mergedForValidation.childrenSizes,
+            stockVariants: stockVariants ?? existing.stockVariants,
             vendorId: auth.vendorId,
             vendorName,
             vendorSlug: auth.vendor.slug,
@@ -133,10 +145,14 @@ export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ productId: string }> | { productId: string } }
 ) {
-    const auth = await requireVendorAuth(request);
-    if (!auth) {
-        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
     }
+    const auth = authResult.auth;
 
     try {
         const { productId } = await Promise.resolve(params);

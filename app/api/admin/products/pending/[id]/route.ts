@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { adminUpdateProductApproval } from "@/lib/firestore-admin";
+
+export const runtime = "nodejs";
 
 export async function PATCH(
     req: Request,
@@ -15,19 +16,18 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
         }
 
-        const status = action === "approve" ? "approved" : "rejected";
-        const approved = action === "approve";
-
-        const docRef = doc(db, "products", id);
-        await updateDoc(docRef, {
-            status,
-            approved,
-            updatedAt: Timestamp.now()
-        });
+        const result = await adminUpdateProductApproval(id, action);
+        if (!result.success) {
+            return NextResponse.json(
+                { success: false, error: result.error || "Failed to update product" },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
-        console.error("Error updating product status:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to update product";
+        console.error("PATCH /api/admin/products/pending/[id]:", error);
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

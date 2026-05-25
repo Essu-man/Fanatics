@@ -20,11 +20,13 @@ import {
     SelectValue,
 } from "../components/ui/select";
 
+const PAGE_SIZE = 20;
 
 // Child component to use useSearchParams inside Suspense
 function ShopPageContent() {
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [categories, setCategories] = useState<{name: string, slug: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -43,32 +45,12 @@ function ShopPageContent() {
                     setCategories(catData.categories);
                 }
 
-                const response = await fetch("/api/admin/products");
+                const response = await fetch("/api/shop/products", { cache: "no-store" });
                 const data = await response.json();
 
                 if (data.success && data.products) {
-                    const availableProducts = data.products
-                        .filter((p: any) => p.images && p.images.length > 0 && p.available && p.stock > 0)
-                        .map((p: any) => ({
-                            id: p.id,
-                            name: p.name,
-                            team: p.team,
-                            teamId: p.teamId,
-                            league: p.league,
-                            category: p.category,
-                            price: p.price,
-                            childrenPrice: p.childrenPrice,
-                            images: p.images || [],
-                            colors: p.colors || [],
-                            sizes: p.sizes || [],
-                            childrenSizes: p.childrenSizes || [],
-                            stock: p.stock,
-                            childrenStock: p.childrenStock,
-                            available: p.available,
-                        }));
-
-                    setProducts(availableProducts);
-                    setFilteredProducts(availableProducts);
+                    setProducts(data.products);
+                    setFilteredProducts(data.products);
                 }
             } catch (error) {
                 console.error("Error fetching shop data:", error);
@@ -117,6 +99,13 @@ function ShopPageContent() {
         setFilteredProducts(filtered);
     }, [selectedCategory, sortBy, products, leagueParam]);
 
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [filteredProducts]);
+
+    const displayedProducts = filteredProducts.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredProducts.length;
+
     if (loading) {
         return (
             <div className="mx-auto max-w-7xl px-6 py-12">
@@ -131,8 +120,8 @@ function ShopPageContent() {
             <div className="mb-12">
                 <h1 className="text-4xl font-black text-zinc-900 mb-3">Shop All Products</h1>
                 <p className="text-lg text-zinc-600 max-w-2xl">
-                    Discover our complete collection of authentic team jerseys, apparel, and gear.
-                    From football to basketball and everything in between.
+                    Discover jerseys, apparel, beauty, tech, and more from Cediman and marketplace
+                    sellers across Ghana — one cart, fast delivery.
                 </p>
             </div>
 
@@ -175,16 +164,34 @@ function ShopPageContent() {
 
             {/* Results Count */}
             <div className="mb-6 text-sm text-zinc-600">
-                Showing <span className="font-semibold text-zinc-900">{filteredProducts.length}</span> product{filteredProducts.length !== 1 ? "s" : ""}
+                Showing{" "}
+                <span className="font-semibold text-zinc-900">
+                    {filteredProducts.length === 0 ? 0 : Math.min(visibleCount, filteredProducts.length)}
+                </span>{" "}
+                of <span className="font-semibold text-zinc-900">{filteredProducts.length}</span> product
+                {filteredProducts.length !== 1 ? "s" : ""}
             </div>
 
             {/* Products Grid */}
             {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {filteredProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        {displayedProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
+                    {hasMore && (
+                        <div className="mt-10 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                                className="rounded-xl border-2 border-zinc-200 bg-white px-8 py-3 text-sm font-bold text-zinc-900 transition hover:border-[var(--brand-red)] hover:text-[var(--brand-red)]"
+                            >
+                                Load more
+                            </button>
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="py-24 text-center">
                     <Grid3x3 className="h-16 w-16 text-zinc-300 mx-auto mb-4" />

@@ -375,10 +375,33 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
 /**
  * Listen to auth state changes
  */
+async function loadAuthUserViaApi(firebaseUser: FirebaseUser): Promise<AuthUser | null> {
+    try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch("/api/user/me", {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+            return data.user as AuthUser;
+        }
+    } catch {
+        /* use Firestore fallback */
+    }
+    return null;
+}
+
 export const onAuthStateChange = (callback: (user: AuthUser | null) => void) => {
     return onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
             try {
+                const fromApi = await loadAuthUserViaApi(firebaseUser);
+                if (fromApi) {
+                    callback(fromApi);
+                    return;
+                }
+
                 const profile = await getUserProfile(firebaseUser.uid);
                 if (profile) {
                     callback({

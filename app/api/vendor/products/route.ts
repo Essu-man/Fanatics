@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { createProduct, getProductsByVendorId } from "@/lib/firestore";
-import { requireVendorAuth } from "@/lib/api-auth";
+import { requireVendorAuthDetailed } from "@/lib/api-auth";
 import { buildProductFirestorePayload, validateProductCreateBase, vendorDisplayName } from "@/lib/products-shared";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-    const auth = await requireVendorAuth(request);
-    if (!auth) {
-        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
     }
+    const auth = authResult.auth;
 
     try {
         const products = await getProductsByVendorId(auth.vendorId);
@@ -24,10 +28,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const auth = await requireVendorAuth(request);
-    if (!auth) {
-        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
     }
+    const auth = authResult.auth;
 
     try {
         const body = await request.json();
@@ -44,6 +52,7 @@ export async function POST(request: Request) {
             images,
             colors,
             sizes,
+            customSizes,
             childrenSizes,
         } = body;
 
@@ -78,6 +87,7 @@ export async function POST(request: Request) {
             images,
             colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
             sizes: Array.isArray(sizes) && sizes.length > 0 ? sizes : undefined,
+            customSizes: Array.isArray(customSizes) && customSizes.length > 0 ? customSizes : undefined,
             childrenSizes: Array.isArray(childrenSizes) && childrenSizes.length > 0 ? childrenSizes : undefined,
             vendorId: auth.vendorId,
             vendorName,

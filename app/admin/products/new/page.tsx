@@ -223,11 +223,6 @@ export default function AdminNewProductPage() {
             return;
         }
 
-        if (selectedSizes.length === 0 && selectedChildrenSizes.length === 0) {
-            showToast("Select at least one adult or children size", "error");
-            return;
-        }
-
         if (isTeamRequired && !teamId) {
             showToast("Team is required for jerseys", "error");
             return;
@@ -428,7 +423,7 @@ export default function AdminNewProductPage() {
 
                     {/* Available Sizes */}
                     <div className="space-y-4">
-                        <p className="text-sm font-semibold text-zinc-900">Available Sizes * (Select at least one from either category)</p>
+                        <p className="text-sm font-semibold text-zinc-900">Available sizes (optional)</p>
 
                         {/* Adult Sizes */}
                         <div className="space-y-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4">
@@ -487,7 +482,7 @@ export default function AdminNewProductPage() {
                             Available Colors * (Required)
                         </label>
                         <p className="text-xs text-zinc-500 mb-3">
-                            Add color variants that will appear on the product card
+                            Color variants (optional) — appear on the product card when added
                         </p>
 
                         {/* Add Color Input */}

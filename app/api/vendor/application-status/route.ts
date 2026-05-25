@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
-import { getUserProfile } from "@/lib/firestore";
+import { adminGetUserProfile } from "@/lib/firestore-admin";
 import { getLatestVendorApplicationForUser } from "@/lib/vendor-application-status";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         }
 
         const decoded = await verifyFirebaseIdToken(token);
-        const profile = await getUserProfile(decoded.uid);
+        const profile = await adminGetUserProfile(decoded.uid);
         const application = await getLatestVendorApplicationForUser(
             decoded.uid,
             profile?.email || decoded.email

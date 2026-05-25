@@ -27,6 +27,8 @@ export type Product = {
     childrenSizes?: string[];
     stock?: number;
     childrenStock?: number;
+    customSizes?: string[];
+    stockVariants?: Array<{ colorId: string; size: string; stock: number }>;
     available?: boolean;
 };
 

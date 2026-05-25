@@ -349,6 +349,8 @@ export interface Vendor {
     updatedAt: Date;
     description?: string;
     logoUrl?: string;
+    /** Wide image shown as the storefront header background */
+    bannerUrl?: string;
 }
 
 export const createVendor = async (
@@ -379,6 +381,7 @@ export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, 
         if (data.status !== undefined) updatePayload.status = data.status;
         if (data.description !== undefined) updatePayload.description = data.description;
         if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
+        if (data.bannerUrl !== undefined) updatePayload.bannerUrl = data.bannerUrl;
         await updateDoc(doc(db, "vendors", vendorId), updatePayload as DocumentData);
         return { success: true };
     } catch (error: any) {
@@ -506,6 +509,10 @@ export interface Product {
     childrenPrice?: number;
     childrenStock?: number;
     similarProducts?: string[];
+    /** Seller-defined sizes beyond standard presets (merged into sizes for display) */
+    customSizes?: string[];
+    /** Per color + size inventory; when set, shop uses these instead of aggregate stock */
+    stockVariants?: Array<{ colorId: string; size: string; stock: number }>;
     approved?: boolean;
     status?: "pending" | "approved" | "rejected";
     createdAt?: Date | null;
@@ -537,13 +544,10 @@ export const getProducts = async (): Promise<Product[]> => {
 
 export const getProductsByVendorId = async (vendorId: string): Promise<Product[]> => {
     try {
-        const q = query(
-            collection(db, "products"),
-            where("vendorId", "==", vendorId),
-            orderBy("createdAt", "desc")
-        );
+        // Filter only — sort in memory to avoid requiring a composite Firestore index
+        const q = query(collection(db, "products"), where("vendorId", "==", vendorId));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map((docSnap) => {
+        const products = querySnapshot.docs.map((docSnap) => {
             const data = docSnap.data();
             return {
                 id: docSnap.id,
@@ -551,6 +555,11 @@ export const getProductsByVendorId = async (vendorId: string): Promise<Product[]
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null,
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : null,
             } as Product;
+        });
+        return products.sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+            return dateB - dateA;
         });
     } catch (error) {
         console.error("Error getting vendor products:", error);
@@ -602,15 +611,27 @@ export const getProduct = async (productId: string): Promise<Product | null> => 
     }
 };
 
+/** Firestore rejects `undefined` field values — omit those keys before write. */
+export function stripUndefinedFields<T extends Record<string, unknown>>(data: T): T {
+    const out = {} as T;
+    for (const key of Object.keys(data) as (keyof T)[]) {
+        const value = data[key];
+        if (value !== undefined) {
+            out[key] = value;
+        }
+    }
+    return out;
+}
+
 export const createProduct = async (productData: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
     try {
         const docRef = doc(collection(db, "products"));
         const timestamp = Timestamp.now();
         await setDoc(docRef, {
-            ...productData,
+            ...stripUndefinedFields(productData as Record<string, unknown>),
             createdAt: timestamp,
             updatedAt: timestamp,
-        });
+        } as DocumentData);
         return { success: true, id: docRef.id };
     } catch (error: any) {
         console.error("Error creating product:", error);
@@ -621,7 +642,7 @@ export const createProduct = async (productData: Omit<Product, "id" | "createdAt
 export const updateProduct = async (productId: string, data: Partial<Product>) => {
     try {
         await updateDoc(doc(db, "products", productId), {
-            ...data,
+            ...stripUndefinedFields(data as Record<string, unknown>),
             updatedAt: Timestamp.now(),
         } as DocumentData);
         return { success: true };
@@ -952,13 +973,13 @@ export interface StoreCategory {
 
 export const getStoreCategories = async (): Promise<StoreCategory[]> => {
     try {
-        const q = query(collection(db, "store_categories"), orderBy("order", "asc"));
-        const snap = await getDocs(q);
-        return snap.docs.map(d => ({
+        const snap = await getDocs(collection(db, "store_categories"));
+        const categories = snap.docs.map((d) => ({
             id: d.id,
             ...d.data(),
             createdAt: d.data().createdAt?.toDate() || new Date(),
         })) as StoreCategory[];
+        return categories.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     } catch (error) {
         console.error("Error getStoreCategories:", error);
         return [];
@@ -982,18 +1003,20 @@ export const createStoreCategory = async (data: Omit<StoreCategory, "id" | "crea
 // Admin Operations for Approvals
 export const getPendingProducts = async (): Promise<Product[]> => {
     try {
-        const q = query(
-            collection(db, "products"),
-            where("status", "==", "pending"),
-            orderBy("createdAt", "desc")
-        );
+        const q = query(collection(db, "products"), where("status", "==", "pending"));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({
+        const products = snap.docs.map((d) => ({
             id: d.id,
             ...d.data(),
             createdAt: d.data().createdAt?.toDate() || null,
             updatedAt: d.data().updatedAt?.toDate() || null,
         })) as Product[];
+        products.sort((a, b) => {
+            const ta = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+            const tb = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+            return tb - ta;
+        });
+        return products;
     } catch (error) {
         console.error("Error getPendingProducts:", error);
         return [];

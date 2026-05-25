@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Edit, Trash2, AlertTriangle, Package, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Search, Plus, Edit, Trash2, AlertTriangle, Package, RefreshCw, ClipboardList } from "lucide-react";
 import { useToast } from "../../components/ui/ToastContainer";
 import {
     Select,
@@ -218,6 +219,13 @@ export default function AdminProductsPage() {
                     <p className="mt-1 text-sm text-zinc-600">Manage your product inventory</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <Link
+                        href="/admin/products/pending"
+                        className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 font-semibold text-amber-900 hover:bg-amber-100"
+                    >
+                        <ClipboardList className="h-5 w-5" />
+                        Vendor approvals
+                    </Link>
                     <button
                         onClick={() => router.push("/admin/teams")}
                         className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 font-semibold text-zinc-700 hover:bg-zinc-50"

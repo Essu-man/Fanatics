@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import type { Product } from "@/lib/firestore";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Boxes } from "lucide-react";
+import { totalVariantStock, usesVariantStock } from "@/lib/stock-variants";
 import { useToast } from "@/app/components/ui/ToastContainer";
 
 export default function VendorProductsPage() {
@@ -111,8 +112,19 @@ export default function VendorProductsPage() {
                                     </td>
                                     <td className="px-4 py-3 text-zinc-600">{p.category}</td>
                                     <td className="px-4 py-3 text-right font-medium">₵{Number(p.price).toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-right text-zinc-600">{p.stock}</td>
+                                    <td className="px-4 py-3 text-right text-zinc-600">
+                                        {usesVariantStock(p)
+                                            ? totalVariantStock(p.stockVariants!)
+                                            : p.stock}
+                                    </td>
                                     <td className="px-4 py-3 text-right">
+                                        <Link
+                                            href={`/vendor/stock?product=${p.id}`}
+                                            className="mr-2 inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+                                        >
+                                            <Boxes className="h-4 w-4" />
+                                            Stock
+                                        </Link>
                                         <button
                                             type="button"
                                             onClick={() => removeProduct(p.id)}

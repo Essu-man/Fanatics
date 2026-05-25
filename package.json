@@ -25,7 +25,8 @@
     "next": "16.0.7",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "recharts": "^3.5.1"
+    "recharts": "^3.5.1",
+    "sharp": "^0.34.5"
   },
   "overrides": {
     "react": "19.2.1",

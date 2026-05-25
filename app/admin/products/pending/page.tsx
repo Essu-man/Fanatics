@@ -119,7 +119,9 @@ export default function AdminPendingProductsPage() {
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-zinc-500 font-bold">
                                         <Package className="h-3.5 w-3.5 text-zinc-400" />
-                                        {p.stock} in stock
+                                        {p.stockVariants?.length
+                                            ? `${p.stockVariants.reduce((s, v) => s + (v.stock || 0), 0)} in stock (variants)`
+                                            : `${p.stock ?? 0} in stock`}
                                     </div>
                                 </div>
 

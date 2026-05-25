@@ -3,6 +3,12 @@ import { db } from "@/lib/firebase";
 import { footballTeams, basketballTeams, internationalTeams } from "@/lib/teams";
 import { isApparelJerseyCategory } from "@/lib/product-category";
 import type { Product } from "@/lib/firestore";
+import {
+    aggregateLegacyStock,
+    normalizeStockVariants,
+    totalVariantStock,
+    type StockVariant,
+} from "@/lib/stock-variants";
 
 const allTeams = [...footballTeams, ...basketballTeams, ...internationalTeams];
 
@@ -93,7 +99,9 @@ export type BuildProductInput = {
     images: string[];
     colors?: Array<{ id: string; name: string; hex: string }>;
     sizes?: string[];
+    customSizes?: string[];
     childrenSizes?: string[];
+    stockVariants?: StockVariant[];
     vendorId?: string;
     vendorName?: string;
     vendorSlug?: string;
@@ -106,10 +114,7 @@ export async function buildProductFirestorePayload(input: BuildProductInput): Pr
     const resolved = await resolveTeamForProduct(input.teamId, category);
     await enableTeamForProduct(resolved);
 
-    let colors = Array.isArray(input.colors) && input.colors.length > 0 ? input.colors : undefined;
-    if (!colors && !isApparelJerseyCategory(category)) {
-        colors = [{ id: "default", name: "Default", hex: "#e4e4e7" }];
-    }
+    const colors = Array.isArray(input.colors) && input.colors.length > 0 ? input.colors : undefined;
 
     const description =
         input.description?.trim() ||
@@ -118,31 +123,62 @@ export async function buildProductFirestorePayload(input: BuildProductInput): Pr
     const payload: Omit<Product, "id" | "createdAt" | "updatedAt"> = {
         name: input.name.trim(),
         price: Number(input.price),
-        childrenPrice: input.childrenPrice !== undefined ? Number(input.childrenPrice) : undefined,
         stock: Number(input.stock ?? 0),
-        childrenStock:
-            input.childrenStock !== undefined &&
-            input.childrenStock !== null &&
-            `${input.childrenStock}` !== ""
-                ? Number(input.childrenStock)
-                : undefined,
         available: input.available !== false,
         category,
         description,
         images: input.images,
-        colors,
-        sizes: Array.isArray(input.sizes) && input.sizes.length > 0 ? input.sizes : undefined,
-        childrenSizes: Array.isArray(input.childrenSizes) && input.childrenSizes.length > 0 ? input.childrenSizes : undefined,
     };
+
+    if (input.childrenPrice !== undefined && input.childrenPrice !== null && `${input.childrenPrice}` !== "") {
+        payload.childrenPrice = Number(input.childrenPrice);
+    }
+    if (
+        input.childrenStock !== undefined &&
+        input.childrenStock !== null &&
+        `${input.childrenStock}` !== ""
+    ) {
+        payload.childrenStock = Number(input.childrenStock);
+    }
+    if (colors) payload.colors = colors;
+    if (Array.isArray(input.sizes) && input.sizes.length > 0) payload.sizes = input.sizes;
+    if (Array.isArray(input.customSizes) && input.customSizes.length > 0) {
+        payload.customSizes = [...new Set(input.customSizes.map((s) => s.trim()).filter(Boolean))];
+    }
+    if (Array.isArray(input.childrenSizes) && input.childrenSizes.length > 0) {
+        payload.childrenSizes = input.childrenSizes;
+    }
+
+    if (input.customSizes?.length && payload.sizes) {
+        payload.sizes = [
+            ...new Set([...payload.sizes, ...input.customSizes.map((s) => s.trim()).filter(Boolean)]),
+        ];
+    } else if (input.customSizes?.length) {
+        payload.sizes = [...new Set(input.customSizes.map((s) => s.trim()).filter(Boolean))];
+    }
+
+    if (input.stockVariants?.length) {
+        const normalized = normalizeStockVariants({
+            colors: payload.colors,
+            sizes: payload.sizes,
+            customSizes: payload.customSizes,
+            childrenSizes: payload.childrenSizes,
+            stockVariants: input.stockVariants,
+        });
+        payload.stockVariants = normalized;
+        const legacy = aggregateLegacyStock(
+            { sizes: payload.sizes, customSizes: payload.customSizes, childrenSizes: payload.childrenSizes },
+            normalized
+        );
+        payload.stock = legacy.stock;
+        if (legacy.childrenStock !== undefined) payload.childrenStock = legacy.childrenStock;
+        payload.available = totalVariantStock(normalized) > 0;
+    }
 
     if (resolved) {
         payload.team = resolved.teamName;
         payload.teamId = resolved.actualTeamId;
         payload.league = resolved.league;
-    } else {
-        payload.team = undefined;
-        payload.teamId = undefined;
-        payload.league = undefined;
     }
 
     if (input.vendorId) {
@@ -190,14 +226,6 @@ export function validateProductCreateBase(body: {
     const images = body.images;
     if (!Array.isArray(images) || images.length === 0) {
         return { ok: false, error: "At least one image is required" };
-    }
-
-    const sizes = body.sizes;
-    const childrenSizes = body.childrenSizes;
-    const hasSizes = Array.isArray(sizes) && sizes.length > 0;
-    const hasChildrenSizes = Array.isArray(childrenSizes) && childrenSizes.length > 0;
-    if (!hasSizes && !hasChildrenSizes) {
-        return { ok: false, error: "Select at least one size (adult or children), or one size for general products" };
     }
 
     if (isApparelJerseyCategory(category) && (!body.teamId || typeof body.teamId !== "string")) {
