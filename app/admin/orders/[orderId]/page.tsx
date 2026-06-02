@@ -126,14 +126,16 @@ export default function AdminOrderDetailPage() {
 
     // Fetch delivery price when order loads
     useEffect(() => {
-        if (order && order.shipping && (order.shipping.area || order.shipping.city)) {
-            const location = order.shipping.area || order.shipping.city;
-            setDeliveryLocation(location);
-            fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) setDeliveryPrice(data.price);
-                });
+        if (order && order.shipping) {
+            const location = order.shipping.city || order.shipping.town || order.shipping.area || "";
+            if (location) {
+                setDeliveryLocation(location);
+                fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) setDeliveryPrice(data.price);
+                    });
+            }
         }
     }, [order]);
 
@@ -415,9 +417,9 @@ export default function AdminOrderDetailPage() {
                                         return (
                                             <div className="space-y-1 text-sm text-zinc-700">
                                                 <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim()}</p>
-                                                {/* Only show Area/City once, prefer addr.area or deliveryLocation */}
-                                                {(addr.area || deliveryLocation) && (
-                                                    <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation} {deliveryPrice !== null && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
+                                                {/* Only show Area/City once, prefer addr.city, addr.town, addr.area or deliveryLocation */}
+                                                {(addr.city || addr.town || addr.area || deliveryLocation) && (
+                                                    <p><span className="font-semibold">Area/City:</span> {addr.city || addr.town || addr.area || deliveryLocation} {deliveryPrice !== null && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
                                                 )}
                                                 {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
                                                 {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}

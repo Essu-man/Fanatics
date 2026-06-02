@@ -59,6 +59,7 @@ interface Order {
         country: string;
         area?: string;
         landmark?: string;
+        town?: string;
     };
     subtotal: number;
     shippingCost: number;
@@ -98,14 +99,16 @@ export default function OrderDetailsPage() {
     }, [orderId]);
 
     useEffect(() => {
-        if (order && (order.shipping.area || order.shipping.city)) {
-            const location = order.shipping.area || order.shipping.city;
-            setDeliveryLocation(location);
-            fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) setDeliveryPrice(data.price);
-                });
+        if (order && order.shipping) {
+            const location = order.shipping.city || order.shipping.town || order.shipping.area || "";
+            if (location) {
+                setDeliveryLocation(location);
+                fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) setDeliveryPrice(data.price);
+                    });
+            }
         }
     }, [order]);
 
@@ -380,9 +383,9 @@ export default function OrderDetailsPage() {
                                 return (
                                     <div className="space-y-1 text-sm text-zinc-700">
                                         <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim()}</p>
-                                        {/* Only show Area/City once, prefer addr.area or deliveryLocation */}
-                                        {(addr.area || deliveryLocation || addr.city) && (
-                                            <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation || addr.city} {deliveryPrice !== null && (addr.area || deliveryLocation || addr.city) && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
+                                        {/* Only show Area/City once, prefer addr.city, addr.town, addr.area or deliveryLocation */}
+                                        {(addr.city || addr.town || addr.area || deliveryLocation) && (
+                                            <p><span className="font-semibold">Area/City:</span> {addr.city || addr.town || addr.area || deliveryLocation} {deliveryPrice !== null && (addr.city || addr.town || addr.area || deliveryLocation) && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
                                         )}
                                         {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
                                         {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}
