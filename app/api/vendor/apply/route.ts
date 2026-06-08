@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { sendEmail, getVendorApplicationReceivedEmail, getAdminNewApplicationEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
     try {
@@ -135,6 +136,29 @@ export async function POST(req: Request) {
             status: "pending",
             appliedAt: serverTimestamp(),
         });
+
+        // Send confirmation email
+        try {
+            const emailHtml = getVendorApplicationReceivedEmail(contactPerson, businessName);
+            await sendEmail(email.trim().toLowerCase(), `Seller Application Received - ${businessName}`, emailHtml);
+        } catch (emailError) {
+            console.error("Failed to send application confirmation email:", emailError);
+        }
+
+        // Send notification to store administrator
+        try {
+            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_FROM_EMAIL;
+            if (adminEmail) {
+                const adminEmailHtml = getAdminNewApplicationEmail("Administrator", businessName, contactPerson, email);
+                await sendEmail(
+                    adminEmail.trim().toLowerCase(),
+                    `New Seller Application: ${businessName}`,
+                    adminEmailHtml
+                );
+            }
+        } catch (emailError) {
+            console.error("Failed to send admin application notification email:", emailError);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error: any) {

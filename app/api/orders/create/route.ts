@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, getProduct, updateProduct } from "@/lib/firestore";
 import { decrementVariantStock, usesVariantStock } from "@/lib/stock-variants";
-import { sendEmail, getOrderConfirmationEmail } from "@/lib/sendgrid";
+import { sendEmail, getOrderConfirmationEmail } from "@/lib/email";
 import { collection, query, where, getDocs, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 

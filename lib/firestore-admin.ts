@@ -236,7 +236,8 @@ export async function adminGetPendingProducts(): Promise<Product[]> {
 
 export async function adminUpdateProductApproval(
     productId: string,
-    action: "approve" | "reject"
+    action: "approve" | "reject",
+    reason?: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const status = action === "approve" ? "approved" : "rejected";
@@ -248,6 +249,7 @@ export async function adminUpdateProductApproval(
                 status,
                 approved,
                 updatedAt: new Date(),
+                ...(action === "reject" && reason ? { rejectionReason: reason } : {}),
             });
         return { success: true };
     } catch (error: unknown) {

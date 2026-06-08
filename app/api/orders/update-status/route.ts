@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus, getOrder } from "@/lib/firestore";
-import { sendEmail, getOrderStatusEmail } from "@/lib/sendgrid";
+import { sendEmail, getOrderStatusEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 

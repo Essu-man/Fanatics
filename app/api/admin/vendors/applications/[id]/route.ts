@@ -10,7 +10,7 @@ export async function PATCH(
     try {
         const { id } = await Promise.resolve(params);
         const body = await req.json();
-        const { status } = body;
+        const { status, reason } = body;
 
         if (!status || !["approved", "rejected"].includes(status)) {
             return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
@@ -19,7 +19,7 @@ export async function PATCH(
         const result =
             status === "approved"
                 ? await approveVendorApplication(id)
-                : await rejectVendorApplication(id);
+                : await rejectVendorApplication(id, reason);
 
         if (!result.success) {
             return NextResponse.json(

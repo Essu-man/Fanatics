@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import { adminAuth } from "@/lib/firebase-admin";
 import { assertSlugUnique } from "@/lib/products-shared";
 import { createVendor, updateUserProfile, updateVendor } from "@/lib/firestore";
+import { sendEmail, getVendorApplicationApprovedEmail, getVendorApplicationRejectedEmail } from "@/lib/email";
 
 function slugifyBusinessName(name: string): string {
     const base = name
@@ -139,6 +140,18 @@ export async function approveVendorApplication(
             approvedAt: Timestamp.now(),
         });
 
+        // Send approval email
+        try {
+            const recipientEmail = app.email;
+            const contactName = app.contactPerson || "Seller";
+            if (recipientEmail) {
+                const emailHtml = getVendorApplicationApprovedEmail(contactName, businessName);
+                await sendEmail(recipientEmail.trim().toLowerCase(), `Seller Application Approved - Welcome to Cediman!`, emailHtml);
+            }
+        } catch (emailError) {
+            console.error("Failed to send vendor approval email:", emailError);
+        }
+
         return { success: true, vendorId };
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Approval failed";
@@ -148,7 +161,8 @@ export async function approveVendorApplication(
 }
 
 export async function rejectVendorApplication(
-    applicationId: string
+    applicationId: string,
+    reason?: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const appRef = doc(db, "vendor_applications", applicationId);
@@ -157,10 +171,26 @@ export async function rejectVendorApplication(
             return { success: false, error: "Application not found" };
         }
 
+        const app = appSnap.data();
+        const businessName = (app.businessName as string)?.trim() || "your store";
+
         await updateDoc(appRef, {
             status: "rejected",
             rejectedAt: Timestamp.now(),
+            ...(reason ? { rejectionReason: reason } : {}),
         });
+
+        // Send rejection email
+        try {
+            const recipientEmail = app.email;
+            const contactName = app.contactPerson || "Seller";
+            if (recipientEmail) {
+                const emailHtml = getVendorApplicationRejectedEmail(contactName, businessName, reason || "No specific reason provided.");
+                await sendEmail(recipientEmail.trim().toLowerCase(), `Seller Application Update - ${businessName}`, emailHtml);
+            }
+        } catch (emailError) {
+            console.error("Failed to send vendor rejection email:", emailError);
+        }
 
         return { success: true };
     } catch (error: unknown) {

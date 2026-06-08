@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
-import { sendEmail } from "@/lib/sendgrid";
+import { sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 

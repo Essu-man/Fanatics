@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createProduct, getProductsByVendorId } from "@/lib/firestore";
 import { requireVendorAuthDetailed } from "@/lib/api-auth";
 import { buildProductFirestorePayload, validateProductCreateBase, vendorDisplayName } from "@/lib/products-shared";
+import { adminGetUserProfile } from "@/lib/firestore-admin";
+import { sendEmail, getProductWithheldEmail, getAdminNewProductEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -99,6 +101,38 @@ export async function POST(request: Request) {
         const result = await createProduct(payload);
         if (!result.success) {
             throw new Error(result.error || "Failed to create product");
+        }
+
+        // Send email notification to vendor that the product has been posted but withheld pending review
+        const businessName = auth.vendor.businessName || "your shop";
+        try {
+            const userProfile = await adminGetUserProfile(auth.uid);
+            if (userProfile?.email) {
+                const contactName = `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim() || "Seller";
+                const emailHtml = getProductWithheldEmail(contactName, businessName, name);
+                await sendEmail(
+                    userProfile.email.trim().toLowerCase(),
+                    `Product Pending Review - ${name}`,
+                    emailHtml
+                );
+            }
+        } catch (emailError) {
+            console.error("Failed to send product withheld email:", emailError);
+        }
+
+        // Send email notification to store administrator
+        try {
+            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_FROM_EMAIL;
+            if (adminEmail) {
+                const adminEmailHtml = getAdminNewProductEmail("Administrator", businessName, name);
+                await sendEmail(
+                    adminEmail.trim().toLowerCase(),
+                    `New Product Awaiting Review - ${name}`,
+                    adminEmailHtml
+                );
+            }
+        } catch (emailError) {
+            console.error("Failed to send admin product notification email:", emailError);
         }
 
         return NextResponse.json({ success: true, productId: result.id });

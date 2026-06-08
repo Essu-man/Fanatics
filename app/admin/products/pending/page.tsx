@@ -39,15 +39,38 @@ export default function AdminPendingProductsPage() {
     }, []);
 
     const handleAction = async (id: string, action: "approve" | "reject") => {
+        let rejectionReason: string | undefined;
+
+        if (action === "reject") {
+            const input = window.prompt(
+                "Please enter a reason for rejecting this product listing.\nThis will be sent to the seller in an email:",
+                ""
+            );
+            // Cancelled or empty reason — abort
+            if (input === null || input.trim() === "") {
+                showToast("Rejection cancelled — a reason is required.", "error");
+                return;
+            }
+            rejectionReason = input.trim();
+        }
+
         try {
             const res = await fetch(`/api/admin/products/pending/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action })
+                body: JSON.stringify({
+                    action,
+                    ...(rejectionReason ? { reason: rejectionReason } : {})
+                })
             });
             const data = await res.json();
             if (data.success) {
-                showToast(`Product ${action === "approve" ? "approved" : "rejected"}`, "success");
+                showToast(
+                    action === "approve"
+                        ? "Product approved"
+                        : "Product rejected — vendor notified by email",
+                    "success"
+                );
                 loadProducts();
             } else {
                 showToast(data.error || "Failed to update product", "error");

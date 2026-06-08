@@ -11,7 +11,7 @@ import { TeamPageSkeleton } from "../components/ui/Skeleton";
 import type { Product } from "@/lib/products";
 import HomeProductSections from "../components/HomeProductSections";
 import NewArrivals from "../components/NewArrivals";
-import { Filter, SortAsc, Grid3x3 } from "lucide-react";
+import { Filter, SortAsc, Grid3x3, ChevronDown } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -181,13 +181,14 @@ function ShopPageContent() {
                         ))}
                     </div>
                     {hasMore && (
-                        <div className="mt-10 flex justify-center">
+                        <div className="mt-16 flex justify-center">
                             <button
                                 type="button"
                                 onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-                                className="rounded-xl border-2 border-zinc-200 bg-white px-8 py-3 text-sm font-bold text-zinc-900 transition hover:border-[var(--brand-red)] hover:text-[var(--brand-red)]"
+                                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--brand-red)] to-red-600 text-white px-12 py-4 text-base font-black uppercase tracking-wider shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-[var(--brand-red)]/50 cursor-pointer"
                             >
-                                Load more
+                                <span>Load More</span>
+                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover:translate-y-0.5" />
                             </button>
                         </div>
                     )}

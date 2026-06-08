@@ -102,19 +102,37 @@ export default function AdminVendorsPage() {
     }
 
     const handleApplicationAction = async (id: string, action: "approve" | "reject") => {
+        let rejectionReason: string | undefined;
+
+        if (action === "reject") {
+            const input = window.prompt(
+                "Please enter a reason for rejecting this application.\nThis will be sent to the applicant in an email:",
+                ""
+            );
+            // Cancelled or empty reason — abort
+            if (input === null || input.trim() === "") {
+                showToast("Rejection cancelled — a reason is required.", "error");
+                return;
+            }
+            rejectionReason = input.trim();
+        }
+
         setActionLoading(true);
         try {
             const res = await fetch(`/api/admin/vendors/applications/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: action === "approve" ? "approved" : "rejected" }),
+                body: JSON.stringify({
+                    status: action === "approve" ? "approved" : "rejected",
+                    ...(rejectionReason ? { reason: rejectionReason } : {}),
+                }),
             });
             const data = await res.json();
             if (data.success) {
                 showToast(
                     action === "approve"
                         ? "Application approved — vendor is now active"
-                        : "Application rejected",
+                        : "Application rejected — applicant notified by email",
                     "success"
                 );
                 setSelectedApplication(null);
