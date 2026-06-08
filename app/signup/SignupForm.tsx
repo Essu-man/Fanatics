@@ -71,7 +71,11 @@ export default function SignupForm() {
                 showToast("Please check your email to verify your account", "success");
                 router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
             } else {
-                showToast(result.error || "Failed to create account", "error");
+                let errorMessage = result.error || "Failed to create account";
+                if (errorMessage.includes("auth/email-already-in-use")) {
+                    errorMessage = "This email is already in use. Please sign in first, or use a different email address.";
+                }
+                showToast(errorMessage, "error");
             }
         } catch {
             showToast("An error occurred. Please try again.", "error");

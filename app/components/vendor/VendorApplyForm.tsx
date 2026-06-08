@@ -291,7 +291,11 @@ export default function VendorApplyForm({ requireAccount = false }: VendorApplyF
                     formData.phone.trim() || undefined
                 );
                 if (!signUpResult.success || !signUpResult.user) {
-                    showToast(signUpResult.error || "Could not create your account", "error");
+                    let errorMessage = signUpResult.error || "Could not create your account";
+                    if (errorMessage.includes("auth/email-already-in-use")) {
+                        errorMessage = "This email is already in use. Please sign in first, or use a different email address.";
+                    }
+                    showToast(errorMessage, "error");
                     return;
                 }
                 applicantUserId = signUpResult.user.id;
