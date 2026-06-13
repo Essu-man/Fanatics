@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus, getOrder } from "@/lib/firestore";
 import { sendEmail, getOrderStatusEmail } from "@/lib/email";
+import { creditPendingBalanceForOrder, clearPendingBalanceToAvailable, cancelPendingBalanceForOrder, refundOrderBalances } from "@/lib/vendor-ledger";
 
 export const runtime = "nodejs";
 
@@ -26,12 +27,29 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Get order details for email and balance adjustments
+        const order = await getOrder(orderId);
+
+        // Process vendor balance adjustments based on order status change
+        if (order) {
+            try {
+                if (status === "submitted") {
+                    await creditPendingBalanceForOrder(order);
+                } else if (status === "delivered") {
+                    await clearPendingBalanceToAvailable(orderId);
+                } else if (status === "cancelled") {
+                    await cancelPendingBalanceForOrder(orderId);
+                } else if (status === "refunded") {
+                    await refundOrderBalances(orderId);
+                }
+            } catch (ledgerError) {
+                console.error("Failed to adjust vendor balances for status:", status, ledgerError);
+            }
+        }
+
         // Generate tracking link
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com";
         const trackingLink = `${appUrl}/track/${orderId}`;
-
-        // Get order details for email
-        const order = await getOrder(orderId);
 
         // Send email notification via SendGrid (non-blocking - don't fail status update if email fails)
         if (customerEmail) {

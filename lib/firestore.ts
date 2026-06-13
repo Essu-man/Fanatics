@@ -351,6 +351,29 @@ export interface Vendor {
     logoUrl?: string;
     /** Wide image shown as the storefront header background */
     bannerUrl?: string;
+    payoutMethod?: "Bank Transfer" | "Mobile Money" | null;
+    bankName?: string | null;
+    branch?: string | null;
+    accountNumber?: string | null;
+    accountName?: string | null;
+    momoNetwork?: string | null;
+    momoNumber?: string | null;
+    balanceAvailable?: number;
+    balancePending?: number;
+    commissionRate?: number;
+}
+
+export interface LedgerEntry {
+    id: string;
+    vendorId: string;
+    orderId?: string;
+    type: "sale" | "payout" | "refund" | "adjustment";
+    amount: number;
+    status: "pending" | "available" | "completed" | "cancelled";
+    createdAt: Date;
+    description: string;
+    payoutMethod?: string;
+    payoutDetails?: any;
 }
 
 export const createVendor = async (
@@ -382,6 +405,16 @@ export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, 
         if (data.description !== undefined) updatePayload.description = data.description;
         if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
         if (data.bannerUrl !== undefined) updatePayload.bannerUrl = data.bannerUrl;
+        if (data.payoutMethod !== undefined) updatePayload.payoutMethod = data.payoutMethod;
+        if (data.bankName !== undefined) updatePayload.bankName = data.bankName;
+        if (data.branch !== undefined) updatePayload.branch = data.branch;
+        if (data.accountNumber !== undefined) updatePayload.accountNumber = data.accountNumber;
+        if (data.accountName !== undefined) updatePayload.accountName = data.accountName;
+        if (data.momoNetwork !== undefined) updatePayload.momoNetwork = data.momoNetwork;
+        if (data.momoNumber !== undefined) updatePayload.momoNumber = data.momoNumber;
+        if (data.balanceAvailable !== undefined) updatePayload.balanceAvailable = data.balanceAvailable;
+        if (data.balancePending !== undefined) updatePayload.balancePending = data.balancePending;
+        if (data.commissionRate !== undefined) updatePayload.commissionRate = data.commissionRate;
         await updateDoc(doc(db, "vendors", vendorId), updatePayload as DocumentData);
         return { success: true };
     } catch (error: any) {
@@ -389,6 +422,7 @@ export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, 
         return { success: false, error: error.message };
     }
 };
+
 
 export const getVendor = async (vendorId: string): Promise<Vendor | null> => {
     try {

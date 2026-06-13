@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrder, updateOrderStatus } from "@/lib/firestore";
 import { sendEmail, getOrderConfirmationEmail } from "@/lib/email";
+import { creditPendingBalanceForOrder } from "@/lib/vendor-ledger";
 
 export const runtime = "nodejs";
 
@@ -68,13 +69,20 @@ export async function POST(request: NextRequest) {
         }
 
         // Payment is successful! Update order status
-        const updateResult = await updateOrderStatus(orderId, "submitted", undefined, "Payment manually verified by admin");
+        const updateResult = await updateOrderStatus(orderId, "submitted", undefined, "Payment verified");
 
         if (!updateResult.success) {
             return NextResponse.json(
                 { error: "Failed to update order status", details: updateResult.error },
                 { status: 500 }
             );
+        }
+
+        // Credit vendor balances since order is paid
+        try {
+            await creditPendingBalanceForOrder(order);
+        } catch (ledgerError) {
+            console.error("Failed to credit pending balance on payment verification:", ledgerError);
         }
 
         // Send confirmation email

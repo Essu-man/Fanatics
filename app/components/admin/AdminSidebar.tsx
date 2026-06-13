@@ -15,6 +15,7 @@ import {
     Image as ImageIcon,
     Store,
     ClipboardList,
+    DollarSign,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -23,6 +24,7 @@ const navigation = [
     { name: "Products", href: "/admin/products", icon: Package },
     { name: "Pending products", href: "/admin/products/pending", icon: ClipboardList },
     { name: "Vendors", href: "/admin/vendors", icon: Store },
+    { name: "Payouts", href: "/admin/payouts", icon: DollarSign },
     { name: "Teams & Leagues", href: "/admin/teams", icon: Shield },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Customers", href: "/admin/customers", icon: Users },

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOrder, getProduct, updateProduct } from "@/lib/firestore";
+import { createOrder, getProduct, updateProduct, getVendor } from "@/lib/firestore";
 import { decrementVariantStock, usesVariantStock } from "@/lib/stock-variants";
 import { sendEmail, getOrderConfirmationEmail } from "@/lib/email";
 import { collection, query, where, getDocs, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { creditPendingBalanceForOrder } from "@/lib/vendor-ledger";
 
 export const runtime = "nodejs";
 
@@ -119,9 +120,17 @@ export async function POST(request: NextRequest) {
                         if (product) {
                             vendorId = product.vendorId ?? null;
                             vendorName = product.vendorName ?? null;
-                            // Reserved for Paystack split / settlement (Phase 2+)
-                            platformFee = undefined;
-                            vendorAmount = undefined;
+                             if (vendorId) {
+                                 const price = Number(item.price || product.price) || 0;
+                                 const qty = Number(item.quantity) || 1;
+                                 const subtotal = price * qty;
+                                 const vendorDoc = await getVendor(vendorId);
+                                 const commissionRate = (vendorDoc && typeof vendorDoc.commissionRate === "number")
+                                     ? vendorDoc.commissionRate
+                                     : 10;
+                                 platformFee = subtotal * (commissionRate / 100);
+                                 vendorAmount = subtotal - platformFee;
+                             }
                         }
                     } catch {
                         /* keep client-sent values if any */
@@ -208,6 +217,15 @@ export async function POST(request: NextRequest) {
                 },
                 { status: 500 }
             );
+        }
+
+        // Credit vendor balances if order is created in submitted status
+        if (orderData.status === "submitted") {
+            try {
+                await creditPendingBalanceForOrder({ id: orderId, items: enrichedItems });
+            } catch (ledgerError) {
+                console.error("Failed to credit pending balance on order creation:", ledgerError);
+            }
         }
 
         // Generate order page link (for button) and tracking link

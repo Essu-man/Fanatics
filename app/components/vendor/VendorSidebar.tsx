@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PlusCircle, Boxes, Settings } from "lucide-react";
+import { LayoutDashboard, Package, PlusCircle, Boxes, Settings, ClipboardList, DollarSign } from "lucide-react";
 
 const navigation = [
     { name: "Overview", href: "/vendor", icon: LayoutDashboard },
+    { name: "Orders", href: "/vendor/orders", icon: ClipboardList },
+    { name: "Payouts & Balances", href: "/vendor/payouts", icon: DollarSign },
     { name: "My products", href: "/vendor/products", icon: Package },
     { name: "Stock", href: "/vendor/stock", icon: Boxes },
     { name: "Add product", href: "/vendor/products/new", icon: PlusCircle },

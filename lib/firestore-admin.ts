@@ -165,7 +165,7 @@ export async function adminFindApprovedApplicationVendor(
 
 export async function adminUpdateVendor(
     vendorId: string,
-    data: Partial<Pick<Vendor, "slug" | "businessName" | "description" | "logoUrl" | "bannerUrl">>
+    data: Partial<Vendor>
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const updatePayload: Record<string, unknown> = {
@@ -176,6 +176,16 @@ export async function adminUpdateVendor(
         if (data.description !== undefined) updatePayload.description = data.description.trim();
         if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
         if (data.bannerUrl !== undefined) updatePayload.bannerUrl = data.bannerUrl;
+        if (data.payoutMethod !== undefined) updatePayload.payoutMethod = data.payoutMethod;
+        if (data.bankName !== undefined) updatePayload.bankName = data.bankName;
+        if (data.branch !== undefined) updatePayload.branch = data.branch;
+        if (data.accountNumber !== undefined) updatePayload.accountNumber = data.accountNumber;
+        if (data.accountName !== undefined) updatePayload.accountName = data.accountName;
+        if (data.momoNetwork !== undefined) updatePayload.momoNetwork = data.momoNetwork;
+        if (data.momoNumber !== undefined) updatePayload.momoNumber = data.momoNumber;
+        if (data.balanceAvailable !== undefined) updatePayload.balanceAvailable = data.balanceAvailable;
+        if (data.balancePending !== undefined) updatePayload.balancePending = data.balancePending;
+        if (data.commissionRate !== undefined) updatePayload.commissionRate = data.commissionRate;
 
         await getAdminDb().collection("vendors").doc(vendorId).update(updatePayload);
         return { success: true };

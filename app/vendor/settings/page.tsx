@@ -15,6 +15,13 @@ type VendorSettings = {
     logoUrl: string;
     bannerUrl: string;
     status: string;
+    payoutMethod?: string;
+    bankName?: string;
+    branch?: string;
+    accountNumber?: string;
+    accountName?: string;
+    momoNetwork?: string;
+    momoNumber?: string;
 };
 
 type AccountInfo = {
@@ -39,6 +46,14 @@ export default function VendorSettingsPage() {
     const [status, setStatus] = useState("active");
     const [account, setAccount] = useState<AccountInfo | null>(null);
 
+    const [payoutMethod, setPayoutMethod] = useState("Bank Transfer");
+    const [bankName, setBankName] = useState("");
+    const [branch, setBranch] = useState("");
+    const [accountNumber, setAccountNumber] = useState("");
+    const [accountName, setAccountName] = useState("");
+    const [momoNetwork, setMomoNetwork] = useState("MTN");
+    const [momoNumber, setMomoNumber] = useState("");
+
     const loadSettings = useCallback(async () => {
         setLoading(true);
         try {
@@ -57,6 +72,13 @@ export default function VendorSettingsPage() {
             setLogoUrl(v.logoUrl);
             setBannerUrl(v.bannerUrl);
             setStatus(v.status);
+            setPayoutMethod(v.payoutMethod || "Bank Transfer");
+            setBankName(v.bankName || "");
+            setBranch(v.branch || "");
+            setAccountNumber(v.accountNumber || "");
+            setAccountName(v.accountName || "");
+            setMomoNetwork(v.momoNetwork || "MTN");
+            setMomoNumber(v.momoNumber || "");
             setStorefrontUrl(data.storefrontUrl || `/store/${v.slug}`);
             setAccount(data.account ?? null);
         } catch (e: unknown) {
@@ -159,6 +181,13 @@ export default function VendorSettingsPage() {
                     description,
                     logoUrl,
                     bannerUrl,
+                    payoutMethod,
+                    bankName: payoutMethod === "Bank Transfer" ? bankName.trim() : "",
+                    branch: payoutMethod === "Bank Transfer" ? branch.trim() : "",
+                    accountNumber: payoutMethod === "Bank Transfer" ? accountNumber.trim() : "",
+                    accountName: payoutMethod === "Bank Transfer" ? accountName.trim() : "",
+                    momoNetwork: payoutMethod === "Mobile Money" ? momoNetwork : "",
+                    momoNumber: payoutMethod === "Mobile Money" ? momoNumber.trim() : "",
                 }),
             });
             const data = await res.json();
@@ -339,6 +368,109 @@ export default function VendorSettingsPage() {
                             </Link>
                         )}
                     </div>
+                </section>
+
+                {/* Payout/Payment Settings */}
+                <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-5">
+                    <h2 className="text-lg font-semibold text-zinc-900">Payout settings</h2>
+                    <p className="text-xs text-zinc-500">
+                        How you receive payments for sold products. Balances are held until order delivery is confirmed.
+                    </p>
+
+                    <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer font-semibold text-zinc-700">
+                            <input
+                                type="radio"
+                                name="payoutMethod"
+                                value="Bank Transfer"
+                                checked={payoutMethod === "Bank Transfer"}
+                                onChange={(e) => setPayoutMethod(e.target.value)}
+                                className="text-[var(--brand-red)] focus:ring-[var(--brand-red)]"
+                            />
+                            <span className="text-sm font-bold text-zinc-800">Bank account</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-semibold text-zinc-700">
+                            <input
+                                type="radio"
+                                name="payoutMethod"
+                                value="Mobile Money"
+                                checked={payoutMethod === "Mobile Money"}
+                                onChange={(e) => setPayoutMethod(e.target.value)}
+                                className="text-[var(--brand-red)] focus:ring-[var(--brand-red)]"
+                            />
+                            <span className="text-sm font-bold text-zinc-800">Mobile Money (MoMo)</span>
+                        </label>
+                    </div>
+
+                    {payoutMethod === "Bank Transfer" ? (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">Bank name</label>
+                                <input
+                                    value={bankName}
+                                    onChange={(e) => setBankName(e.target.value)}
+                                    placeholder="e.g. GCB Bank"
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                                    required={payoutMethod === "Bank Transfer"}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">Branch name</label>
+                                <input
+                                    value={branch}
+                                    onChange={(e) => setBranch(e.target.value)}
+                                    placeholder="e.g. Accra Main"
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                                    required={payoutMethod === "Bank Transfer"}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">Account number</label>
+                                <input
+                                    value={accountNumber}
+                                    onChange={(e) => setAccountNumber(e.target.value)}
+                                    placeholder="Enter bank account number"
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm font-mono"
+                                    required={payoutMethod === "Bank Transfer"}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">Account holder name</label>
+                                <input
+                                    value={accountName}
+                                    onChange={(e) => setAccountName(e.target.value)}
+                                    placeholder="Exact account holder name"
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                                    required={payoutMethod === "Bank Transfer"}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">MoMo network</label>
+                                <select
+                                    value={momoNetwork}
+                                    onChange={(e) => setMomoNetwork(e.target.value)}
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm bg-white"
+                                >
+                                    <option value="MTN">MTN Mobile Money</option>
+                                    <option value="Telecel">Telecel Cash</option>
+                                    <option value="AirtelTigo">AirtelTigo Money</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-600">MoMo phone number</label>
+                                <input
+                                    value={momoNumber}
+                                    onChange={(e) => setMomoNumber(e.target.value)}
+                                    placeholder="e.g. 024XXXXXXX"
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm font-mono"
+                                    required={payoutMethod === "Mobile Money"}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 {account && (

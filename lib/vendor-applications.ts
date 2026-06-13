@@ -114,6 +114,15 @@ export async function approveVendorApplication(
                 status: "active",
                 description: (app.description as string | undefined)?.trim() || undefined,
                 logoUrl,
+                payoutMethod: app.payoutMethod || null,
+                bankName: app.bankName || null,
+                branch: app.branch || null,
+                accountNumber: app.accountNumber || null,
+                accountName: app.accountName || null,
+                momoNetwork: app.momoNetwork || null,
+                momoNumber: app.momoNumber || null,
+                balanceAvailable: 0,
+                balancePending: 0,
             });
 
             if (!created.success || !created.id) {

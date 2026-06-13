@@ -1048,3 +1048,197 @@ export const getAdminNewProductEmail = (
   `;
 };
 
+export const getAdminPayoutRequestEmail = (
+  vendorBusinessName: string,
+  amount: number,
+  payoutMethod: string,
+  payoutDetails: string
+): string => {
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/admin/payouts`;
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Payout Request - ${vendorBusinessName}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f5f5f5; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+    .header { background: #1f2937; color: #ffffff; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+    .content { padding: 30px 20px; }
+    .greeting { font-size: 16px; margin-bottom: 20px; color: #111827; }
+    .details-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .details-title { font-weight: 700; color: #111827; margin-bottom: 15px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px dashed #e5e7eb; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: #6b7280; font-weight: 500; }
+    .detail-value { color: #111827; font-weight: 700; }
+    .button { display: block; background: #1f2937; color: #ffffff !important; padding: 16px 32px; text-decoration: none; border-radius: 8px; margin: 30px 0; font-weight: 600; font-size: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <h1>CEDIMAN ADMIN</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">
+        <p>Hello Admin,</p>
+        <p>A vendor has requested a withdrawal from their cleared Available Balance.</p>
+      </div>
+      <div class="details-box">
+        <div class="details-title">Withdrawal Request Details</div>
+        <div class="detail-row">
+          <span class="detail-label">Vendor Store:</span>
+          <span class="detail-value">${vendorBusinessName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Requested Amount:</span>
+          <span class="detail-value" style="color: #10b981;">GH₵ ${amount.toFixed(2)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Payment Method:</span>
+          <span class="detail-value">${payoutMethod}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Account details:</span>
+          <span class="detail-value" style="font-family: monospace; font-size: 12px;">${payoutDetails}</span>
+        </div>
+      </div>
+      <a href="${adminUrl}" class="button">Go to Payouts Manager</a>
+    </div>
+    <div class="footer">
+      <p><strong>Cediman Marketplace</strong></p>
+      <p>© ${new Date().getFullYear()} Cediman. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+};
+
+export const getVendorPayoutApprovedEmail = (
+  vendorContactName: string,
+  amount: number,
+  payoutMethod: string,
+  payoutAccount: string
+): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payout Request Approved - Cediman</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f5f5f5; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+    .header { background: #10b981; color: #ffffff; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+    .content { padding: 30px 20px; }
+    .greeting { font-size: 16px; margin-bottom: 20px; color: #111827; }
+    .success-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .success-title { font-weight: 700; color: #15803d; margin-bottom: 10px; font-size: 18px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px dashed #e5e7eb; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: #6b7280; }
+    .detail-value { color: #111827; font-weight: 700; }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <h1>CEDIMAN MARKETPLACE</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">
+        <p>Dear ${vendorContactName},</p>
+        <p>We are pleased to inform you that your withdrawal request has been approved and successfully processed.</p>
+      </div>
+      <div class="success-box">
+        <div class="success-title">Withdrawal Disbursed</div>
+        <p style="margin: 0 0 15px 0; color: #166534; font-size: 14px;">The payout has been dispatched to your designated payment account. Please allow standard bank/MoMo clearance intervals for funds to reflect.</p>
+        <div class="detail-row">
+          <span class="detail-label" style="color: #166534;">Disbursed Amount:</span>
+          <span class="detail-value" style="color: #15803d;">GH₵ ${amount.toFixed(2)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label" style="color: #166534;">Payment Method:</span>
+          <span class="detail-value" style="color: #166534;">${payoutMethod}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label" style="color: #166534;">Destination Account:</span>
+          <span class="detail-value" style="color: #166534; font-family: monospace; font-size: 12px;">${payoutAccount}</span>
+        </div>
+      </div>
+      <p>If you have any questions or do not receive the funds within 24 hours, please reply to this email to contact our support team.</p>
+    </div>
+    <div class="footer">
+      <p><strong>Cediman Marketplace Seller Services</strong></p>
+      <p>© ${new Date().getFullYear()} Cediman. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+};
+
+export const getVendorPayoutRejectedEmail = (
+  vendorContactName: string,
+  amount: number,
+  reason: string
+): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payout Request Update - Cediman</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f5f5f5; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+    .header { background: #ef4444; color: #ffffff; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+    .content { padding: 30px 20px; }
+    .greeting { font-size: 16px; margin-bottom: 20px; color: #111827; }
+    .reject-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .reject-title { font-weight: 700; color: #991b1b; margin-bottom: 10px; font-size: 18px; }
+    .reason-text { font-style: italic; color: #374151; background: #ffffff; padding: 12px; border-left: 4px solid #ef4444; border-radius: 4px; margin-top: 10px; font-size: 14px; }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <h1>CEDIMAN MARKETPLACE</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">
+        <p>Dear ${vendorContactName},</p>
+        <p>This email is to notify you regarding your recent withdrawal request for **GH₵ ${amount.toFixed(2)}**.</p>
+      </div>
+      <div class="reject-box">
+        <div class="reject-title">Withdrawal Request Refused</div>
+        <p style="margin: 0; color: #7f1d1d; font-size: 14px;">Your request has been rejected by our administration team. The requested amount has been fully restored to your Available Balance.</p>
+        <div class="reason-text">
+          <strong>Reason for decision:</strong><br/>
+          ${reason}
+        </div>
+      </div>
+      <p>Please review your payout account details in your storefront settings page to ensure they are correct, or contact support if you need assistance.</p>
+    </div>
+    <div class="footer">
+      <p><strong>Cediman Marketplace Seller Services</strong></p>
+      <p>© ${new Date().getFullYear()} Cediman. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+};
+

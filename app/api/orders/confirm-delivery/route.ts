@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateOrderStatus, getOrder } from "@/lib/firestore";
 import { sendEmail } from "@/lib/email";
+import { clearPendingBalanceToAvailable } from "@/lib/vendor-ledger";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,13 @@ export async function POST(request: NextRequest) {
                 { error: "Failed to update order status", details: result.error },
                 { status: 500 }
             );
+        }
+
+        // Clear vendor pending balances to available
+        try {
+            await clearPendingBalanceToAvailable(orderId);
+        } catch (ledgerError) {
+            console.error("Failed to clear vendor pending balance on delivery:", ledgerError);
         }
 
         // Optionally send confirmation email

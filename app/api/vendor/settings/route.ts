@@ -26,6 +26,13 @@ export async function GET(request: Request) {
             logoUrl: vendor.logoUrl ?? "",
             bannerUrl: vendor.bannerUrl ?? "",
             status: vendor.status,
+            payoutMethod: vendor.payoutMethod ?? null,
+            bankName: vendor.bankName ?? null,
+            branch: vendor.branch ?? null,
+            accountNumber: vendor.accountNumber ?? null,
+            accountName: vendor.accountName ?? null,
+            momoNetwork: vendor.momoNetwork ?? null,
+            momoNumber: vendor.momoNumber ?? null,
         },
         account: profile
             ? {
@@ -49,15 +56,22 @@ export async function PATCH(request: Request) {
 
     try {
         const body = await request.json();
-        const { businessName, slug, description, logoUrl, bannerUrl } = body;
+        const {
+            businessName,
+            slug,
+            description,
+            logoUrl,
+            bannerUrl,
+            payoutMethod,
+            bankName,
+            branch,
+            accountNumber,
+            accountName,
+            momoNetwork,
+            momoNumber,
+        } = body;
 
-        const updates: Partial<{
-            slug: string;
-            businessName: string;
-            description: string;
-            logoUrl: string;
-            bannerUrl: string;
-        }> = {};
+        const updates: Record<string, any> = {};
 
         if (typeof businessName === "string" && businessName.trim()) {
             updates.businessName = businessName.trim();
@@ -101,6 +115,28 @@ export async function PATCH(request: Request) {
             updates.bannerUrl = typeof bannerUrl === "string" ? bannerUrl.trim() : "";
         }
 
+        if (payoutMethod !== undefined) {
+            updates.payoutMethod = payoutMethod;
+        }
+        if (bankName !== undefined) {
+            updates.bankName = bankName;
+        }
+        if (branch !== undefined) {
+            updates.branch = branch;
+        }
+        if (accountNumber !== undefined) {
+            updates.accountNumber = accountNumber;
+        }
+        if (accountName !== undefined) {
+            updates.accountName = accountName;
+        }
+        if (momoNetwork !== undefined) {
+            updates.momoNetwork = momoNetwork;
+        }
+        if (momoNumber !== undefined) {
+            updates.momoNumber = momoNumber;
+        }
+
         if (Object.keys(updates).length === 0) {
             return NextResponse.json({ success: false, error: "No changes to save" }, { status: 400 });
         }
@@ -126,6 +162,13 @@ export async function PATCH(request: Request) {
                       logoUrl: vendor.logoUrl ?? "",
                       bannerUrl: vendor.bannerUrl ?? "",
                       status: vendor.status,
+                      payoutMethod: vendor.payoutMethod ?? null,
+                      bankName: vendor.bankName ?? null,
+                      branch: vendor.branch ?? null,
+                      accountNumber: vendor.accountNumber ?? null,
+                      accountName: vendor.accountName ?? null,
+                      momoNetwork: vendor.momoNetwork ?? null,
+                      momoNumber: vendor.momoNumber ?? null,
                   }
                 : null,
             storefrontUrl: vendor ? `/store/${vendor.slug}` : null,

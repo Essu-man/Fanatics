@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isVendor(vendorId) {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.vendorId == vendorId;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 2. Products
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.vendorId != null && isVendor(request.resource.data.vendorId));
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.vendorId != null && isVendor(resource.data.vendorId));
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.vendorId != null && isVendor(resource.data.vendorId));
+    }
+
+    // 3. Orders
+    match /orders/{orderId} {
+      allow read: if isAdmin() || 
+        (isAuthenticated() && resource.data.userId == request.auth.uid) ||
+        (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'delivery');
+      allow create: if true; // Guest checkouts allowed
+      allow update: if isAdmin() || 
+        (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'delivery');
+      allow delete: if isAdmin();
+    }
+
+    // 4. Vendors
+    match /vendors/{vendorId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.ownerUserId == request.auth.uid &&
+        // Prevent client-side modification of balances and commission rate
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['balanceAvailable', 'balancePending', 'commissionRate', 'ownerUserId'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 5. Vendor Ledger Entries
+    match /vendor_ledger_entries/{entryId} {
+      allow read: if isAdmin() || (isAuthenticated() && isVendor(resource.data.vendorId));
+      // Writes must occur via the server Admin SDK only
+      allow write: if false;
+    }
+
+    // 6. Payout Requests
+    match /payout_requests/{requestId} {
+      allow read: if isAdmin() || (isAuthenticated() && isVendor(resource.data.vendorId));
+      allow create: if isAuthenticated() && 
+        isVendor(request.resource.data.vendorId) &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.amount > 0;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 7. Vendor Applications
+    match /vendor_applications/{applicationId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.applicantUserId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
