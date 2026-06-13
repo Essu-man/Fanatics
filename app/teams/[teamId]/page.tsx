@@ -184,7 +184,7 @@ export default function TeamPage() {
 
                 {/* Products Grid */}
                 {filteredAndSortedProducts.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {filteredAndSortedProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}

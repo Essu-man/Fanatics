@@ -27,9 +27,11 @@ function StoresPageContent() {
     const [q, setQ] = useState(queryFromUrl);
     const [vendors, setVendors] = useState<VendorSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleCount, setVisibleCount] = useState(19);
 
     useEffect(() => {
         setQ(queryFromUrl);
+        setVisibleCount(19);
     }, [queryFromUrl]);
 
     useEffect(() => {
@@ -66,6 +68,10 @@ function StoresPageContent() {
 
         return officialMatches ? [CEDIMAN_OFFICIAL_STORE, ...marketplace] : marketplace;
     }, [vendors, queryFromUrl]);
+
+    const displayedStores = useMemo(() => {
+        return stores.slice(0, visibleCount);
+    }, [stores, visibleCount]);
 
     function onSearch(e: FormEvent) {
         e.preventDefault();
@@ -113,16 +119,32 @@ function StoresPageContent() {
 
                 <div className="mt-10">
                     {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {[1, 2, 3].map((i) => (
+                        <div className="grid grid-cols-2 gap-4 md:gap-8">
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
                                 <div
                                     key={i}
-                                    className="h-72 rounded-[2.5rem] bg-zinc-100 animate-pulse border border-zinc-100"
+                                    className="h-72 rounded-2xl md:rounded-[2.5rem] bg-zinc-100 animate-pulse border border-zinc-100"
                                 />
                             ))}
                         </div>
                     ) : (
-                        <StoreCardGrid stores={stores} />
+                        <>
+                            <StoreCardGrid 
+                                stores={displayedStores} 
+                                className="grid grid-cols-2 gap-4 md:gap-8" 
+                                enableSpecialLayout={true}
+                            />
+                            {stores.length > visibleCount && (
+                                <div className="mt-12 flex justify-center">
+                                    <button
+                                        onClick={() => setVisibleCount((prev) => prev + 13)}
+                                        className="px-8 py-3.5 bg-zinc-950 text-white hover:bg-emerald-600 rounded-2xl font-bold text-sm shadow-md transition-all duration-300 active:scale-95 cursor-pointer"
+                                    >
+                                        Load More Stores
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

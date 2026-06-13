@@ -74,7 +74,7 @@ export default function ProductRecommendations({ currentProduct, limit = 4 }: Pr
             <section className="border-t border-zinc-200 bg-white py-12">
                 <div className="mx-auto max-w-7xl px-6">
                     <div className="h-8 w-48 bg-zinc-100 rounded mb-6 animate-pulse"></div>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {[...Array(limit)].map((_, i) => (
                             <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-lg animate-pulse" />
                         ))}
@@ -95,7 +95,7 @@ export default function ProductRecommendations({ currentProduct, limit = 4 }: Pr
                         View All
                     </Link>
                 </div>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {recommendations.map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
