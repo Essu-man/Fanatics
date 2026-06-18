@@ -184,6 +184,13 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 				</div>
 
 				<div className="border-t px-5 py-4 bg-zinc-50 flex-shrink-0">
+					{items.some(it => it.customization && (it.customization.playerName || it.customization.playerNumber)) && (
+						<div className="mb-3 rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-900 animate-in fade-in duration-200">
+							<p className="leading-relaxed">
+								<span className="font-bold">Notice:</span> Customized jerseys require an <span className="font-bold">additional 3 days processing time</span> before delivery.
+							</p>
+						</div>
+					)}
 					<div className="mb-3 space-y-2 text-sm">
 						<div className="flex items-center justify-between">
 							<span className="text-zinc-600">Subtotal</span>

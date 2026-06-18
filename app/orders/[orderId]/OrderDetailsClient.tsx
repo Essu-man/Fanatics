@@ -241,6 +241,18 @@ export default function OrderDetailsPage() {
                     </div>
                 </div>
 
+                {/* Customization Delivery Delay Disclaimer */}
+                {customizationDetails.count > 0 && order.status !== "delivered" && order.status !== "cancelled" && (
+                    <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 shadow-sm animate-in fade-in duration-200">
+                        <div>
+                            <h3 className="font-bold text-sm sm:text-base text-amber-900">Customization Processing Notice</h3>
+                            <p className="mt-1 text-xs sm:text-sm leading-relaxed text-amber-800">
+                                This order contains customized jerseys. Please note that customization requires an <span className="font-bold">additional 3 days processing time</span> before shipment.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left Column - Order Items */}
                     <div className="lg:col-span-2 space-y-6">

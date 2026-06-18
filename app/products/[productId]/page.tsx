@@ -557,6 +557,20 @@ export default function ProductDetailPage() {
                                     </div>
                                 )}
 
+                                {/* Customization Delay Disclaimer */}
+                                {(customization.playerName || customization.playerNumber) && (
+                                    <div className="rounded-lg bg-red-50 border-2 border-red-200 p-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <div>
+                                            <p className="text-sm font-black text-red-700 uppercase tracking-wider">
+                                                Important Customization Notice
+                                            </p>
+                                            <p className="mt-1 text-xs font-black text-red-900 leading-relaxed">
+                                                Customized jerseys require an additional <span className="underline">3 days processing time</span> before delivery.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Info Tip */}
                                 <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
                                     <span className="text-base">💡</span>

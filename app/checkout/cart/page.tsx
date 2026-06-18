@@ -139,6 +139,14 @@ export default function CheckoutCartPage() {
                         <div className="sticky top-8 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
                             <h2 className="mb-4 text-lg font-bold text-zinc-900">Order Summary</h2>
 
+                            {items.some((item: any) => item.customization && (item.customization.playerName || item.customization.playerNumber)) && (
+                                <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-900 animate-in fade-in duration-200">
+                                    <p className="leading-relaxed">
+                                        <span className="font-bold">Notice:</span> Customized jerseys require an <span className="font-bold">additional 3 days processing time</span> before delivery.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-zinc-600">Subtotal ({items.length} items)</span>

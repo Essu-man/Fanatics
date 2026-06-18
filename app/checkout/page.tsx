@@ -427,6 +427,14 @@ export default function CheckoutPage() {
                         <div className="sticky top-8 rounded-lg bg-white p-6 shadow-sm">
                             <h2 className="mb-6 text-xl font-bold text-zinc-900">Order Summary</h2>
 
+                            {customizationDetails.count > 0 && (
+                                <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-900 animate-in fade-in duration-200">
+                                    <p className="leading-relaxed">
+                                        <span className="font-bold">Notice:</span> Customized jerseys require an <span className="font-bold">additional 3 days processing time</span> before delivery.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="mb-6 space-y-3">
                                 {items.map((item, index) => (
                                     <div key={`${item.id}-${item.colorId || 'default'}-${index}`} className="flex gap-3">
