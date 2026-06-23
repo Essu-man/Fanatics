@@ -1,33 +1,45 @@
-# SMTP Environment Variables (Yahoo App Password Integration)
+# SMTP Environment Variables (Gmail App Password Integration)
 
-To use Yahoo App Password with SMTP, add the following variables to your `.env.local` file:
+To use Gmail SMTP with App Passwords, add the following variables to your `.env.local` file:
 
 ```env
-# SMTP Server Settings (Yahoo Defaults)
-SMTP_HOST=smtp.mail.yahoo.com
+# SMTP Server Settings (Gmail Defaults)
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_SECURE=true
 
 # SMTP Credentials
-SMTP_USER=your_yahoo_email@yahoo.com
-SMTP_PASSWORD=your_yahoo_app_password
+SMTP_USER=your_gmail_address@gmail.com
+SMTP_PASSWORD=your_gmail_app_password
 
 # Sender settings
-SMTP_FROM_EMAIL=your_yahoo_email@yahoo.com
+SMTP_FROM_EMAIL=your_gmail_address@gmail.com
 SMTP_FROM_NAME=Cediman
+
+# Email address to receive administrator notifications (new vendor signups, product listings)
+ADMIN_NOTIFICATION_EMAIL=your_gmail_address@gmail.com
 ```
 
-## How to Get Your Yahoo App Password:
+## How to Get Your Gmail App Password:
 
-1. Go to [Yahoo Account Security Page](https://login.yahoo.com/account/security) and log in.
-2. Scroll down and look for **Generate App Password** or **Manage app passwords**.
-3. Select **Other App** from the dropdown menu and enter a name like `Cediman Store`.
-4. Click **Generate**.
-5. Yahoo will generate a 16-character password (e.g., `abcd efgh ijkl mnop`).
-6. Copy this password.
-7. Paste it as `SMTP_PASSWORD` in your `.env.local` file. You can enter it with or without spaces, but it is recommended to enter it as a single block without spaces (`abcdefghijklmnop`).
+Gmail requires an **App Password** to send emails programmatically if you have 2-Step Verification enabled (which is required by Google for app passwords).
+
+1. Go to your [Google Account settings](https://myaccount.google.com/).
+2. On the left navigation panel, select **Security**.
+3. Under the "How you sign in to Google" section, ensure **2-Step Verification** is turned on.
+4. Click on **2-Step Verification** to open its settings.
+5. Scroll all the way to the bottom of the page and click on **App passwords** (if you don't see it, search for "App passwords" in the search bar at the top of the page).
+6. Enter a name for the app (e.g., `Cediman Store` or `Fanatics App`).
+7. Click **Create**.
+8. A modal will appear showing a 16-character app password (e.g., `abcd efgh ijkl mnop`).
+9. Copy this password (it will not be shown again).
+10. Paste it as `SMTP_PASSWORD` in your `.env.local` file. **Make sure to remove any spaces** when entering it (e.g., `abcdefghijklmnop`).
 
 ## Troubleshooting Deliverability:
 
-1. **Sender Address Rejection**: Yahoo SMTP requires the sender email (`SMTP_FROM_EMAIL`) to match the authenticated email (`SMTP_USER`) or be an approved Yahoo account alias. If you specify a different email, Yahoo SMTP will reject the message with a `550 Sender address rejected` error.
-2. **Connection Issues**: We use port `465` (SSL/TLS) by default. If your network blocks port `465`, you can try port `587` with `SMTP_SECURE=false`.
+1. **Connection Issues**: By default, we use port `465` (SSL/TLS) with `SMTP_SECURE=true`. If your hosting environment or local network blocks port `465`, you can try port `587` with `SMTP_SECURE=false`.
+2. **2-Step Verification Requirement**: Google only allows you to create App Passwords if 2-Step Verification is enabled on your account.
+3. **Testing your settings**: You can test the configuration using the test script:
+   ```bash
+   npx ts-node scripts/test-email.ts your-personal-email@gmail.com
+   ```

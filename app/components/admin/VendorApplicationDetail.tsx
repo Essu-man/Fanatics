@@ -1,6 +1,6 @@
 "use client";
 
-import { X, CreditCard, FileText, Image as ImageIcon, ExternalLink } from "lucide-react";
+import { X, CreditCard, FileText, Image as ImageIcon, ExternalLink, Trash2 } from "lucide-react";
 
 export type VendorApplicationRecord = {
     id: string;
@@ -52,12 +52,14 @@ export default function VendorApplicationDetail({
     onClose,
     onApprove,
     onReject,
+    onDelete,
     actionLoading,
 }: {
     application: VendorApplicationRecord;
     onClose: () => void;
     onApprove: () => void;
     onReject: () => void;
+    onDelete?: () => void;
     actionLoading?: boolean;
 }) {
     const socials: Array<{ platform: string; handle: string }> = application.socialHandles?.length
@@ -279,6 +281,19 @@ export default function VendorApplicationDetail({
                             className="flex-1 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 disabled:opacity-50"
                         >
                             Approve
+                        </button>
+                    </div>
+                )}
+                {application.status === "rejected" && onDelete && (
+                    <div className="flex gap-3 border-t border-zinc-100 p-4 bg-white">
+                        <button
+                            type="button"
+                            disabled={actionLoading}
+                            onClick={onDelete}
+                            className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Application
                         </button>
                     </div>
                 )}

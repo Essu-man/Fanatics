@@ -9,7 +9,7 @@ let transporter: nodemailer.Transporter | null = null;
 const getTransporter = () => {
   if (transporter) return transporter;
 
-  const host = process.env.SMTP_HOST || 'smtp.mail.yahoo.com';
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465', 10);
   const secure = process.env.SMTP_SECURE !== 'false';
   const user = process.env.SMTP_USER;

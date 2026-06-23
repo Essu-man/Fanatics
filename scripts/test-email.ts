@@ -20,10 +20,10 @@ const run = async () => {
     `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
       <h2 style="color: #dc2626;">SMTP Test Successful!</h2>
-      <p>This email confirms that your Yahoo SMTP configuration with App Password is working correctly.</p>
+      <p>This email confirms that your Gmail SMTP configuration with App Password is working correctly.</p>
       <p><strong>Config Details:</strong></p>
       <ul>
-        <li>Host: ${process.env.SMTP_HOST || 'smtp.mail.yahoo.com'}</li>
+        <li>Host: ${process.env.SMTP_HOST || 'smtp.gmail.com'}</li>
         <li>Port: ${process.env.SMTP_PORT || '465'}</li>
         <li>User: ${process.env.SMTP_USER}</li>
       </ul>

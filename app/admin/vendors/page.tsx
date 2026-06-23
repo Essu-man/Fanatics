@@ -17,6 +17,8 @@ import {
     Info,
     Plus,
     Eye,
+    Trash2,
+    UserX,
 } from "lucide-react";
 
 export default function AdminVendorsPage() {
@@ -143,6 +145,89 @@ export default function AdminVendorsPage() {
             }
         } catch {
             showToast("An error occurred", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteVendor = async (id: string, name: string) => {
+        const confirmDelete = window.confirm(
+            `WARNING: Are you sure you want to permanently delete "${name}" and all their products?\n\nThis will revert their seller user profile to "customer". This action cannot be undone.`
+        );
+        if (!confirmDelete) return;
+
+        setActionLoading(true);
+        try {
+            const res = await fetch(`/api/admin/vendors/${id}`, {
+                method: "DELETE",
+            });
+            const data = await res.ok ? await res.json() : null;
+            if (data && data.success) {
+                showToast(`Successfully deleted vendor "${name}" and their store`, "success");
+                loadData();
+            } else {
+                showToast(data?.error || "Failed to delete vendor", "error");
+            }
+        } catch (err: any) {
+            showToast(err.message || "Failed to delete vendor", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handlePurgeVendor = async (id: string, name: string) => {
+        const confirm1 = window.confirm(
+            `CRITICAL WARNING: You are about to completely PURGE "${name}" from the database.\n\nThis will permanently delete:\n- The vendor & storefront document\n- All products associated with this store\n- All ledger records and vendor application history\n- The owner user profile document\n- The owner's actual Firebase Authentication account (they will not be able to log in)\n\nThis is a destructive operation that CANNOT BE UNDONE. Are you sure?`
+        );
+        if (!confirm1) return;
+
+        const typedConfirm = window.prompt(
+            `Please type "${name}" to confirm the complete purge of this vendor and user:`
+        );
+        if (typedConfirm !== name) {
+            showToast("Purge cancelled — confirmation name did not match.", "error");
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const res = await fetch(`/api/admin/vendors/${id}?purge=true`, {
+                method: "DELETE",
+            });
+            const data = await res.ok ? await res.json() : null;
+            if (data && data.success) {
+                showToast(`Successfully purged vendor "${name}" and all associated data from the database.`, "success");
+                loadData();
+            } else {
+                showToast(data?.error || "Failed to purge vendor", "error");
+            }
+        } catch (err: any) {
+            showToast(err.message || "Failed to purge vendor", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteApplication = async (id: string, businessName: string) => {
+        const confirmDelete = window.confirm(
+            `Are you sure you want to permanently delete the vendor application for "${businessName}"?`
+        );
+        if (!confirmDelete) return;
+
+        setActionLoading(true);
+        try {
+            const res = await fetch(`/api/admin/vendors/applications/${id}`, {
+                method: "DELETE",
+            });
+            const data = await res.ok ? await res.json() : null;
+            if (data && data.success) {
+                showToast(`Successfully deleted vendor application for "${businessName}"`, "success");
+                loadData();
+            } else {
+                showToast(data?.error || "Failed to delete application", "error");
+            }
+        } catch (err: any) {
+            showToast(err.message || "Failed to delete application", "error");
         } finally {
             setActionLoading(false);
         }
@@ -280,6 +365,7 @@ export default function AdminVendorsPage() {
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Store Link</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Status</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Owner</th>
+                                    <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-50">
@@ -315,11 +401,29 @@ export default function AdminVendorsPage() {
                                         <td className="px-6 py-5 text-zinc-400 font-mono text-[10px] truncate max-w-[150px]">
                                             {v.ownerUserId}
                                         </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleDeleteVendor(v.id, v.businessName)}
+                                                    className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 p-2 rounded-lg transition-all"
+                                                    title="Delete Vendor & Store (Keep User)"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePurgeVendor(v.id, v.businessName)}
+                                                    className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-all"
+                                                    title="Purge Vendor & User (Full Wipe)"
+                                                >
+                                                    <UserX className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                                 {activeVendors.length === 0 && !loading && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-zinc-500 font-medium">
+                                        <td colSpan={5} className="px-6 py-12 text-center text-zinc-500 font-medium">
                                             No active vendors yet. Approve an application to add one here.
                                         </td>
                                     </tr>
@@ -449,6 +553,16 @@ export default function AdminVendorsPage() {
                                             <CheckCircle2 className="h-4 w-4" /> Activate vendor
                                         </button>
                                     )}
+                                    {app.status === "rejected" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteApplication(app.id, app.businessName || "")}
+                                            disabled={actionLoading}
+                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-red-100 text-red-600 rounded-2xl font-bold hover:bg-red-50 transition-all disabled:opacity-50"
+                                        >
+                                            <Trash2 className="h-4 w-4" /> Delete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -464,6 +578,10 @@ export default function AdminVendorsPage() {
                     onClose={() => setSelectedApplication(null)}
                     onApprove={() => handleApplicationAction(selectedApplication.id, "approve")}
                     onReject={() => handleApplicationAction(selectedApplication.id, "reject")}
+                    onDelete={selectedApplication.status === "rejected" ? () => {
+                        handleDeleteApplication(selectedApplication.id, selectedApplication.businessName || "");
+                        setSelectedApplication(null);
+                    } : undefined}
                     actionLoading={actionLoading}
                 />
             )}

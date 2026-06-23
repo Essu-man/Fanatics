@@ -4,7 +4,7 @@ import {
     FirebaseAdminConfigError,
     getFirebaseServiceAccount,
     isFirebaseAdminConfigError,
-} from "@/lib/get-firebase-service-account";
+} from "./get-firebase-service-account";
 
 let app: App | null = null;
 
@@ -30,6 +30,9 @@ export const adminAuth = {
     },
     get getUserByEmail() {
         return getAuth(getAdminApp()).getUserByEmail.bind(getAuth(getAdminApp()));
+    },
+    get deleteUser() {
+        return getAuth(getAdminApp()).deleteUser.bind(getAuth(getAdminApp()));
     },
 };
 

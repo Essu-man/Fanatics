@@ -1,5 +1,5 @@
-import { getFirestore, type Firestore, type QueryDocumentSnapshot } from "firebase-admin/firestore";
-import { getFirebaseAdminApp } from "@/lib/firebase-admin";
+import { getFirestore, FieldValue, type Firestore, type QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { getFirebaseAdminApp, adminAuth } from "./firebase-admin";
 import type { Product, StoreCategory, UserProfile, Vendor } from "@/lib/firestore";
 
 let adminDbInstance: Firestore | null = null;
@@ -284,5 +284,88 @@ export async function adminGetStoreCategories(): Promise<StoreCategory[]> {
     } catch (error) {
         console.error("adminGetStoreCategories:", error);
         return [];
+    }
+}
+
+export async function adminDeleteVendorAndStore(vendorId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const vendor = await adminGetVendor(vendorId);
+        if (!vendor) {
+            return { success: false, error: "Vendor not found" };
+        }
+
+        const db = getAdminDb();
+
+        // 1. Revert owner user role & remove vendorId link
+        if (vendor.ownerUserId) {
+            await db.collection("users").doc(vendor.ownerUserId).update({
+                role: "customer",
+                vendorId: FieldValue.delete()
+            });
+        }
+
+        // 2. Delete all products belonging to this vendor
+        const productsSnapshot = await db.collection("products").where("vendorId", "==", vendorId).get();
+        const deleteProductPromises = productsSnapshot.docs.map((docSnap) => docSnap.ref.delete());
+        await Promise.all(deleteProductPromises);
+
+        // 3. Update any vendor applications that referenced this vendor to remove the vendorId link
+        const appsSnapshot = await db.collection("vendor_applications").where("vendorId", "==", vendorId).get();
+        const updateAppPromises = appsSnapshot.docs.map((docSnap) => docSnap.ref.update({
+            vendorId: FieldValue.delete()
+        }));
+        await Promise.all(updateAppPromises);
+
+        // 4. Delete the vendor document itself
+        await db.collection("vendors").doc(vendorId).delete();
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error adminDeleteVendorAndStore:", error);
+        return { success: false, error: error.message || "Failed to delete vendor and store" };
+    }
+}
+
+export async function adminPurgeVendorAndAllData(vendorId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const vendor = await adminGetVendor(vendorId);
+        if (!vendor) {
+            return { success: false, error: "Vendor not found" };
+        }
+
+        const db = getAdminDb();
+
+        // 1. Delete associated products
+        const productsSnapshot = await db.collection("products").where("vendorId", "==", vendorId).get();
+        const deleteProductPromises = productsSnapshot.docs.map((docSnap) => docSnap.ref.delete());
+        await Promise.all(deleteProductPromises);
+
+        // 2. Delete vendor applications
+        const appsSnapshot = await db.collection("vendor_applications").where("vendorId", "==", vendorId).get();
+        const deleteAppPromises = appsSnapshot.docs.map((docSnap) => docSnap.ref.delete());
+        await Promise.all(deleteAppPromises);
+
+        // 3. Delete vendor ledger entries
+        const ledgersSnapshot = await db.collection("vendor_ledger_entries").where("vendorId", "==", vendorId).get();
+        const deleteLedgerPromises = ledgersSnapshot.docs.map((docSnap) => docSnap.ref.delete());
+        await Promise.all(deleteLedgerPromises);
+
+        // 4. Delete Firestore user profile and Firebase Auth account
+        if (vendor.ownerUserId) {
+            await db.collection("users").doc(vendor.ownerUserId).delete();
+            try {
+                await adminAuth.deleteUser(vendor.ownerUserId);
+            } catch (authError: any) {
+                console.warn(`Auth user ${vendor.ownerUserId} not found or failed to delete:`, authError.message);
+            }
+        }
+
+        // 5. Delete vendor document
+        await db.collection("vendors").doc(vendorId).delete();
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error adminPurgeVendorAndAllData:", error);
+        return { success: false, error: error.message || "Failed to purge vendor and all data" };
     }
 }
