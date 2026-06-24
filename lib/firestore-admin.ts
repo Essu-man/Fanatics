@@ -176,6 +176,7 @@ export async function adminUpdateVendor(
         if (data.description !== undefined) updatePayload.description = data.description.trim();
         if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
         if (data.bannerUrl !== undefined) updatePayload.bannerUrl = data.bannerUrl;
+        if (data.socialHandles !== undefined) updatePayload.socialHandles = data.socialHandles;
         if (data.payoutMethod !== undefined) updatePayload.payoutMethod = data.payoutMethod;
         if (data.bankName !== undefined) updatePayload.bankName = data.bankName;
         if (data.branch !== undefined) updatePayload.branch = data.branch;
@@ -186,6 +187,8 @@ export async function adminUpdateVendor(
         if (data.balanceAvailable !== undefined) updatePayload.balanceAvailable = data.balanceAvailable;
         if (data.balancePending !== undefined) updatePayload.balancePending = data.balancePending;
         if (data.commissionRate !== undefined) updatePayload.commissionRate = data.commissionRate;
+        if (data.paystackRecipientCode !== undefined) updatePayload.paystackRecipientCode = data.paystackRecipientCode;
+        if (data.paystackBankCode !== undefined) updatePayload.paystackBankCode = data.paystackBankCode;
 
         await getAdminDb().collection("vendors").doc(vendorId).update(updatePayload);
         return { success: true };

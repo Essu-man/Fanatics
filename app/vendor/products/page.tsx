@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import type { Product } from "@/lib/firestore";
-import { PlusCircle, Trash2, Boxes } from "lucide-react";
+import { PlusCircle, Trash2, Boxes, Edit } from "lucide-react";
 import { totalVariantStock, usesVariantStock } from "@/lib/stock-variants";
 import { useToast } from "@/app/components/ui/ToastContainer";
 
@@ -118,6 +118,13 @@ export default function VendorProductsPage() {
                                             : p.stock}
                                     </td>
                                     <td className="px-4 py-3 text-right">
+                                        <Link
+                                            href={`/vendor/products/${p.id}/edit`}
+                                            className="mr-2 inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            Edit
+                                        </Link>
                                         <Link
                                             href={`/vendor/stock?product=${p.id}`}
                                             className="mr-2 inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-zinc-700 hover:bg-zinc-50"

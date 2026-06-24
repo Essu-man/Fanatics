@@ -157,12 +157,49 @@ export async function POST(request: Request) {
                 return NextResponse.json({ success: true, message: "Payout request rejected." });
             }
 
+            // Execute Paystack Transfer
+            const vendorDoc = await db.collection("vendors").doc(requestData.vendorId).get();
+            if (!vendorDoc.exists) {
+                return NextResponse.json({ success: false, error: "Vendor not found" }, { status: 404 });
+            }
+            const vendorData = vendorDoc.data()!;
+            if (!vendorData.paystackRecipientCode) {
+                return NextResponse.json({
+                    success: false,
+                    error: "Vendor has not registered a Paystack Transfer Recipient code."
+                }, { status: 400 });
+            }
+
+            // Call Paystack Transfer API
+            const paystackTransferResponse = await fetch("https://api.paystack.co/transfer", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    source: "balance",
+                    amount: Math.round(requestData.amount * 100), // convert GHS to Pesewas
+                    recipient: vendorData.paystackRecipientCode,
+                    reason: `Payout request ID: ${requestId}`
+                })
+            });
+
+            const transferData = await paystackTransferResponse.json();
+            if (!transferData.status) {
+                return NextResponse.json({
+                    success: false,
+                    error: `Paystack Transfer Failed: ${transferData.message}`
+                }, { status: 400 });
+            }
+
             // Execute payout ledger transaction
             const payoutResult = await payoutVendor(requestData.vendorId, requestData.amount, {
                 payoutMethod: requestData.payoutMethod,
                 payoutAccount: requestData.payoutMethod === "Bank Transfer"
                     ? `${requestData.payoutDetails.bankName} - ${requestData.payoutDetails.accountNumber}`
                     : `${requestData.payoutDetails.momoNetwork} - ${requestData.payoutDetails.momoNumber}`,
+                paystackTransferReference: transferData.data.reference, // save ref for audit logs
             });
 
             if (!payoutResult.success) {
@@ -173,6 +210,7 @@ export async function POST(request: Request) {
             await requestRef.update({
                 status: "completed",
                 processedAt: new Date(),
+                paystackReference: transferData.data.reference,
             });
 
             // Send email receipt to vendor (non-blocking)

@@ -9,6 +9,7 @@ export function serializePublicVendor(vendor: Vendor) {
         description: vendor.description ?? "",
         logoUrl: vendor.logoUrl ?? "",
         bannerUrl: vendor.bannerUrl ?? "",
+        socialHandles: vendor.socialHandles ?? [],
         status: vendor.status,
     };
 }

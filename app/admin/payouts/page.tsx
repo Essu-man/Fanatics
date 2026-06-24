@@ -191,7 +191,12 @@ export default function AdminPayoutsPage() {
 
     const handleProcessRequest = async (requestId: string, action: "approve" | "reject") => {
         if (action === "approve") {
-            const confirm = window.confirm("Have you sent the bank or Mobile Money transfer? Confirming will deduct this amount from the vendor's balance and record it.");
+            const req = requests.find((r) => r.id === requestId);
+            const amountStr = req ? `GH₵ ${req.amount.toFixed(2)}` : "this amount";
+            const vendorName = req ? req.businessName : "the vendor";
+            const confirm = window.confirm(
+                `Are you sure you want to approve and disburse ${amountStr} to ${vendorName}? This will trigger an automatic transfer via Paystack, deduct this amount from their available balance, and record it in the ledger.`
+            );
             if (!confirm) return;
         }
 

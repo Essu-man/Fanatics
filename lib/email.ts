@@ -75,8 +75,72 @@ export const sendEmail = async (
 };
 
 // Email template functions
+
+export const getOtpVerificationEmail = (
+  firstName: string,
+  otp: string
+): string => {
+  const digits = otp.split("");
+  const digitBoxes = digits
+    .map(
+      (d) =>
+        `<span style="display:inline-block;width:44px;height:54px;line-height:54px;text-align:center;font-size:28px;font-weight:700;background:#f4f4f5;border:2px solid #e4e4e7;border-radius:10px;margin:0 4px;color:#18181b;letter-spacing:0;">${d}</span>`
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Cediman Verification Code</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#c41e3a 0%,#a01630 100%);padding:32px 24px;text-align:center;">
+      <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.75);">CEDIMAN CO.</p>
+      <h1 style="margin:8px 0 0;font-size:22px;font-weight:700;color:#ffffff;">Email Verification</h1>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:36px 32px;">
+      <p style="margin:0 0 8px;font-size:16px;color:#374151;">Hi ${firstName},</p>
+      <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.6;">
+        Use the code below to verify your email address. It expires in <strong style="color:#18181b;">15 minutes</strong>.
+      </p>
+
+      <!-- OTP Box -->
+      <div style="background:#fafafa;border:1.5px solid #e4e4e7;border-radius:12px;padding:28px 16px;text-align:center;margin-bottom:28px;">
+        <p style="margin:0 0 16px;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Your verification code</p>
+        <div style="display:flex;justify-content:center;gap:6px;">
+          ${digitBoxes}
+        </div>
+      </div>
+
+      <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;text-align:center;">
+        ⏱ This code expires in <strong>15 minutes</strong>
+      </p>
+      <p style="margin:0;font-size:13px;color:#9ca3af;text-align:center;">
+        Didn't request this? You can safely ignore this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:20px 32px;border-top:1px solid #f0f0f0;text-align:center;background:#fafafa;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;">
+        © ${new Date().getFullYear()} Cediman. All rights reserved.<br>
+        <a href="https://www.cediman.com" style="color:#c41e3a;text-decoration:none;">www.cediman.com</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
 export const getOrderConfirmationEmail = (
   customerName: string,
+
   orderId: string,
   orderTotal: number,
   trackingLink: string,
@@ -748,6 +812,59 @@ export const getVendorApplicationRejectedEmail = (
         </div>
       </div>
       <p>If you believe there has been a misunderstanding or if you can resolve the issue listed above, you are welcome to contact our administration team at support@cediman.com to discuss your application.</p>
+    </div>
+    <div class="footer">
+      <p><strong>Cediman Co. Marketplace</strong></p>
+      <p>© ${new Date().getFullYear()} Cediman. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+};
+
+export const getVendorWelcomeEmail = (
+  contactName: string,
+  businessName: string
+): string => {
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/vendor`;
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Cediman Co. Seller Portal!</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f5f5f5; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+    .header { background: #10b981; color: #ffffff; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+    .content { padding: 30px 20px; }
+    .greeting { font-size: 16px; margin-bottom: 20px; color: #111827; }
+    .welcome-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .welcome-title { font-weight: 700; color: #15803d; margin-bottom: 10px; }
+    .button { display: block; background: #10b981; color: #ffffff !important; padding: 16px 32px; text-decoration: none; border-radius: 8px; margin: 30px 0; font-weight: 600; font-size: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <h1>CEDIMAN CO.</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">
+        <p>Dear ${contactName},</p>
+        <p>Your seller registration for <strong>${businessName}</strong> is complete and active!</p>
+      </div>
+      <div class="welcome-box">
+        <div class="welcome-title">Your Seller Portal is Ready!</div>
+        <p style="margin: 0; color: #166534;">Your login account is now officially linked to your store. You can manage your store inventory, upload new products, track sales, and check your payout history directly in your Seller Dashboard.</p>
+      </div>
+      <p>Click below to sign in and access your store:</p>
+      <a href="${loginUrl}" class="button">Go to Seller Dashboard</a>
+      <p>If you have any questions or need support as you manage your store, please email us at support@cediman.com.</p>
     </div>
     <div class="footer">
       <p><strong>Cediman Co. Marketplace</strong></p>

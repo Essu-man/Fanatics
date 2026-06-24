@@ -7,6 +7,7 @@ import {
     adminGetVendorByOwnerUserId,
     adminLinkUserToVendor,
 } from "@/lib/firestore-admin";
+import { sendEmail, getVendorWelcomeEmail } from "@/lib/email";
 
 export type VendorAuthContext = {
     uid: string;
@@ -27,6 +28,15 @@ function bearerToken(request: Request): string | null {
     const h = request.headers.get("authorization");
     if (!h?.startsWith("Bearer ")) return null;
     return h.slice(7).trim() || null;
+}
+
+async function triggerWelcomeEmail(vendorName: string, businessName: string, recipientEmail: string) {
+    try {
+        const emailHtml = getVendorWelcomeEmail(vendorName, businessName);
+        await sendEmail(recipientEmail.trim().toLowerCase(), `Welcome to Cediman Co. Seller Portal!`, emailHtml);
+    } catch (err) {
+        console.error("Failed to send vendor welcome email on linking:", err);
+    }
 }
 
 async function resolveVendorForUser(
@@ -53,6 +63,11 @@ async function resolveVendorForUser(
                     vendor.ownerUserId === uid || vendor.ownerUserId.startsWith("pending-link-");
                 if (ownerOk) {
                     await adminLinkUserToVendor(uid, vendor.id, email || profile?.email);
+                    const recipientEmail = email || profile?.email;
+                    if (recipientEmail) {
+                        const name = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") : "Seller";
+                        triggerWelcomeEmail(name, vendor.businessName, recipientEmail);
+                    }
                     vendor = { ...vendor, ownerUserId: uid, status: "active" };
                     return { vendor, vendorId: vendor.id, linked: true };
                 }
@@ -68,12 +83,22 @@ async function resolveVendorForUser(
 
     if (vendor.ownerUserId.startsWith("pending-link-")) {
         await adminLinkUserToVendor(uid, vendor.id, email || profile?.email);
+        const recipientEmail = email || profile?.email;
+        if (recipientEmail) {
+            const name = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") : "Seller";
+            triggerWelcomeEmail(name, vendor.businessName, recipientEmail);
+        }
         vendor = { ...vendor, ownerUserId: uid, status: "active" };
         return { vendor, vendorId, linked: true };
     }
 
     if (profile?.role !== "vendor" || profile.vendorId !== vendorId) {
         await adminLinkUserToVendor(uid, vendorId, email || profile?.email);
+        const recipientEmail = email || profile?.email;
+        if (recipientEmail) {
+            const name = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") : "Seller";
+            triggerWelcomeEmail(name, vendor.businessName, recipientEmail);
+        }
         return { vendor, vendorId, linked: true };
     }
 

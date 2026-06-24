@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireVendorAuthDetailed } from "@/lib/api-auth";
-import { getAllOrders, getProductsByVendorId, getOrder } from "@/lib/firestore";
+import { getAllOrders, getProductsByVendorId, getOrder, updateOrderStatus } from "@/lib/firestore";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { clearPendingBalanceToAvailable } from "@/lib/vendor-ledger";
 
 export const runtime = "nodejs";
 
@@ -92,7 +93,7 @@ export async function PATCH(request: Request) {
             );
         }
 
-        if (!["pending", "processing", "ready", "shipped"].includes(fulfillmentStatus)) {
+        if (!["pending", "processing", "ready", "shipped", "delivered"].includes(fulfillmentStatus)) {
             return NextResponse.json(
                 { success: false, error: "Invalid fulfillment status" },
                 { status: 400 }
@@ -148,12 +149,24 @@ export async function PATCH(request: Request) {
             return item;
         });
 
+        // Check if ALL items in the order are now marked as "delivered"
+        const allDelivered = updatedItems.every((item: any) => item.fulfillmentStatus === "delivered");
+
         // Save back to Firestore
         const orderRef = doc(db, "orders", orderId);
         await updateDoc(orderRef, {
             items: updatedItems,
             updatedAt: new Date().toISOString()
         });
+
+        if (allDelivered && order.status !== "delivered") {
+            try {
+                await updateOrderStatus(orderId, "delivered", undefined, "All items marked as delivered by vendor.");
+                await clearPendingBalanceToAvailable(orderId);
+            } catch (statusError) {
+                console.error("Failed to update overall order status or clear pending balance:", statusError);
+            }
+        }
 
         return NextResponse.json({ success: true, message: "Item fulfillment status updated" });
     } catch (error: any) {

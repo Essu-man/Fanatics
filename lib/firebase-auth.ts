@@ -53,16 +53,7 @@ export const signUp = async (
             displayName: `${firstName} ${lastName}`,
         });
 
-        // Send email verification with custom action handler
-        try {
-            await sendEmailVerification(firebaseUser, {
-                url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cediman.com'}/auth/action`,
-                handleCodeInApp: false,
-            });
-        } catch (emailError) {
-            console.warn('Could not send verification email:', emailError);
-            // Don't fail signup if email sending fails
-        }
+        // OTP-based email verification will be triggered after profile creation
 
         // Create user profile in Firestore
         const profileData: Omit<UserProfile, 'uid' | 'createdAt'> = {
@@ -70,25 +61,85 @@ export const signUp = async (
             firstName,
             lastName,
             role,
-            emailVerified: firebaseUser.emailVerified,
+            emailVerified: false,
             // Only include phone if it's provided (not undefined)
             ...(phone && { phone }),
         };
 
         const profileResult = await createUserProfile(firebaseUser.uid, profileData);
 
-        // Send welcome email via SendGrid
+        // After profile creation, trigger OTP email verification
         if (profileResult.success) {
             try {
-                await fetch('/api/notifications/send-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        to: email,
-                        subject: 'Welcome to Cediman - Verify Your Email',
-                        htmlBody: `
+                const idToken = await firebaseUser.getIdToken();
+                // Fire-and-forget: send OTP email via server API
+                fetch("/api/auth/send-verification", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${idToken}` },
+                }).catch((err) => console.warn("OTP send failed:", err));
+            } catch (otpErr) {
+                console.warn("Could not trigger OTP send:", otpErr);
+            }
+        }
+
+        // Also send welcome email
+        if (profileResult.success) {
+            try {
+                const isVendor = role === "vendor";
+                const welcomeSubject = isVendor
+                    ? "Welcome to Cediman - Seller Account Created"
+                    : "Welcome to Cediman!";
+
+                const welcomeHtml = isVendor
+                    ? `
+                            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <h1 style="color: #10b981; margin: 0;">Welcome to Cediman Seller Portal!</h1>
+                                </div>
+                                
+                                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                    <p>Hi ${firstName},</p>
+                                    <p>Thank you for registering a seller account with <strong>Cediman</strong>! We're excited to have you join our marketplace community.</p>
+                                    <p>Your account has been successfully created. You can now access your seller dashboard to manage your applications and storefront:</p>
+                                     
+                                    <div style="text-align: center; margin: 30px 0;">
+                                         <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/vendor" 
+                                            style="display: inline-block; background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                             Go to Seller Dashboard
+                                         </a>
+                                    </div>
+                                    
+                                    <p style="font-size: 13px; color: #666; margin-top: 20px;">
+                                         If the button above doesn't work, copy and paste this link in your browser:<br>
+                                         <span style="word-break: break-all;">${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/vendor</span>
+                                     </p>
+                                </div>
+                                
+                                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                    <h3 style="color: #1f2937; margin-top: 0;">What's Next?</h3>
+                                    <ul style="color: #666; line-height: 1.8;">
+                                        <li><strong>Submit/Review Application</strong> - Submit store details and bank details for approval</li>
+                                        <li><strong>Set Up Your Storefront</strong> - Customize your logo, banner, and descriptions</li>
+                                        <li><strong>List Products</strong> - Upload premium jersey listings for buyers to see</li>
+                                        <li><strong>Receive Payouts</strong> - Withdraw earnings to your bank or mobile money wallet</li>
+                                    </ul>
+                                </div>
+                                
+                                <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: center;">
+                                    <p style="margin: 0; font-size: 13px; color: #999;">
+                                         Need help? Contact our seller support team at <a href="mailto:support@cediman.com" style="color: #2563eb; text-decoration: none;">support@cediman.com</a>
+                                    </p>
+                                </div>
+                                
+                                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                    <p style="font-size: 12px; color: #999; margin: 0;">
+                                         © 2025 Cediman. All rights reserved.<br>
+                                         <a href="https://www.cediman.com" style="color: #2563eb; text-decoration: none;">Visit our website</a>
+                                    </p>
+                                </div>
+                            </div>
+                        `
+                    : `
                             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto;">
                                 <div style="text-align: center; margin-bottom: 30px;">
                                     <h1 style="color: #2563eb; margin: 0;">Welcome to Cediman!</h1>
@@ -97,18 +148,18 @@ export const signUp = async (
                                 <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                                     <p>Hi ${firstName},</p>
                                     <p>Thank you for creating an account with <strong>Cediman</strong>! We're excited to have you join our community.</p>
-                                    <p>Your account has been successfully created. To complete your registration and start shopping for premium jerseys, please verify your email address by clicking the link below:</p>
+                                    <p>Your account has been successfully created. You can start shopping for premium jerseys right away:</p>
                                     
                                     <div style="text-align: center; margin: 30px 0;">
-                                        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}" 
-                                           style="display: inline-block; background-color: #c41e3a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                                            Verify Your Email
-                                        </a>
+                                         <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/" 
+                                            style="display: inline-block; background-color: #c41e3a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                             Start Shopping
+                                         </a>
                                     </div>
                                     
                                     <p style="font-size: 13px; color: #666; margin-top: 20px;">
                                         If the button above doesn't work, copy and paste this link in your browser:<br>
-                                        <span style="word-break: break-all;">${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}</span>
+                                        <span style="word-break: break-all;">${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/</span>
                                     </p>
                                 </div>
                                 
@@ -135,17 +186,41 @@ export const signUp = async (
                                     </p>
                                 </div>
                             </div>
-                        `,
-                        textBody: `
+                        `;
+
+                const welcomeText = isVendor
+                    ? `
+                            Welcome to Cediman Seller Portal!
+                            
+                            Hi ${firstName},
+                            
+                            Thank you for registering a seller account with Cediman! We're excited to have you join our marketplace community.
+                            
+                            Your account has been successfully created. To set up your store and dashboard, visit your seller dashboard:
+                            
+                            ${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/vendor
+                            
+                            What's Next?
+                            - Submit/Review Application - Submit store details and bank details for approval
+                            - Set Up Your Storefront - Customize your logo, banner, and descriptions
+                            - List Products - Upload premium jersey listings for buyers to see
+                            - Receive Payouts - Withdraw earnings to your bank or mobile money wallet
+                            
+                            Need help? Contact our seller support team at support@cediman.com
+                            
+                            © 2025 Cediman. All rights reserved.
+                            Visit our website: https://www.cediman.com
+                        `
+                    : `
                             Welcome to Cediman!
                             
                             Hi ${firstName},
                             
                             Thank you for creating an account with Cediman! We're excited to have you join our community.
                             
-                            Your account has been successfully created. To complete your registration and start shopping for premium jerseys, please verify your email address by visiting the link below:
+                            Your account has been successfully created. Start shopping for premium jerseys now:
                             
-                            ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.cediman.com'}/verify-email?email=${encodeURIComponent(email)}
+                            ${process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com"}/
                             
                             What's Next?
                             - Explore Teams - Browse jerseys from your favorite teams
@@ -157,7 +232,18 @@ export const signUp = async (
                             
                             © 2025 Cediman. All rights reserved.
                             Visit our website: https://www.cediman.com
-                        `,
+                        `;
+
+                await fetch("/api/notifications/send-email", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        to: email,
+                        subject: welcomeSubject,
+                        htmlBody: welcomeHtml,
+                        textBody: welcomeText,
                     }),
                 });
             } catch (sendgridError) {

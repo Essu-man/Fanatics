@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/firebase-auth";
+import { useAuth } from "../providers/AuthProvider";
 import { useToast } from "../components/ui/ToastContainer";
 import VendorApplyForm from "../components/vendor/VendorApplyForm";
 
@@ -17,6 +18,7 @@ export default function SignupForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { showToast } = useToast();
+    const { refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: "",
@@ -68,8 +70,10 @@ export default function SignupForm() {
             );
 
             if (result.success) {
-                showToast("Please check your email to verify your account", "success");
-                router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+                showToast("Account created! Check your email for a verification code.", "success");
+                router.push(
+                    `/verify-email?email=${encodeURIComponent(formData.email)}&role=${formData.role}`
+                );
             } else {
                 let errorMessage = result.error || "Failed to create account";
                 if (errorMessage.includes("auth/email-already-in-use")) {

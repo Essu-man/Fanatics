@@ -14,7 +14,7 @@ import { signUp } from "@/lib/firebase-auth";
 import { useToast } from "../components/ui/ToastContainer";
 
 export default function AccountPage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [recommendations, setRecommendations] = useState<Product[]>([]);
@@ -96,8 +96,8 @@ export default function AccountPage() {
             );
 
             if (result.success) {
-                showToast("Please check your email to verify your account", "success");
-                router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+                showToast("Account created successfully!", "success");
+                await refreshUser();
             } else {
                 showToast(result.error || "Failed to create account", "error");
             }

@@ -25,6 +25,7 @@ export async function GET(request: Request) {
             description: vendor.description ?? "",
             logoUrl: vendor.logoUrl ?? "",
             bannerUrl: vendor.bannerUrl ?? "",
+            socialHandles: vendor.socialHandles ?? [],
             status: vendor.status,
             payoutMethod: vendor.payoutMethod ?? null,
             bankName: vendor.bankName ?? null,
@@ -33,6 +34,8 @@ export async function GET(request: Request) {
             accountName: vendor.accountName ?? null,
             momoNetwork: vendor.momoNetwork ?? null,
             momoNumber: vendor.momoNumber ?? null,
+            paystackBankCode: vendor.paystackBankCode ?? null,
+            paystackRecipientCode: vendor.paystackRecipientCode ?? null,
         },
         account: profile
             ? {
@@ -62,6 +65,7 @@ export async function PATCH(request: Request) {
             description,
             logoUrl,
             bannerUrl,
+            socialHandles,
             payoutMethod,
             bankName,
             branch,
@@ -69,7 +73,10 @@ export async function PATCH(request: Request) {
             accountName,
             momoNetwork,
             momoNumber,
+            bankCode,
         } = body;
+
+        const currentVendor = await adminGetVendor(authResult.auth.vendorId);
 
         const updates: Record<string, any> = {};
 
@@ -136,6 +143,114 @@ export async function PATCH(request: Request) {
         if (momoNumber !== undefined) {
             updates.momoNumber = momoNumber;
         }
+        if (socialHandles !== undefined) {
+            updates.socialHandles = Array.isArray(socialHandles) ? socialHandles : [];
+        }
+
+        // Determine if payout settings are being updated and have changed
+        const hasPayoutDetailsChanged = 
+            payoutMethod !== undefined && (
+                payoutMethod !== currentVendor?.payoutMethod ||
+                (payoutMethod === "Bank Transfer" && (
+                    accountNumber !== currentVendor?.accountNumber ||
+                    accountName !== currentVendor?.accountName ||
+                    bankCode !== currentVendor?.paystackBankCode
+                )) ||
+                (payoutMethod === "Mobile Money" && (
+                    momoNumber !== currentVendor?.momoNumber ||
+                    momoNetwork !== currentVendor?.momoNetwork
+                ))
+            );
+
+        const needsPaystackRegistration = hasPayoutDetailsChanged || (payoutMethod && !currentVendor?.paystackRecipientCode);
+
+        if (needsPaystackRegistration) {
+            const method = payoutMethod || currentVendor?.payoutMethod;
+            if (method === "Bank Transfer") {
+                const accNum = accountNumber !== undefined ? accountNumber : currentVendor?.accountNumber;
+                const accName = accountName !== undefined ? accountName : currentVendor?.accountName;
+                const bCode = bankCode !== undefined ? bankCode : currentVendor?.paystackBankCode;
+
+                if (!accNum || !accName || !bCode) {
+                    return NextResponse.json(
+                        { success: false, error: "Missing account details or bank code for Paystack registration" },
+                        { status: 400 }
+                    );
+                }
+
+                // Call Paystack API
+                const paystackResponse = await fetch("https://api.paystack.co/transferrecipient", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        type: "ghipss",
+                        name: accName,
+                        account_number: accNum,
+                        bank_code: bCode,
+                        currency: "GHS"
+                    })
+                });
+
+                const paystackData = await paystackResponse.json();
+                if (!paystackData.status) {
+                    return NextResponse.json(
+                        { success: false, error: `Paystack Verification Failed: ${paystackData.message}` },
+                        { status: 400 }
+                    );
+                }
+
+                updates.paystackRecipientCode = paystackData.data.recipient_code;
+                updates.paystackBankCode = bCode;
+            } else if (method === "Mobile Money") {
+                const mobNum = momoNumber !== undefined ? momoNumber : currentVendor?.momoNumber;
+                const mobNet = momoNetwork !== undefined ? momoNetwork : currentVendor?.momoNetwork;
+
+                if (!mobNum || !mobNet) {
+                    return NextResponse.json(
+                        { success: false, error: "Missing mobile number or network for Paystack registration" },
+                        { status: 400 }
+                    );
+                }
+
+                // Map Network provider code
+                let providerCode = mobNet;
+                if (mobNet === "Telecel") {
+                    providerCode = "VOD";
+                } else if (mobNet === "AirtelTigo") {
+                    providerCode = "ATL";
+                } // MTN is MTN
+
+                // Call Paystack API
+                const paystackResponse = await fetch("https://api.paystack.co/transferrecipient", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        type: "mobile_money",
+                        name: businessName || currentVendor?.businessName || "Vendor Owner",
+                        account_number: mobNum,
+                        bank_code: providerCode,
+                        currency: "GHS"
+                    })
+                });
+
+                const paystackData = await paystackResponse.json();
+                if (!paystackData.status) {
+                    return NextResponse.json(
+                        { success: false, error: `Paystack Verification Failed: ${paystackData.message}` },
+                        { status: 400 }
+                    );
+                }
+
+                updates.paystackRecipientCode = paystackData.data.recipient_code;
+                updates.paystackBankCode = providerCode;
+            }
+        }
 
         if (Object.keys(updates).length === 0) {
             return NextResponse.json({ success: false, error: "No changes to save" }, { status: 400 });
@@ -169,6 +284,8 @@ export async function PATCH(request: Request) {
                       accountName: vendor.accountName ?? null,
                       momoNetwork: vendor.momoNetwork ?? null,
                       momoNumber: vendor.momoNumber ?? null,
+                      paystackBankCode: vendor.paystackBankCode ?? null,
+                      paystackRecipientCode: vendor.paystackRecipientCode ?? null,
                   }
                 : null,
             storefrontUrl: vendor ? `/store/${vendor.slug}` : null,

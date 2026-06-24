@@ -96,6 +96,7 @@ export async function approveVendorApplication(
                 status: "active",
                 ...(logoUrl ? { logoUrl } : {}),
                 description: (app.description as string | undefined)?.trim() || undefined,
+                socialHandles: app.socialHandles || undefined,
             });
         } else {
             const ownerUserId = await resolveOwnerUserId(
@@ -114,6 +115,7 @@ export async function approveVendorApplication(
                 status: "active",
                 description: (app.description as string | undefined)?.trim() || undefined,
                 logoUrl,
+                socialHandles: app.socialHandles || [],
                 payoutMethod: app.payoutMethod || null,
                 bankName: app.bankName || null,
                 branch: app.branch || null,

@@ -15,7 +15,7 @@ interface OrderItem {
     colorId: string | null;
     size: string;
     image: string | null;
-    fulfillmentStatus?: "pending" | "processing" | "ready" | "shipped";
+    fulfillmentStatus?: "pending" | "processing" | "ready" | "shipped" | "delivered";
     customization?: {
         playerName?: string;
         playerNumber?: string;
@@ -58,6 +58,7 @@ const FULFILLMENT_LABELS: Record<string, string> = {
     processing: "Processing",
     ready: "Ready for Pickup",
     shipped: "Shipped",
+    delivered: "Delivered",
 };
 
 export default function VendorOrdersPage() {
@@ -97,7 +98,7 @@ export default function VendorOrdersPage() {
         productId: string,
         colorId: string | null,
         size: string,
-        status: "pending" | "processing" | "ready" | "shipped"
+        status: "pending" | "processing" | "ready" | "shipped" | "delivered"
     ) => {
         const updateKey = `${orderId}-${productId}-${colorId || "default"}-${size}`;
         setUpdatingId(updateKey);
@@ -140,7 +141,7 @@ export default function VendorOrdersPage() {
             return order.items.some((item) => item.fulfillmentStatus === "ready");
         }
         if (filter === "completed") {
-            return order.items.every((item) => item.fulfillmentStatus === "shipped") || order.status === "delivered";
+            return order.items.every((item) => item.fulfillmentStatus === "shipped" || item.fulfillmentStatus === "delivered") || order.status === "delivered";
         }
         return true;
     });
@@ -290,21 +291,23 @@ export default function VendorOrdersPage() {
                                                     <div className="flex items-center gap-2">
                                                         <span
                                                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                                                                item.fulfillmentStatus === "ready"
-                                                                    ? "bg-emerald-100 text-emerald-800"
-                                                                    : item.fulfillmentStatus === "processing"
-                                                                      ? "bg-blue-100 text-blue-800"
-                                                                      : item.fulfillmentStatus === "shipped"
-                                                                        ? "bg-zinc-100 text-zinc-800"
-                                                                        : "bg-amber-100 text-amber-800"
+                                                                item.fulfillmentStatus === "delivered"
+                                                                    ? "bg-green-100 text-green-800"
+                                                                    : item.fulfillmentStatus === "ready"
+                                                                      ? "bg-emerald-100 text-emerald-800"
+                                                                      : item.fulfillmentStatus === "processing"
+                                                                        ? "bg-blue-100 text-blue-800"
+                                                                        : item.fulfillmentStatus === "shipped"
+                                                                          ? "bg-zinc-100 text-zinc-800"
+                                                                          : "bg-amber-100 text-amber-800"
                                                             }`}
                                                         >
                                                             {FULFILLMENT_LABELS[item.fulfillmentStatus || "pending"]}
                                                         </span>
                                                     </div>
 
-                                                    {order.status !== "cancelled" && item.fulfillmentStatus !== "shipped" && (
-                                                        <div className="flex gap-1.5">
+                                                    {order.status !== "cancelled" && item.fulfillmentStatus !== "delivered" && (
+                                                        <div className="flex gap-1.5 flex-wrap">
                                                             {(!item.fulfillmentStatus || item.fulfillmentStatus === "pending") && (
                                                                 <button
                                                                     type="button"
@@ -315,7 +318,7 @@ export default function VendorOrdersPage() {
                                                                     {isUpdating ? "Saving..." : "Start Prep"}
                                                                 </button>
                                                             )}
-                                                            {item.fulfillmentStatus !== "ready" && (
+                                                            {(!item.fulfillmentStatus || item.fulfillmentStatus === "pending" || item.fulfillmentStatus === "processing") && (
                                                                 <button
                                                                     type="button"
                                                                     disabled={isUpdating}
@@ -324,6 +327,27 @@ export default function VendorOrdersPage() {
                                                                 >
                                                                     <CheckCircle2 className="h-3 w-3" />
                                                                     Ready for Pickup
+                                                                </button>
+                                                            )}
+                                                            {item.fulfillmentStatus === "ready" && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={isUpdating}
+                                                                    onClick={() => handleFulfillmentUpdate(order.id, item.id, item.colorId, item.size, "shipped")}
+                                                                    className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white hover:bg-blue-700 shadow-md shadow-blue-100 disabled:opacity-50"
+                                                                >
+                                                                    Ship Item
+                                                                </button>
+                                                            )}
+                                                            {(item.fulfillmentStatus === "ready" || item.fulfillmentStatus === "shipped") && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={isUpdating}
+                                                                    onClick={() => handleFulfillmentUpdate(order.id, item.id, item.colorId, item.size, "delivered")}
+                                                                    className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-green-600 px-3 text-xs font-bold text-white hover:bg-green-700 shadow-md shadow-green-100 disabled:opacity-50"
+                                                                >
+                                                                    <CheckCircle2 className="h-3 w-3" />
+                                                                    Mark Delivered
                                                                 </button>
                                                             )}
                                                         </div>

@@ -4,8 +4,38 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/app/components/ui/ToastContainer";
-import { ExternalLink, Save, UploadCloud, X } from "lucide-react";
+import { ExternalLink, Save, UploadCloud, X, Plus } from "lucide-react";
 import VendorStorefrontBanner from "@/app/components/vendor/VendorStorefrontBanner";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/app/components/ui/select";
+
+const GHANA_BANKS = [
+    { name: "Absa Bank Ghana Limited", code: "030100" },
+    { name: "Access Bank", code: "280100" },
+    { name: "ADB Bank Limited", code: "080100" },
+    { name: "CAL Bank Limited", code: "140100" },
+    { name: "Consolidated Bank Ghana Limited", code: "340100" },
+    { name: "Ecobank Ghana Limited", code: "130100" },
+    { name: "Fidelity Bank Ghana Limited", code: "240100" },
+    { name: "First Atlantic Bank Limited", code: "170100" },
+    { name: "First National Bank (Ghana) Limited", code: "330100" },
+    { name: "GCB Bank Limited", code: "040100" },
+    { name: "Guaranty Trust Bank (Ghana) Limited", code: "230100" },
+    { name: "National Investment Bank Limited", code: "050100" },
+    { name: "Prudential Bank Limited", code: "180100" },
+    { name: "Republic Bank (GH) Limited", code: "110100" },
+    { name: "Société Générale Ghana Limited", code: "090100" },
+    { name: "Stanbic Bank Ghana Limited", code: "190100" },
+    { name: "Standard Chartered Bank Ghana Limited", code: "020100" },
+    { name: "United Bank for Africa (Ghana) Limited", code: "060100" },
+    { name: "Universal Merchant Bank Ghana Limited", code: "100100" },
+    { name: "Zenith Bank (Ghana) Limited", code: "120100" }
+];
 
 type VendorSettings = {
     id: string;
@@ -22,6 +52,8 @@ type VendorSettings = {
     accountName?: string;
     momoNetwork?: string;
     momoNumber?: string;
+    paystackBankCode?: string;
+    socialHandles?: Array<{ platform: string; handle: string }>;
 };
 
 type AccountInfo = {
@@ -53,6 +85,23 @@ export default function VendorSettingsPage() {
     const [accountName, setAccountName] = useState("");
     const [momoNetwork, setMomoNetwork] = useState("MTN");
     const [momoNumber, setMomoNumber] = useState("");
+    const [bankCode, setBankCode] = useState("");
+    const [socialHandles, setSocialHandles] = useState<Array<{ platform: string; handle: string }>>([
+        { platform: "", handle: "" },
+    ]);
+
+    const SOCIAL_PLATFORMS = [
+        "Instagram",
+        "TikTok",
+        "Snapchat",
+        "Facebook",
+        "WhatsApp Business",
+        "X (Twitter)",
+        "YouTube",
+        "LinkedIn",
+        "Threads",
+        "Pinterest",
+    ] as const;
 
     const loadSettings = useCallback(async () => {
         setLoading(true);
@@ -79,6 +128,12 @@ export default function VendorSettingsPage() {
             setAccountName(v.accountName || "");
             setMomoNetwork(v.momoNetwork || "MTN");
             setMomoNumber(v.momoNumber || "");
+            setBankCode(v.paystackBankCode || "");
+            setSocialHandles(
+                v.socialHandles && v.socialHandles.length > 0
+                    ? v.socialHandles
+                    : [{ platform: "", handle: "" }]
+            );
             setStorefrontUrl(data.storefrontUrl || `/store/${v.slug}`);
             setAccount(data.account ?? null);
         } catch (e: unknown) {
@@ -188,6 +243,10 @@ export default function VendorSettingsPage() {
                     accountName: payoutMethod === "Bank Transfer" ? accountName.trim() : "",
                     momoNetwork: payoutMethod === "Mobile Money" ? momoNetwork : "",
                     momoNumber: payoutMethod === "Mobile Money" ? momoNumber.trim() : "",
+                    bankCode: payoutMethod === "Bank Transfer" ? bankCode : "",
+                    socialHandles: socialHandles
+                        .filter((s) => s.platform && s.handle.trim())
+                        .map((s) => ({ platform: s.platform, handle: s.handle.trim() })),
                 }),
             });
             const data = await res.json();
@@ -196,6 +255,7 @@ export default function VendorSettingsPage() {
             if (data.vendor) {
                 setSlug(data.vendor.slug);
                 setStorefrontUrl(data.storefrontUrl || `/store/${data.vendor.slug}`);
+                setBankCode(data.vendor.paystackBankCode || "");
             }
             showToast("Settings saved", "success");
         } catch (err: unknown) {
@@ -234,6 +294,7 @@ export default function VendorSettingsPage() {
                             description,
                             logoUrl,
                             bannerUrl,
+                            socialHandles: socialHandles.filter((s) => s.platform && s.handle.trim()),
                         }}
                     />
 
@@ -370,6 +431,100 @@ export default function VendorSettingsPage() {
                     </div>
                 </section>
 
+                {/* Social Handles Section */}
+                <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
+                    <div>
+                        <h2 className="text-lg font-semibold text-zinc-900">Social links</h2>
+                        <p className="mt-1 text-sm text-zinc-500">
+                            Add links to your social media channels. These will display as clickable icons on your storefront banner.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        {socialHandles.map((entry, index) => {
+                            const taken = new Set(
+                                socialHandles
+                                    .map((s, i) => (i !== index && s.platform ? s.platform : null))
+                                    .filter(Boolean)
+                            );
+                            const hasPlatform = Boolean(entry.platform);
+                            return (
+                                <div key={index} className="flex gap-2 items-center w-full max-w-lg">
+                                    <div className="flex w-full max-w-lg items-stretch overflow-hidden rounded-xl border-2 border-zinc-200 bg-white transition-all focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20">
+                                        <div className="relative z-10 w-[6.25rem] shrink-0 flex-none border-r border-zinc-200 bg-zinc-50">
+                                            <Select
+                                                value={entry.platform || undefined}
+                                                onValueChange={(v) => {
+                                                    setSocialHandles((prev) =>
+                                                        prev.map((s, i) => (i === index ? { ...s, platform: v } : s))
+                                                    );
+                                                }}
+                                            >
+                                                <SelectTrigger
+                                                    className="!w-full !max-w-full h-11 min-h-11 border-0 rounded-none bg-zinc-50 px-2 text-xs font-medium shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 [&>span]:truncate"
+                                                    aria-label="Social platform"
+                                                >
+                                                    <SelectValue placeholder="Platform" />
+                                                </SelectTrigger>
+                                                <SelectContent align="start" position="popper">
+                                                    {SOCIAL_PLATFORMS.map((platform) => (
+                                                        <SelectItem
+                                                            key={platform}
+                                                            value={platform}
+                                                            textValue={platform}
+                                                            disabled={taken.has(platform) && entry.platform !== platform}
+                                                        >
+                                                            {platform}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={entry.handle}
+                                            onChange={(e) => {
+                                                setSocialHandles((prev) =>
+                                                    prev.map((s, i) => (i === index ? { ...s, handle: e.target.value } : s))
+                                                );
+                                            }}
+                                            disabled={!hasPlatform}
+                                            className="min-w-0 flex-1 basis-0 grow h-11 border-0 bg-transparent px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 disabled:bg-zinc-50/50 disabled:cursor-not-allowed"
+                                            placeholder={
+                                                hasPlatform
+                                                    ? entry.platform === "WhatsApp Business"
+                                                        ? "Your number or link"
+                                                        : "@username or profile URL"
+                                                    : "Select platform first"
+                                            }
+                                        />
+                                    </div>
+                                    {socialHandles.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSocialHandles((prev) => prev.filter((_, i) => i !== index));
+                                            }}
+                                            className="shrink-0 h-11 w-10 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 flex items-center justify-center"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            onClick={() => setSocialHandles((prev) => [...prev, { platform: "", handle: "" }])}
+                            disabled={socialHandles.length >= SOCIAL_PLATFORMS.length}
+                            className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:text-emerald-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Add another platform
+                        </button>
+                    </div>
+                </section>
+
                 {/* Payout/Payment Settings */}
                 <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-5">
                     <h2 className="text-lg font-semibold text-zinc-900">Payout settings</h2>
@@ -406,13 +561,26 @@ export default function VendorSettingsPage() {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-600">Bank name</label>
-                                <input
-                                    value={bankName}
-                                    onChange={(e) => setBankName(e.target.value)}
-                                    placeholder="e.g. GCB Bank"
-                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                                <select
+                                    value={bankCode}
+                                    onChange={(e) => {
+                                        const selectedCode = e.target.value;
+                                        setBankCode(selectedCode);
+                                        const bank = GHANA_BANKS.find(b => b.code === selectedCode);
+                                        if (bank) {
+                                            setBankName(bank.name);
+                                        }
+                                    }}
+                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm bg-white"
                                     required={payoutMethod === "Bank Transfer"}
-                                />
+                                >
+                                    <option value="">Select a Bank...</option>
+                                    {GHANA_BANKS.map((bank) => (
+                                        <option key={bank.code} value={bank.code}>
+                                            {bank.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-600">Branch name</label>

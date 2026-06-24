@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Rocket,
     ArrowRight,
@@ -13,6 +13,11 @@ import {
     X,
     Upload,
     Loader2,
+    ShieldCheck,
+    RotateCcw,
+    Clock,
+    Mail,
+    Phone,
 } from "lucide-react";
 import { useToast } from "@/app/components/ui/ToastContainer";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -86,6 +91,113 @@ export default function VendorApplyForm({ requireAccount = false }: VendorApplyF
     const { showToast } = useToast();
     const { user, refreshUser } = useAuth();
 
+    // ── Email OTP verification state ──────────────────────────────────────────
+    const [emailVerified, setEmailVerified] = useState(false);
+    const [otpSending, setOtpSending] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""));
+    const [otpVerifying, setOtpVerifying] = useState(false);
+    const [otpError, setOtpError] = useState<string | null>(null);
+    const [otpCooldown, setOtpCooldown] = useState(0);
+    const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
+    const otpCooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const otpExpiryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const otpInputRefs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
+
+    const startOtpCooldown = () => {
+        setOtpCooldown(60);
+        if (otpCooldownRef.current) clearInterval(otpCooldownRef.current);
+        otpCooldownRef.current = setInterval(() => {
+            setOtpCooldown((p) => { if (p <= 1) { clearInterval(otpCooldownRef.current!); return 0; } return p - 1; });
+        }, 1000);
+    };
+
+    const startOtpExpiry = () => {
+        setOtpExpirySeconds(15 * 60);
+        if (otpExpiryRef.current) clearInterval(otpExpiryRef.current);
+        otpExpiryRef.current = setInterval(() => {
+            setOtpExpirySeconds((p) => { if (p <= 1) { clearInterval(otpExpiryRef.current!); return 0; } return p - 1; });
+        }, 1000);
+    };
+
+    const formatOtpExpiry = (secs: number) => `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, "0")}`;
+
+    const sendEmailOtp = async () => {
+        const email = formData.email.trim();
+        if (!email || !email.includes("@")) { showToast("Enter a valid email first", "error"); return; }
+        setOtpSending(true);
+        setOtpError(null);
+        try {
+            const nameParts = formData.contactPerson.trim().split(/\s+/);
+            const res = await fetch("/api/auth/send-email-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, firstName: nameParts[0] || "" }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setOtpSent(true);
+                setOtpDigits(Array(6).fill(""));
+                startOtpCooldown();
+                startOtpExpiry();
+                setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+            } else {
+                setOtpError(data.error || "Failed to send code");
+            }
+        } catch { setOtpError("Failed to send code. Please try again."); }
+        finally { setOtpSending(false); }
+    };
+
+    const handleOtpDigitChange = (index: number, value: string) => {
+        const digit = value.replace(/\D/g, "").slice(-1);
+        const next = [...otpDigits]; next[index] = digit;
+        setOtpDigits(next); setOtpError(null);
+        if (digit && index < 5) otpInputRefs.current[index + 1]?.focus();
+    };
+
+    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace") {
+            if (otpDigits[index]) { const n = [...otpDigits]; n[index] = ""; setOtpDigits(n); }
+            else if (index > 0) otpInputRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e: React.ClipboardEvent) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+        if (!pasted) return;
+        const next = Array(6).fill("");
+        pasted.split("").forEach((ch, i) => (next[i] = ch));
+        setOtpDigits(next); setOtpError(null);
+        otpInputRefs.current[Math.min(pasted.length, 5)]?.focus();
+    };
+
+    const verifyEmailOtp = async () => {
+        const code = otpDigits.join("");
+        if (code.length < 6) { setOtpError("Enter all 6 digits"); return; }
+        setOtpVerifying(true); setOtpError(null);
+        try {
+            const res = await fetch("/api/auth/verify-email-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: formData.email.trim(), code }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setEmailVerified(true);
+                setOtpSent(false);
+                if (otpCooldownRef.current) clearInterval(otpCooldownRef.current);
+                if (otpExpiryRef.current) clearInterval(otpExpiryRef.current);
+                showToast("Email verified!", "success");
+            } else {
+                setOtpError(data.error || "Incorrect code");
+                setOtpDigits(Array(6).fill(""));
+                otpInputRefs.current[0]?.focus();
+            }
+        } catch { setOtpError("Verification failed. Please try again."); }
+        finally { setOtpVerifying(false); }
+    };
+
     const [socialHandles, setSocialHandles] = useState<SocialHandleEntry[]>([{ platform: "", handle: "" }]);
 
     const [formData, setFormData] = useState({
@@ -119,6 +231,8 @@ export default function VendorApplyForm({ requireAccount = false }: VendorApplyF
                 f.contactPerson ||
                 [user.firstName, user.lastName].filter(Boolean).join(" ").trim(),
         }));
+        // If user is already logged in their email is confirmed — skip OTP
+        setEmailVerified(true);
     }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -211,6 +325,10 @@ export default function VendorApplyForm({ requireAccount = false }: VendorApplyF
         if (step === 1) {
             if (!formData.contactPerson || !formData.email || !formData.phone) {
                 showToast("Please fill in all basic information", "error");
+                return;
+            }
+            if (!emailVerified) {
+                showToast("Please verify your email address before continuing", "error");
                 return;
             }
             if (requireAccount && !user) {
@@ -407,36 +525,180 @@ export default function VendorApplyForm({ requireAccount = false }: VendorApplyF
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-zinc-700">Contact Person Name</label>
-                            <input
-                                name="contactPerson"
-                                required
-                                value={formData.contactPerson}
-                                onChange={handleChange}
-                                className={inputClass}
-                                placeholder="Full Name"
-                            />
+                            <div className="relative flex items-center w-full h-14 rounded-2xl bg-zinc-50 border-2 border-zinc-100 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all px-4">
+                                <User className="h-5 w-5 text-zinc-400 flex-shrink-0" />
+                                <input
+                                    name="contactPerson"
+                                    required
+                                    value={formData.contactPerson}
+                                    onChange={handleChange}
+                                    className="w-full h-full bg-transparent px-3 outline-none text-base text-zinc-900 placeholder:text-zinc-400 font-medium"
+                                    placeholder="Full Name"
+                                />
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-zinc-700">Business Email</label>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-zinc-700">Business Email</label>
+                            {/* Premium Unified Email input container */}
+                            <div className={`relative flex items-center w-full h-14 rounded-2xl border-2 transition-all ${
+                                emailVerified 
+                                    ? "border-emerald-500 bg-emerald-50/20 shadow-sm shadow-emerald-50" 
+                                    : "border-zinc-100 bg-zinc-50 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10"
+                            }`}>
+                                <Mail className={`h-5 w-5 ml-4 flex-shrink-0 transition-colors ${
+                                    emailVerified ? "text-emerald-500" : "text-zinc-400"
+                                }`} />
                                 <input
                                     name="email"
                                     type="email"
                                     required
                                     value={formData.email}
-                                    onChange={handleChange}
-                                    className={inputClass}
+                                    onChange={(e) => {
+                                        if (emailVerified) return; // lock after verification
+                                        setEmailVerified(false);
+                                        setOtpSent(false);
+                                        setOtpError(null);
+                                        handleChange(e);
+                                    }}
+                                    readOnly={emailVerified}
+                                    className="w-full h-full bg-transparent px-3 outline-none text-base text-zinc-900 placeholder:text-zinc-400 font-medium"
                                     placeholder="hello@yourbusiness.com"
                                 />
+                                <div className="pr-2 flex-shrink-0">
+                                    {emailVerified ? (
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm">
+                                            <ShieldCheck className="h-4.5 w-4.5" />
+                                            Verified
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={sendEmailOtp}
+                                            disabled={otpSending || otpCooldown > 0 || !formData.email.includes("@")}
+                                            className="h-10 px-4 rounded-xl bg-zinc-900 hover:bg-emerald-600 active:scale-[0.97] text-white text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap shadow-sm"
+                                        >
+                                            {otpSending ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : otpCooldown > 0 ? (
+                                                <RotateCcw className="h-3.5 w-3.5" />
+                                            ) : null}
+                                            {otpSending ? "Sending…" : otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? "Resend" : "Verify"}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-zinc-700">Phone Number</label>
+
+                            {/* Compact Redesigned OTP inline entry placed below the email field */}
+                            {otpSent && !emailVerified && (
+                                <div className="mt-3 p-3 rounded-2xl bg-gradient-to-b from-zinc-50 to-zinc-100/50 border border-zinc-200/80 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        {/* OTP input boxes container */}
+                                        <div className="flex items-center gap-1 sm:gap-1.5" onPaste={handleOtpPaste}>
+                                            {otpDigits.slice(0, 3).map((digit, index) => {
+                                                const i = index;
+                                                return (
+                                                    <input
+                                                        key={i}
+                                                        ref={(el) => { otpInputRefs.current[i] = el; }}
+                                                        id={`vendor-otp-${i}`}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        maxLength={1}
+                                                        value={digit}
+                                                        onChange={(e) => handleOtpDigitChange(i, e.target.value)}
+                                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                                        aria-label={`OTP digit ${i + 1}`}
+                                                        className={`h-9 w-7 sm:w-8 rounded-lg border text-center text-sm font-mono font-bold text-zinc-900 outline-none transition-all shadow-sm
+                                                            ${digit ? "border-emerald-500 bg-emerald-50/20 text-emerald-700 shadow-emerald-100/30" : "border-zinc-200 bg-white"}
+                                                            focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white
+                                                            ${otpError ? "border-red-400 text-red-600 focus:border-red-400 focus:ring-red-500/10" : ""}
+                                                            disabled:opacity-50`}
+                                                        disabled={otpVerifying}
+                                                    />
+                                                );
+                                            })}
+                                            <span className="text-zinc-300 font-bold select-none text-xs">—</span>
+                                            {otpDigits.slice(3, 6).map((digit, index) => {
+                                                const i = index + 3;
+                                                return (
+                                                    <input
+                                                        key={i}
+                                                        ref={(el) => { otpInputRefs.current[i] = el; }}
+                                                        id={`vendor-otp-${i}`}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        maxLength={1}
+                                                        value={digit}
+                                                        onChange={(e) => handleOtpDigitChange(i, e.target.value)}
+                                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                                        aria-label={`OTP digit ${i + 1}`}
+                                                        className={`h-9 w-7 sm:w-8 rounded-lg border text-center text-sm font-mono font-bold text-zinc-900 outline-none transition-all shadow-sm
+                                                            ${digit ? "border-emerald-500 bg-emerald-50/20 text-emerald-700 shadow-emerald-100/30" : "border-zinc-200 bg-white"}
+                                                            focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white
+                                                            ${otpError ? "border-red-400 text-red-600 focus:border-red-400 focus:ring-red-500/10" : ""}
+                                                            disabled:opacity-50`}
+                                                        disabled={otpVerifying}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Compact Confirm button next to it */}
+                                        <button
+                                            type="button"
+                                            onClick={verifyEmailOtp}
+                                            disabled={otpDigits.join("").length < 6 || otpVerifying || otpExpirySeconds === 0}
+                                            className={`h-9 px-3.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-300 relative overflow-hidden flex-1 sm:flex-initial min-w-[5.5rem]
+                                                ${otpDigits.join("").length === 6 && !otpVerifying && otpExpirySeconds > 0
+                                                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500 hover:shadow-md hover:shadow-emerald-500/15 active:scale-[0.98] cursor-pointer"
+                                                    : "bg-zinc-100 text-zinc-400 border border-zinc-200/50 cursor-not-allowed"
+                                                }`}
+                                        >
+                                            {otpVerifying ? (
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                            )}
+                                            <span>{otpVerifying ? "Verifying…" : "Confirm"}</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Error, Countdown, and Instructions footer */}
+                                    <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-zinc-200/60 text-[10px] text-zinc-500 font-medium">
+                                        <span>Enter code sent to email</span>
+                                        {otpExpirySeconds > 0 && (
+                                            <div className={`flex items-center gap-1 ${
+                                                otpExpirySeconds < 60 ? "text-red-500 animate-pulse font-bold" : "text-zinc-450"
+                                            }`}>
+                                                <Clock className="h-3 w-3" />
+                                                {formatOtpExpiry(otpExpirySeconds)}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {otpError && (
+                                        <div className="mt-2 p-1.5 rounded-lg bg-red-50 border border-red-100 flex items-center gap-1.5 text-[10px] text-red-600 font-medium">
+                                            <span className="w-1 h-1 rounded-full bg-red-500 shrink-0" />
+                                            {otpError}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Phone Number Field */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-zinc-700">Phone Number</label>
+                            <div className="relative flex items-center w-full h-14 rounded-2xl bg-zinc-50 border-2 border-zinc-100 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all px-4">
+                                <Phone className="h-5 w-5 text-zinc-400 flex-shrink-0" />
                                 <input
                                     name="phone"
                                     required
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className={inputClass}
+                                    className="w-full h-full bg-transparent px-3 outline-none text-base text-zinc-900 placeholder:text-zinc-400 font-medium"
                                     placeholder="+233..."
                                 />
                             </div>

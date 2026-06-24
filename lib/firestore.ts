@@ -351,6 +351,7 @@ export interface Vendor {
     logoUrl?: string;
     /** Wide image shown as the storefront header background */
     bannerUrl?: string;
+    socialHandles?: Array<{ platform: string; handle: string }>;
     payoutMethod?: "Bank Transfer" | "Mobile Money" | null;
     bankName?: string | null;
     branch?: string | null;
@@ -361,6 +362,8 @@ export interface Vendor {
     balanceAvailable?: number;
     balancePending?: number;
     commissionRate?: number;
+    paystackRecipientCode?: string | null;
+    paystackBankCode?: string | null;
 }
 
 export interface LedgerEntry {
@@ -405,6 +408,7 @@ export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, 
         if (data.description !== undefined) updatePayload.description = data.description;
         if (data.logoUrl !== undefined) updatePayload.logoUrl = data.logoUrl;
         if (data.bannerUrl !== undefined) updatePayload.bannerUrl = data.bannerUrl;
+        if (data.socialHandles !== undefined) updatePayload.socialHandles = data.socialHandles;
         if (data.payoutMethod !== undefined) updatePayload.payoutMethod = data.payoutMethod;
         if (data.bankName !== undefined) updatePayload.bankName = data.bankName;
         if (data.branch !== undefined) updatePayload.branch = data.branch;
@@ -415,6 +419,8 @@ export const updateVendor = async (vendorId: string, data: Partial<Omit<Vendor, 
         if (data.balanceAvailable !== undefined) updatePayload.balanceAvailable = data.balanceAvailable;
         if (data.balancePending !== undefined) updatePayload.balancePending = data.balancePending;
         if (data.commissionRate !== undefined) updatePayload.commissionRate = data.commissionRate;
+        if (data.paystackRecipientCode !== undefined) updatePayload.paystackRecipientCode = data.paystackRecipientCode;
+        if (data.paystackBankCode !== undefined) updatePayload.paystackBankCode = data.paystackBankCode;
         await updateDoc(doc(db, "vendors", vendorId), updatePayload as DocumentData);
         return { success: true };
     } catch (error: any) {

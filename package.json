@@ -23,14 +23,14 @@
     "lucide-react": "^0.553.0",
     "next": "16.0.7",
     "nodemailer": "^8.0.10",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
+    "react": "19.3.0-canary-52684925-20251110",
+    "react-dom": "19.3.0-canary-52684925-20251110",
     "recharts": "^3.5.1",
     "sharp": "^0.34.5"
   },
   "overrides": {
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react": "19.3.0-canary-52684925-20251110",
+    "react-dom": "19.3.0-canary-52684925-20251110"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
