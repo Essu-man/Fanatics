@@ -216,7 +216,7 @@ export default function OrderTrackingPage() {
                             <span className="text-zinc-600">Shipping</span>
                             <span className="font-semibold text-zinc-900">
                                 {order.shippingCost === 0 ? (
-                                    <span className="text-green-600">FREE</span>
+                                    <span className="text-green-600">##</span>
                                 ) : (
                                     `₵${order.shippingCost.toFixed(2)}`
                                 )}

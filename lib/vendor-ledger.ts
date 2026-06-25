@@ -18,7 +18,15 @@ export interface LedgerEntryData {
  */
 export async function creditPendingBalanceForOrder(order: any): Promise<{ success: boolean; message?: string; error?: string }> {
     const db = getAdminDb();
-    const vendorShares: Record<string, { amount: number; description: string }> = {};
+    const vendorShares: Record<
+        string,
+        {
+            amount: number;
+            commissionRate: number;
+            deliveryFee: number;
+            description: string;
+        }
+    > = {};
 
     // Fetch vendor commission rates first to support customization
     const rawVendorIds = Array.from(new Set((order.items || []).map((item: any) => item.vendorId).filter(Boolean)));
@@ -53,13 +61,29 @@ export async function creditPendingBalanceForOrder(order: any): Promise<{ succes
         const vendorAmount = item.vendorAmount !== undefined ? Number(item.vendorAmount) : (itemSubtotal - platformFee);
 
         if (!vendorShares[vendorId]) {
-            vendorShares[vendorId] = { amount: 0, description: "" };
+            vendorShares[vendorId] = {
+                amount: 0,
+                commissionRate,
+                deliveryFee: 0,
+                description: "",
+            };
         }
         vendorShares[vendorId].amount += vendorAmount;
         const desc = `${item.name || item.productName || "Product"} x${qty}`;
         vendorShares[vendorId].description = vendorShares[vendorId].description 
             ? `${vendorShares[vendorId].description}, ${desc}` 
             : desc;
+    }
+
+    // Add delivery fees to vendor shares if present in order data
+    if (order.vendorDeliveryFees) {
+        for (const vendorId of Object.keys(vendorShares)) {
+            const deliveryFee = Number(order.vendorDeliveryFees[vendorId]) || 0;
+            if (deliveryFee > 0) {
+                vendorShares[vendorId].deliveryFee = deliveryFee;
+                vendorShares[vendorId].amount += deliveryFee;
+            }
+        }
     }
 
     const vendorIds = Object.keys(vendorShares);
@@ -108,6 +132,7 @@ export async function creditPendingBalanceForOrder(order: any): Promise<{ succes
                     updatedAt: new Date()
                 }, { merge: true });
 
+                const deliveryFeeStr = share.deliveryFee > 0 ? ` (includes GH₵ ${share.deliveryFee} delivery fee)` : "";
                 const entryRef = db.collection("vendor_ledger_entries").doc();
                 transaction.set(entryRef, {
                     vendorId,
@@ -116,7 +141,7 @@ export async function creditPendingBalanceForOrder(order: any): Promise<{ succes
                     amount: share.amount,
                     status: "pending",
                     createdAt: new Date(),
-                    description: `Gross sale for items: ${share.description}. Less 10% platform fee.`
+                    description: `Gross sale for items: ${share.description}${deliveryFeeStr}. Less ${share.commissionRate}% platform fee.`
                 });
             }
         });

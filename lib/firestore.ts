@@ -364,6 +364,7 @@ export interface Vendor {
     commissionRate?: number;
     paystackRecipientCode?: string | null;
     paystackBankCode?: string | null;
+    deliveryEnabled?: boolean;
 }
 
 export interface LedgerEntry {

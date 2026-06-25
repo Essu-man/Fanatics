@@ -54,6 +54,7 @@ type VendorSettings = {
     momoNumber?: string;
     paystackBankCode?: string;
     socialHandles?: Array<{ platform: string; handle: string }>;
+    deliveryEnabled?: boolean;
 };
 
 type AccountInfo = {
@@ -77,6 +78,7 @@ export default function VendorSettingsPage() {
     const [bannerUrl, setBannerUrl] = useState("");
     const [status, setStatus] = useState("active");
     const [account, setAccount] = useState<AccountInfo | null>(null);
+    const [deliveryEnabled, setDeliveryEnabled] = useState(true);
 
     const [payoutMethod, setPayoutMethod] = useState("Bank Transfer");
     const [bankName, setBankName] = useState("");
@@ -129,6 +131,7 @@ export default function VendorSettingsPage() {
             setMomoNetwork(v.momoNetwork || "MTN");
             setMomoNumber(v.momoNumber || "");
             setBankCode(v.paystackBankCode || "");
+            setDeliveryEnabled(v.deliveryEnabled !== false);
             setSocialHandles(
                 v.socialHandles && v.socialHandles.length > 0
                     ? v.socialHandles
@@ -244,6 +247,7 @@ export default function VendorSettingsPage() {
                     momoNetwork: payoutMethod === "Mobile Money" ? momoNetwork : "",
                     momoNumber: payoutMethod === "Mobile Money" ? momoNumber.trim() : "",
                     bankCode: payoutMethod === "Bank Transfer" ? bankCode : "",
+                    deliveryEnabled,
                     socialHandles: socialHandles
                         .filter((s) => s.platform && s.handle.trim())
                         .map((s) => ({ platform: s.platform, handle: s.handle.trim() })),
@@ -522,6 +526,29 @@ export default function VendorSettingsPage() {
                             <Plus className="h-4 w-4" />
                             Add another platform
                         </button>
+                    </div>
+                </section>
+
+                {/* Delivery Settings Section */}
+                <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
+                    <div>
+                        <h2 className="text-lg font-semibold text-zinc-900">Delivery settings</h2>
+                        <p className="mt-1 text-sm text-zinc-500">
+                            Choose whether to charge delivery fees on checkout for your products.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-zinc-50 border border-zinc-200 max-w-md">
+                        <input
+                            type="checkbox"
+                            id="deliveryEnabled"
+                            checked={deliveryEnabled}
+                            onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                            className="h-4 w-4 rounded border-zinc-300 text-[var(--brand-red)] focus:ring-2 focus:ring-[var(--brand-red)]/20 cursor-pointer"
+                        />
+                        <label htmlFor="deliveryEnabled" className="text-sm font-medium text-zinc-700 cursor-pointer select-none">
+                            Charge standard delivery fee for my products
+                        </label>
                     </div>
                 </section>
 

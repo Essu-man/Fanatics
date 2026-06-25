@@ -25,6 +25,8 @@ export type CartItem = {
         playerName?: string;
         playerNumber?: string;
     };
+    vendorId?: string;
+    vendorName?: string;
 };
 
 type CartContextValue = {

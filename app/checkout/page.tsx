@@ -89,17 +89,19 @@ export default function CheckoutPage() {
         }
     }, [shipping.region]);
 
-    // Fetch delivery price when town changes
+    // Fetch delivery price when town or items change
     useEffect(() => {
         if (shipping.town) {
             fetchDeliveryPrice(shipping.town);
         }
-    }, [shipping.town]);
+    }, [shipping.town, items]);
 
     const fetchDeliveryPrice = async (location: string) => {
         setLoadingPrice(true);
         try {
-            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`);
+            const productIds = Array.from(new Set(items.map((it) => it.id).filter(Boolean)));
+            const productsQuery = productIds.length > 0 ? `&products=${encodeURIComponent(productIds.join(","))}` : "";
+            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}${productsQuery}`);
             const data = await response.json();
 
             if (data.success) {
@@ -468,7 +470,7 @@ export default function CheckoutPage() {
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-zinc-600">Delivery Fee</span>
                                     <span className="font-semibold text-zinc-900">
-                                        {typeof estimatedShipping === 'number' && estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : 'FREE'}
+                                        {typeof estimatedShipping === 'number' && estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : '##'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">

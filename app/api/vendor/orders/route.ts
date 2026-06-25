@@ -177,3 +177,84 @@ export async function PATCH(request: Request) {
         );
     }
 }
+
+export async function DELETE(request: Request) {
+    const authResult = await requireVendorAuthDetailed(request);
+    if (!authResult.ok) {
+        return NextResponse.json(
+            { success: false, error: authResult.error, code: authResult.code },
+            { status: authResult.status }
+        );
+    }
+    const auth = authResult.auth;
+
+    try {
+        const body = await request.json();
+        const { orderId, productId, colorId, size } = body;
+
+        if (!orderId || !productId) {
+            return NextResponse.json(
+                { success: false, error: "Missing required fields" },
+                { status: 400 }
+            );
+        }
+
+        const order = await getOrder(orderId);
+        if (!order) {
+            return NextResponse.json(
+                { success: false, error: "Order not found" },
+                { status: 404 }
+            );
+        }
+
+        // Verify the product belongs to this vendor
+        const products = await getProductsByVendorId(auth.vendorId);
+        const vendorProductIds = new Set(products.map((p) => p.id));
+        
+        let belongsToVendor = vendorProductIds.has(String(productId));
+        
+        // Secondary check via item's own vendorId
+        const matchItem = order.items.find((item: any) => {
+            const id = item.productId || item.id;
+            return id === productId && 
+                (!colorId || item.colorId === colorId) && 
+                (!size || item.size === size);
+        });
+
+        if (matchItem && matchItem.vendorId === auth.vendorId) {
+            belongsToVendor = true;
+        }
+
+        if (!belongsToVendor || !matchItem) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized: Product does not belong to vendor or is not in order" },
+                { status: 403 }
+            );
+        }
+
+        // Remove item from order
+        const updatedItems = order.items.filter((item: any) => {
+            const id = item.productId || item.id;
+            const matches = id === productId && 
+                (!colorId || item.colorId === colorId) && 
+                (!size || item.size === size);
+            
+            return !matches;
+        });
+
+        // Save back to Firestore
+        const orderRef = doc(db, "orders", orderId);
+        await updateDoc(orderRef, {
+            items: updatedItems,
+            updatedAt: new Date().toISOString()
+        });
+
+        return NextResponse.json({ success: true, message: "Item deleted from order" });
+    } catch (error: any) {
+        console.error("Vendor orders DELETE error:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Failed to delete item" },
+            { status: 500 }
+        );
+    }
+}

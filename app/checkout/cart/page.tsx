@@ -147,7 +147,7 @@ export default function CheckoutCartPage() {
 
                                 <div className="flex justify-between">
                                     <span className="text-zinc-600">Shipping</span>
-                                    <span className="font-medium text-green-600">FREE</span>
+                                    <span className="font-medium text-green-600">##</span>
                                 </div>
 
                                 <div className="border-t border-zinc-200 pt-3">

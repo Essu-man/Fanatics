@@ -36,6 +36,7 @@ export async function GET(request: Request) {
             momoNumber: vendor.momoNumber ?? null,
             paystackBankCode: vendor.paystackBankCode ?? null,
             paystackRecipientCode: vendor.paystackRecipientCode ?? null,
+            deliveryEnabled: vendor.deliveryEnabled !== false,
         },
         account: profile
             ? {
@@ -74,11 +75,16 @@ export async function PATCH(request: Request) {
             momoNetwork,
             momoNumber,
             bankCode,
+            deliveryEnabled,
         } = body;
 
         const currentVendor = await adminGetVendor(authResult.auth.vendorId);
 
         const updates: Record<string, any> = {};
+
+        if (deliveryEnabled !== undefined) {
+            updates.deliveryEnabled = Boolean(deliveryEnabled);
+        }
 
         if (typeof businessName === "string" && businessName.trim()) {
             updates.businessName = businessName.trim();
@@ -286,6 +292,7 @@ export async function PATCH(request: Request) {
                       momoNumber: vendor.momoNumber ?? null,
                       paystackBankCode: vendor.paystackBankCode ?? null,
                       paystackRecipientCode: vendor.paystackRecipientCode ?? null,
+                      deliveryEnabled: vendor.deliveryEnabled !== false,
                   }
                 : null,
             storefrontUrl: vendor ? `/store/${vendor.slug}` : null,

@@ -31,6 +31,7 @@ interface Vendor {
     momoNetwork: string | null;
     momoNumber: string | null;
     commissionRate: number;
+    adminProfit?: number;
 }
 
 interface PayoutRequest {
@@ -58,6 +59,7 @@ export default function AdminPayoutsPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [requests, setRequests] = useState<PayoutRequest[]>([]);
     const [history, setHistory] = useState<PayoutHistory[]>([]);
+    const [overallAdminProfit, setOverallAdminProfit] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<"requests" | "balances" | "history">("requests");
@@ -112,12 +114,13 @@ export default function AdminPayoutsPage() {
     };
 
     const handleExportBalances = () => {
-        const headers = ["Vendor Name", "Pending Balance (GHS)", "Available Balance (GHS)", "Commission Rate (%)", "Payout Method", "Account Details"];
+        const headers = ["Vendor Name", "Pending Balance (GHS)", "Available Balance (GHS)", "Commission Rate (%)", "Admin Profit (GHS)", "Payout Method", "Account Details"];
         const rows = vendors.map(v => [
             v.businessName,
             v.balancePending.toFixed(2),
             v.balanceAvailable.toFixed(2),
             `${v.commissionRate}%`,
+            (v.adminProfit || 0).toFixed(2),
             v.payoutMethod || "Not set",
             v.payoutMethod === "Bank Transfer"
                 ? `${v.bankName} - ${v.accountNumber}`
@@ -175,6 +178,7 @@ export default function AdminPayoutsPage() {
                 setVendors(data.vendors || []);
                 setRequests(data.payoutRequests || []);
                 setHistory(data.payoutsHistory || []);
+                setOverallAdminProfit(data.overallAdminProfit || 0);
             } else {
                 throw new Error(data.error || "Failed to load payouts data");
             }
@@ -302,7 +306,20 @@ export default function AdminPayoutsPage() {
             </div>
 
             {/* Admin Stats Summary */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-3 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Overall Platform Profit</span>
+                        <div className="rounded-xl bg-purple-500 p-2 text-white">
+                            <DollarSign className="h-4 w-4" />
+                        </div>
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-zinc-950">GH₵ {overallAdminProfit.toFixed(2)}</h2>
+                        <p className="text-[10px] text-zinc-400 mt-1 font-semibold">Total commissions & fees earned</p>
+                    </div>
+                </div>
+
                 <div className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-3 shadow-sm">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Available liability</span>
@@ -469,6 +486,7 @@ export default function AdminPayoutsPage() {
                                 <tr className="bg-zinc-50/50 border-b border-zinc-100">
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Seller Store</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Commission Rate</th>
+                                    <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Platform Profit</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Pending Balance</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Available Balance</th>
                                     <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-400">Default Account</th>
@@ -527,8 +545,9 @@ export default function AdminPayoutsPage() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-amber-700 font-mono">GH₵ {v.balancePending.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-emerald-700 font-mono">GH₵ {v.balanceAvailable.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-purple-600 font-black">GH₵ {(v.adminProfit || 0).toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-amber-600 font-black">GH₵ {v.balancePending.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-emerald-600 font-black">GH₵ {v.balanceAvailable.toFixed(2)}</td>
                                         <td className="px-6 py-4">
                                             {v.payoutMethod ? (
                                                 <div className="text-xs text-zinc-500 font-medium">

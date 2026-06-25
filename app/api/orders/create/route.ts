@@ -50,20 +50,92 @@ export async function POST(request: NextRequest) {
                 if (existingOrderData.status === "awaiting_payment" && requestedStatus !== "awaiting_payment") {
                     console.log("Updating awaiting_payment order to submitted for reference:", paystackReference);
 
+                    const targetStatus = requestedStatus || "submitted";
+                    const newHistoryEntry = {
+                        status: targetStatus,
+                        timestamp: new Date().toISOString(),
+                        note: "Payment confirmed, order submitted",
+                    };
+
                     const updateData: any = {
-                        status: requestedStatus || "submitted",
+                        status: targetStatus,
                         payment: payment || { method: "paystack", reference: paystackReference },
                         updatedAt: new Date().toISOString(),
+                        statusHistory: [...(existingOrderData.statusHistory || []), newHistoryEntry],
                     };
 
                     if (userId) {
                         updateData.userId = userId;
                     }
 
+                    // Check/calculate vendor delivery fees
+                    let vendorDeliveryFees = existingOrderData.vendorDeliveryFees;
+                    if (!vendorDeliveryFees) {
+                        vendorDeliveryFees = await calculateVendorDeliveryFees(
+                            existingOrderData.shipping?.town || shipping?.town || "",
+                            existingOrderData.items || []
+                        );
+                        updateData.vendorDeliveryFees = vendorDeliveryFees;
+                        existingOrderData.vendorDeliveryFees = vendorDeliveryFees;
+                    }
+
                     await updateDoc(doc(db, "orders", existingOrderId), updateData);
 
-                    // Proceed to send email since it's now confirmed
-                    // (The rest of the logic below will handle the response)
+                    // Credit vendor balances if transitioning to submitted
+                    if (targetStatus === "submitted") {
+                        try {
+                            await creditPendingBalanceForOrder({ 
+                                id: existingOrderId, 
+                                items: existingOrderData.items,
+                                vendorDeliveryFees: vendorDeliveryFees
+                            });
+                        } catch (ledgerError) {
+                            console.error("Failed to credit pending balance on order update:", ledgerError);
+                        }
+                    }
+
+                    // Generate order page link (for button) and tracking link
+                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.cediman.com";
+                    const orderPageLink = `${appUrl}/orders/${existingOrderId}`;
+                    const trackingLink = `${appUrl}/track/${existingOrderId}`;
+
+                    // Send email notification (non-blocking)
+                    const emailRecipient = guestEmail || existingOrderData.guestEmail || existingOrderData.shipping?.email;
+                    if (emailRecipient && targetStatus !== "awaiting_payment") {
+                        try {
+                            const emailHtml = getOrderConfirmationEmail(
+                                customerName || existingOrderData.customerName || existingOrderData.shipping?.firstName || "Customer",
+                                existingOrderId,
+                                existingOrderData.total,
+                                orderPageLink,
+                                existingOrderData.items,
+                                existingOrderData.shippingCost,
+                                new Date().toISOString(),
+                                existingOrderData.subtotal
+                            );
+
+                            const emailResult = await sendEmail(
+                                emailRecipient,
+                                `Order Confirmation - ${existingOrderId}`,
+                                emailHtml
+                            );
+
+                            if (emailResult.success) {
+                                console.log("Order confirmation email sent successfully for updated order");
+                            } else {
+                                console.error("Failed to send email notification for updated order:", emailResult.error);
+                            }
+                        } catch (emailError) {
+                            console.error("Failed to send email notification for updated order:", emailError);
+                        }
+                    }
+
+                    return NextResponse.json({
+                        success: true,
+                        orderId: existingOrderId,
+                        trackingLink,
+                        message: "Order payment confirmed and processed",
+                    });
                 } else {
                     console.log("Order already exists with reference:", paystackReference, "Order ID:", existingOrderId);
                     return NextResponse.json({
@@ -147,6 +219,12 @@ export async function POST(request: NextRequest) {
             })
         );
 
+        // Calculate vendor delivery fees
+        const vendorDeliveryFees = await calculateVendorDeliveryFees(
+            shipping?.town || "",
+            enrichedItems
+        );
+
         // Create order in Firestore
         const orderData = {
             userId: userId || null,
@@ -161,6 +239,7 @@ export async function POST(request: NextRequest) {
             tax: Number(tax) || 0,
             total: Number(total) || 0,
             paystackReference: paystackReference || null,
+            vendorDeliveryFees,
         };
 
         console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
@@ -222,7 +301,11 @@ export async function POST(request: NextRequest) {
         // Credit vendor balances if order is created in submitted status
         if (orderData.status === "submitted") {
             try {
-                await creditPendingBalanceForOrder({ id: orderId, items: enrichedItems });
+                await creditPendingBalanceForOrder({ 
+                    id: orderId, 
+                    items: enrichedItems,
+                    vendorDeliveryFees
+                });
             } catch (ledgerError) {
                 console.error("Failed to credit pending balance on order creation:", ledgerError);
             }
@@ -279,4 +362,39 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+async function calculateVendorDeliveryFees(town: string, items: any[]) {
+    const vendorFees: Record<string, number> = {};
+    if (!town) return vendorFees;
+
+    try {
+        // Query the base location price from 'delivery_prices'
+        const q = query(
+            collection(db, "delivery_prices"),
+            where("location", "==", town.trim())
+        );
+        const querySnapshot = await getDocs(q);
+        let basePrice = 0;
+        if (!querySnapshot.empty) {
+            basePrice = querySnapshot.docs[0].data().price || 0;
+        }
+
+        const uniqueVendorIds = Array.from(new Set(items.map(it => it.vendorId).filter(Boolean)));
+        for (const vendorId of uniqueVendorIds) {
+            try {
+                const vendor = await getVendor(vendorId);
+                // default deliveryEnabled to true if not explicitly false
+                if (vendor && vendor.deliveryEnabled !== false) {
+                    vendorFees[vendorId] = basePrice;
+                }
+            } catch (e) {
+                console.error(`Failed to get vendor ${vendorId} for delivery fee calculation:`, e);
+                vendorFees[vendorId] = basePrice; // default to basePrice on error
+            }
+        }
+    } catch (e) {
+        console.error("Failed to calculate vendor delivery fees:", e);
+    }
+    return vendorFees;
 }

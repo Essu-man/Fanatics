@@ -189,6 +189,7 @@ export async function adminUpdateVendor(
         if (data.commissionRate !== undefined) updatePayload.commissionRate = data.commissionRate;
         if (data.paystackRecipientCode !== undefined) updatePayload.paystackRecipientCode = data.paystackRecipientCode;
         if (data.paystackBankCode !== undefined) updatePayload.paystackBankCode = data.paystackBankCode;
+        if (data.deliveryEnabled !== undefined) updatePayload.deliveryEnabled = data.deliveryEnabled;
 
         await getAdminDb().collection("vendors").doc(vendorId).update(updatePayload);
         return { success: true };

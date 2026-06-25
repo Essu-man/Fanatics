@@ -201,10 +201,12 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
                     sessionStorage.removeItem("deliveryPrice");
+                    sessionStorage.removeItem("pendingOrderId");
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
                     localStorage.removeItem("deliveryPrice");
+                    localStorage.removeItem("pendingOrderId");
 
                     setTimeout(() => {
                         router.push(`/checkout/success?orderId=${checkData.orderId}`);
@@ -212,8 +214,10 @@ function PaymentCallbackContent() {
                     return;
                 }
 
-                // Generate order ID
-                const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
+                // Use existing order ID if it was pre-created, otherwise generate a new one
+                const orderId = (checkData.exists && checkData.orderId)
+                    ? checkData.orderId
+                    : (sessionStorage.getItem("pendingOrderId") || localStorage.getItem("pendingOrderId") || `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`);
 
                 // Get user ID for order - try multiple sources
                 let userIdForOrder: string | null = null;
@@ -289,11 +293,13 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("paymentReference");
                     sessionStorage.removeItem("paymentCallback");
                     sessionStorage.removeItem("deliveryPrice");
+                    sessionStorage.removeItem("pendingOrderId");
                     // Also clear localStorage
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
                     localStorage.removeItem("deliveryPrice");
+                    localStorage.removeItem("pendingOrderId");
 
                     // Redirect to success page
                     setTimeout(() => {

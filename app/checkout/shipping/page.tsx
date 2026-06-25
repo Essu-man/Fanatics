@@ -101,12 +101,12 @@ export default function CheckoutShippingPage() {
         }
     }, [user, items, router]);
 
-    // Fetch delivery price when town changes
+    // Fetch delivery price when town or items change
     useEffect(() => {
         if (formData.town) {
             fetchDeliveryPrice(formData.town);
         }
-    }, [formData.town]);
+    }, [formData.town, items]);
 
     // Update towns when region changes
     useEffect(() => {
@@ -125,7 +125,9 @@ export default function CheckoutShippingPage() {
     const fetchDeliveryPrice = async (location: string) => {
         setLoadingPrice(true);
         try {
-            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}`);
+            const productIds = Array.from(new Set(items.map((it) => it.id).filter(Boolean)));
+            const productsQuery = productIds.length > 0 ? `&products=${encodeURIComponent(productIds.join(","))}` : "";
+            const response = await fetch(`/api/delivery-prices?location=${encodeURIComponent(location)}${productsQuery}`);
             const data = await response.json();
 
             if (data.success) {

@@ -156,7 +156,7 @@ export default function CheckoutPaymentPage() {
                                 <div className="flex justify-between">
                                     <span className="text-zinc-600">Delivery Fee</span>
                                     <span className="font-medium text-zinc-900">
-                                        {shipping > 0 ? `GH₵ ${shipping.toFixed(2)}` : 'FREE'}
+                                        {shipping > 0 ? `GH₵ ${shipping.toFixed(2)}` : '##'}
                                     </span>
                                 </div>
 

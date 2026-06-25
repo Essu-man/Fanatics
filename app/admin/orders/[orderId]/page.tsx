@@ -365,7 +365,7 @@ export default function AdminOrderDetailPage() {
                                 <span className="text-zinc-600">Shipping</span>
                                 <span className="font-semibold text-zinc-900">
                                     {(order.shippingCost || order.shipping_cost || 0) === 0 ? (
-                                        <span className="text-green-600">FREE</span>
+                                        <span className="text-green-600">##</span>
                                     ) : (
                                         `₵${(order.shippingCost || order.shipping_cost || 0).toFixed(2)}`
                                     )}

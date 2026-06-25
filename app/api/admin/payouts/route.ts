@@ -18,10 +18,51 @@ export async function GET(request: Request) {
 
         // 1. Fetch all vendors
         const vendorsSnap = await db.collection("vendors").get();
-        const vendors = vendorsSnap.docs.map((doc) => {
-            const data = doc.data();
+        const rawVendors: any[] = vendorsSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // 1.5 Calculate admin profit from orders
+        const vendorProfits: Record<string, number> = {};
+        let overallAdminProfit = 0;
+        
+        try {
+            // Using a simple get() for all orders to avoid complex index requirements for not-in
+            const ordersSnap = await db.collection("orders").get();
+                
+            ordersSnap.forEach((doc) => {
+                const order = doc.data();
+                if (order.status !== "cancelled" && order.status !== "awaiting_payment") {
+                    if (order.items && Array.isArray(order.items)) {
+                        for (const item of order.items) {
+                            if (item.vendorId) {
+                                const price = Number(item.price) || 0;
+                                const qty = Number(item.quantity) || 1;
+                                const itemSubtotal = price * qty;
+                                
+                                // Find vendor's commission rate
+                                const vendorData = rawVendors.find(v => v.id === item.vendorId);
+                                const commissionRate = vendorData?.commissionRate !== undefined ? Number(vendorData.commissionRate) : 10;
+                                
+                                const platformFee = item.platformFee !== undefined 
+                                    ? Number(item.platformFee) 
+                                    : (itemSubtotal * (commissionRate / 100));
+                                    
+                                vendorProfits[item.vendorId] = (vendorProfits[item.vendorId] || 0) + platformFee;
+                                overallAdminProfit += platformFee;
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Error calculating profits:", e);
+        }
+
+        const vendors = rawVendors.map((data: any) => {
             return {
-                id: doc.id,
+                id: data.id,
                 businessName: data.businessName,
                 slug: data.slug,
                 status: data.status,
@@ -35,6 +76,7 @@ export async function GET(request: Request) {
                 momoNetwork: data.momoNetwork ?? null,
                 momoNumber: data.momoNumber ?? null,
                 commissionRate: data.commissionRate ?? 10,
+                adminProfit: vendorProfits[data.id] || 0,
             };
         });
 
@@ -85,6 +127,7 @@ export async function GET(request: Request) {
             vendors,
             payoutRequests,
             payoutsHistory,
+            overallAdminProfit,
         });
     } catch (error: any) {
         console.error("GET /api/admin/payouts error:", error);
