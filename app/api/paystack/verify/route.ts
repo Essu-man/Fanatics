@@ -42,14 +42,15 @@ export async function POST(request: NextRequest) {
             const data = await response.json();
 
             if (!response.ok) {
+                console.error("Paystack API verification error:", data);
                 return NextResponse.json(
-                    { error: "Payment verification failed", details: data },
+                    { error: data.message || `Payment verification failed (${response.status})`, details: data },
                     { status: response.status }
                 );
             }
 
             // Check if payment was successful
-            if (data.status && data.data.status === "success") {
+            if (data.status && data.data?.status === "success") {
                 return NextResponse.json({
                     success: true,
                     data: {
@@ -63,11 +64,12 @@ export async function POST(request: NextRequest) {
                     },
                 });
             } else {
+                const failureReason = data.data?.gateway_response || data.message || `Payment status: ${data.data?.status || 'failed'}`;
                 return NextResponse.json(
                     {
                         success: false,
-                        error: "Payment not successful",
-                        status: data.data.status,
+                        error: failureReason,
+                        status: data.data?.status || "failed",
                     },
                     { status: 400 }
                 );

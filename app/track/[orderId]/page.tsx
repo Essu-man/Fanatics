@@ -213,10 +213,12 @@ export default function OrderTrackingPage() {
                             </div>
                         )}
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-600">Shipping</span>
+                            <span className="text-zinc-600">
+                                {(order.fulfillmentMethod === "pickup" || order.shipping?.fulfillmentMethod === "pickup") ? "Pickup Fee" : "Shipping"}
+                            </span>
                             <span className="font-semibold text-zinc-900">
                                 {order.shippingCost === 0 ? (
-                                    <span className="text-green-600">##</span>
+                                    <span className="text-emerald-600 font-bold">FREE (GH₵ 0.00)</span>
                                 ) : (
                                     `₵${order.shippingCost.toFixed(2)}`
                                 )}

@@ -26,6 +26,8 @@ interface Order {
     id: string;
     orderDate: string;
     status: string;
+    guestPhone?: string;
+    fulfillmentMethod?: string;
     shipping: {
         firstName: string;
         lastName: string;
@@ -35,6 +37,7 @@ interface Order {
         town: string;
         landmark: string;
         digitalAddress: string;
+        fulfillmentMethod?: string;
     };
     items: OrderItem[];
     subtotal: number;
@@ -441,16 +444,29 @@ export default function VendorOrdersPage() {
 
                                             {/* Delivery */}
                                             <td className="px-6 py-4 align-top">
-                                                <div className="text-sm font-bold text-zinc-900">
-                                                    {order.shipping.town}, {order.shipping.region}
-                                                </div>
-                                                <div className="text-xs font-medium text-zinc-500 mt-0.5">
-                                                    {order.shipping.phone}
-                                                </div>
-                                                {order.shipping.landmark && (
-                                                    <div className="text-xs font-medium text-zinc-400 mt-0.5 truncate max-w-[200px]">
-                                                        Landmark: {order.shipping.landmark}
+                                                {(order.shipping?.fulfillmentMethod === "pickup" || (order as any).fulfillmentMethod === "pickup") ? (
+                                                    <div>
+                                                        <span className="inline-block rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 mb-1">
+                                                            🏬 Store Pickup (FREE)
+                                                        </span>
+                                                        <div className="text-xs font-medium text-zinc-600">
+                                                            {order.shipping?.phone || order.guestPhone || "No Phone"}
+                                                        </div>
                                                     </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="text-sm font-bold text-zinc-900">
+                                                            {order.shipping?.town || "Ghana"}, {order.shipping?.region || ""}
+                                                        </div>
+                                                        <div className="text-xs font-medium text-zinc-500 mt-0.5">
+                                                            {order.shipping?.phone}
+                                                        </div>
+                                                        {order.shipping?.landmark && (
+                                                            <div className="text-xs font-medium text-zinc-400 mt-0.5 truncate max-w-[200px]">
+                                                                Landmark: {order.shipping.landmark}
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </td>
 

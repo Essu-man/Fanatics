@@ -53,8 +53,9 @@ export default function CheckoutPaymentPage() {
         return null; // Will redirect
     }
 
+    const isPickup = shippingInfo.fulfillmentMethod === "pickup";
     const subtotal = getCartTotal();
-    const shipping = deliveryPrice;
+    const shipping = isPickup ? 0 : deliveryPrice;
     const total = subtotal + shipping;
 
     return (
@@ -85,19 +86,31 @@ export default function CheckoutPaymentPage() {
                         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <MapPin className="h-5 w-5 text-zinc-600" />
-                                <h2 className="text-lg font-semibold text-zinc-900">Shipping Address</h2>
+                                <h2 className="text-lg font-semibold text-zinc-900">
+                                    {isPickup ? "Contact Details for Pickup" : "Shipping Address"}
+                                </h2>
                             </div>
                             <div className="text-sm text-zinc-600">
                                 <p className="font-medium text-zinc-900">
                                     {shippingInfo.firstName} {shippingInfo.lastName}
                                 </p>
-                                <p>{shippingInfo.address}</p>
-                                {shippingInfo.landmark && <p>Landmark: {shippingInfo.landmark}</p>}
-                                <p>
-                                    {shippingInfo.town}, {shippingInfo.city}
-                                </p>
-                                <p>{shippingInfo.region}</p>
-                                {shippingInfo.digitalAddress && <p>Digital Address: {shippingInfo.digitalAddress}</p>}
+                                {isPickup ? (
+                                    <div className="mt-2 rounded-md bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-medium">
+                                        Store Pickup Selected — FREE (GH₵ 0.00). We will contact you at {shippingInfo.phone} when items are ready.
+                                    </div>
+                                ) : (
+                                    <>
+                                        {shippingInfo.address && <p>{shippingInfo.address}</p>}
+                                        {shippingInfo.landmark && <p>Landmark: {shippingInfo.landmark}</p>}
+                                        {shippingInfo.town && (
+                                            <p>
+                                                {shippingInfo.town}{shippingInfo.city ? `, ${shippingInfo.city}` : ''}
+                                            </p>
+                                        )}
+                                        {shippingInfo.region && <p>{shippingInfo.region}</p>}
+                                        {shippingInfo.digitalAddress && <p>Digital Address: {shippingInfo.digitalAddress}</p>}
+                                    </>
+                                )}
                                 <p className="mt-2">{shippingInfo.email}</p>
                                 <p>{shippingInfo.phone}</p>
                             </div>
@@ -154,9 +167,17 @@ export default function CheckoutPaymentPage() {
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-zinc-600">Delivery Fee</span>
+                                    <span className="text-zinc-600">
+                                        {isPickup ? "Pickup Fee" : "Delivery Fee"}
+                                    </span>
                                     <span className="font-medium text-zinc-900">
-                                        {shipping > 0 ? `GH₵ ${shipping.toFixed(2)}` : '##'}
+                                        {isPickup ? (
+                                            <span className="text-emerald-600 font-bold">FREE (GH₵ 0.00)</span>
+                                        ) : shipping > 0 ? (
+                                            `GH₵ ${shipping.toFixed(2)}`
+                                        ) : (
+                                            'GH₵ 0.00'
+                                        )}
                                     </span>
                                 </div>
 
@@ -174,6 +195,10 @@ export default function CheckoutPaymentPage() {
                                     amount={total}
                                     onSuccess={() => { }}
                                     metadata={{
+                                        customerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+                                        phone: shippingInfo.phone,
+                                        shipping: JSON.stringify(shippingInfo),
+                                        items: JSON.stringify(items),
                                         custom_fields: [
                                             {
                                                 display_name: "Customer Name",

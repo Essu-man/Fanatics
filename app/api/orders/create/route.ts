@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
             total,
             paystackReference,
             status: requestedStatus,
+            fulfillmentMethod: rawFulfillmentMethod,
         } = body;
+
+        const fulfillmentMethod = (rawFulfillmentMethod || shipping?.fulfillmentMethod || "delivery") as "delivery" | "pickup";
 
         // Check if order with this paystack reference already exists
         if (paystackReference) {
@@ -219,11 +222,15 @@ export async function POST(request: NextRequest) {
             })
         );
 
-        // Calculate vendor delivery fees
-        const vendorDeliveryFees = await calculateVendorDeliveryFees(
-            shipping?.town || "",
-            enrichedItems
-        );
+        // Calculate vendor delivery fees (free for pickup)
+        const vendorDeliveryFees = fulfillmentMethod === "pickup"
+            ? {}
+            : await calculateVendorDeliveryFees(
+                shipping?.town || "",
+                enrichedItems
+            );
+
+        const effectiveShippingCost = fulfillmentMethod === "pickup" ? 0 : (Number(shippingCost) || 0);
 
         // Create order in Firestore
         const orderData = {
@@ -235,10 +242,11 @@ export async function POST(request: NextRequest) {
             shipping: shipping || {},
             payment: payment || { method: "paystack", reference: paystackReference },
             subtotal: Number(subtotal) || 0,
-            shippingCost: Number(shippingCost) || 0,
+            shippingCost: effectiveShippingCost,
             tax: Number(tax) || 0,
             total: Number(total) || 0,
             paystackReference: paystackReference || null,
+            fulfillmentMethod,
             vendorDeliveryFees,
         };
 

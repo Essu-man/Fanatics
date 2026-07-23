@@ -123,6 +123,7 @@ export interface Order {
     assignedDeliveryPerson?: string;
     deliveryProof?: string;
     statusHistory: any[];
+    fulfillmentMethod?: "delivery" | "pickup";
     deliveryPersonInfo?: {
         name: string;
         phone: string;

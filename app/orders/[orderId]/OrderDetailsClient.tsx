@@ -48,6 +48,10 @@ interface Order {
     orderDate: string;
     status: OrderStatus;
     items: OrderItem[];
+    customerName?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    fulfillmentMethod?: string;
     shipping: {
         firstName: string;
         lastName: string;
@@ -58,7 +62,9 @@ interface Order {
         region: string;
         country: string;
         area?: string;
+        town?: string;
         landmark?: string;
+        fulfillmentMethod?: string;
     };
     subtotal: number;
     shippingCost: number;
@@ -358,8 +364,16 @@ export default function OrderDetailsPage() {
                                     </div>
                                 )}
                                 <div className="flex justify-between">
-                                    <span className="text-zinc-600">Delivery</span>
-                                    <span className="font-semibold text-zinc-900">₵{order.shippingCost.toFixed(2)}</span>
+                                    <span className="text-zinc-600">
+                                        {(order.fulfillmentMethod === "pickup" || order.shipping?.fulfillmentMethod === "pickup") ? "Pickup Fee" : "Delivery"}
+                                    </span>
+                                    <span className="font-semibold text-zinc-900">
+                                        {(order.fulfillmentMethod === "pickup" || order.shipping?.fulfillmentMethod === "pickup" || order.shippingCost === 0) ? (
+                                            <span className="text-emerald-600 font-bold">FREE (GH₵ 0.00)</span>
+                                        ) : (
+                                            `₵${order.shippingCost.toFixed(2)}`
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="border-t border-zinc-200 pt-3 flex justify-between">
                                     <span className="font-bold text-zinc-900">Total</span>
@@ -368,26 +382,44 @@ export default function OrderDetailsPage() {
                             </div>
                         </div>
 
-                        {/* Shipping Address */}
+                        {/* Shipping Address / Pickup Info */}
                         <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200">
                             <div className="flex items-center gap-2 mb-4">
-                                <MapPin className="h-5 w-5 text-[var(--brand-red)]" />
-                                <h2 className="text-lg font-bold text-zinc-900">Delivery Address</h2>
+                                {(order.fulfillmentMethod === "pickup" || order.shipping?.fulfillmentMethod === "pickup") ? (
+                                    <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                                        <span>🏬</span> Pickup & Contact Info
+                                    </h2>
+                                ) : (
+                                    <>
+                                        <MapPin className="h-5 w-5 text-[var(--brand-red)]" />
+                                        <h2 className="text-lg font-bold text-zinc-900">Delivery Address</h2>
+                                    </>
+                                )}
                             </div>
-                            {/* Clean Delivery Address with Area/City and Landmark, formatted as requested */}
                             {(() => {
-                                const addr = order.shipping;
+                                const addr = order.shipping || {};
+                                const isPickup = order.fulfillmentMethod === "pickup" || addr.fulfillmentMethod === "pickup";
                                 return (
-                                    <div className="space-y-1 text-sm text-zinc-700">
-                                        <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim()}</p>
-                                        {/* Only show Area/City once, prefer addr.area or deliveryLocation */}
-                                        {(addr.area || deliveryLocation || addr.city) && (
-                                            <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation || addr.city} {deliveryPrice !== null && (addr.area || deliveryLocation || addr.city) && <span className="text-xs text-zinc-500">(Delivery: ₵{deliveryPrice})</span>}</p>
+                                    <div className="space-y-1.5 text-sm text-zinc-700">
+                                        <p><span className="font-semibold">Name:</span> {`${addr.firstName || ''} ${addr.lastName || ''}`.trim() || order.customerName || 'N/A'}</p>
+                                        <p><span className="font-semibold">Phone:</span> {addr.phone || order.guestPhone || 'N/A'}</p>
+                                        <p><span className="font-semibold">Email:</span> {addr.email || order.guestEmail || 'N/A'}</p>
+
+                                        {isPickup ? (
+                                            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-medium">
+                                                🏬 <strong>Store Pickup Selected</strong><br />
+                                                No shipping needed. Customer will be notified when items are ready for pickup.
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {(addr.area || deliveryLocation || addr.city || addr.town) && (
+                                                    <p><span className="font-semibold">Area/City:</span> {addr.area || deliveryLocation || addr.city || addr.town}</p>
+                                                )}
+                                                {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
+                                                {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}
+                                                {addr.country && <p><span className="font-semibold">Country:</span> {addr.country}</p>}
+                                            </>
                                         )}
-                                        {addr.landmark && <p><span className="font-semibold">Landmark:</span> {addr.landmark}</p>}
-                                        {addr.region && <p><span className="font-semibold">Region:</span> {addr.region}</p>}
-                                        {addr.country && <p><span className="font-semibold">Country:</span> {addr.country}</p>}
-                                        {addr.phone && <p className="pt-2 text-zinc-600"><span className="font-semibold">Phone Number:</span> {addr.phone}</p>}
                                     </div>
                                 );
                             })()}

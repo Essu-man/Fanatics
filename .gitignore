@@ -42,6 +42,11 @@ serviceAccount.json
 # vercel
 .vercel
 
+# firebase service accounts / keys
+firebase-service-account.json
+serviceAccount.json
+keys/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

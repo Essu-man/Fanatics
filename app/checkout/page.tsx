@@ -9,7 +9,7 @@ import Button from "../components/ui/button";
 import Input from "../components/ui/input";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { Shield, Truck, ArrowLeft } from "lucide-react";
+import { Shield, Truck, ArrowLeft, Store } from "lucide-react";
 import { getRegions, getTownsByRegion, getCuratedAccraTowns } from "../../lib/ghanaLocations";
 import {
     Select,
@@ -31,6 +31,7 @@ export default function CheckoutPage() {
     const { showToast } = useToast();
 
     const [processing, setProcessing] = useState(false);
+    const [fulfillmentMethod, setFulfillmentMethod] = useState<"delivery" | "pickup">("delivery");
     const [regions, setRegions] = useState<string[]>([]);
     const [towns, setTowns] = useState<string[]>([]);
     const [deliveryPrice, setDeliveryPrice] = useState<DeliveryPrice | null>(null);
@@ -55,6 +56,12 @@ export default function CheckoutPage() {
         const accraTowns = getCuratedAccraTowns();
         setTowns(accraTowns);
 
+        // Restore fulfillment method if stored
+        const savedFulfillment = localStorage.getItem("fulfillmentMethod") || sessionStorage.getItem("fulfillmentMethod");
+        if (savedFulfillment === "pickup" || savedFulfillment === "delivery") {
+            setFulfillmentMethod(savedFulfillment as "delivery" | "pickup");
+        }
+
         // Restore shipping data from localStorage if available (for retry scenarios)
         const savedShipping = localStorage.getItem("checkoutShipping");
         if (savedShipping) {
@@ -77,6 +84,13 @@ export default function CheckoutPage() {
             }
         }
     }, []);
+
+    // Save fulfillment method on state change
+    const handleFulfillmentChange = (method: "delivery" | "pickup") => {
+        setFulfillmentMethod(method);
+        localStorage.setItem("fulfillmentMethod", method);
+        sessionStorage.setItem("fulfillmentMethod", method);
+    };
 
     // Keep towns synced if region changes programmatically (region is static in UI)
     useEffect(() => {
@@ -133,7 +147,7 @@ export default function CheckoutPage() {
     }, { count: 0, total: 0 });
 
     const subtotal = itemsSubtotal + customizationDetails.total;
-    const estimatedShipping = typeof deliveryPrice?.price === 'number' ? deliveryPrice.price : 0;
+    const estimatedShipping = fulfillmentMethod === "pickup" ? 0 : (typeof deliveryPrice?.price === 'number' ? deliveryPrice.price : 0);
     const tax = 0; // No tax
     const total = subtotal + estimatedShipping + tax;
 
@@ -142,10 +156,16 @@ export default function CheckoutPage() {
     };
 
     const validateForm = () => {
-        if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone ||
-            !shipping.region || !shipping.town || !shipping.country) {
-            showToast("Please fill in all required shipping details", "error");
+        if (!shipping.firstName || !shipping.lastName || !shipping.email || !shipping.phone) {
+            showToast("Please fill in all required contact details", "error");
             return false;
+        }
+
+        if (fulfillmentMethod === "delivery") {
+            if (!shipping.region || !shipping.town || !shipping.country) {
+                showToast("Please fill in all required shipping details", "error");
+                return false;
+            }
         }
 
         return true;
@@ -164,6 +184,12 @@ export default function CheckoutPage() {
 
         setProcessing(true);
 
+        const shippingPayload = {
+            ...shipping,
+            fulfillmentMethod,
+            town: fulfillmentMethod === "pickup" ? (shipping.town || "Store Pickup") : shipping.town,
+        };
+
         try {
             // Initialize Paystack payment
             const paymentResponse = await fetch("/api/paystack/initialize", {
@@ -175,7 +201,8 @@ export default function CheckoutPage() {
                     metadata: {
                         customerName: `${shipping.firstName} ${shipping.lastName}`,
                         phone: shipping.phone,
-                        shipping: JSON.stringify(shipping), // Store full shipping info as backup
+                        fulfillmentMethod,
+                        shipping: JSON.stringify(shippingPayload), // Store full shipping info as backup
                         custom_fields: [
                             {
                                 display_name: "Customer Name",
@@ -186,6 +213,11 @@ export default function CheckoutPage() {
                                 display_name: "Phone",
                                 variable_name: "phone",
                                 value: shipping.phone,
+                            },
+                            {
+                                display_name: "Fulfillment Method",
+                                variable_name: "fulfillment_method",
+                                value: fulfillmentMethod === "pickup" ? "Store Pickup (Free)" : "Doorstep Delivery",
                             },
                         ],
                     },
@@ -201,8 +233,6 @@ export default function CheckoutPage() {
             }
 
             // Pre-create the order with "awaiting_payment" status
-            // This ensures if the customer pays but network fails during redirect,
-            // we have a record of the order to confirm manually.
             const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
 
             await fetch("/api/orders/create", {
@@ -210,12 +240,13 @@ export default function CheckoutPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     orderId,
-                    userId: null, // We'll update this in callback if they are logged in
+                    userId: null,
                     guestEmail: shipping.email,
                     guestPhone: shipping.phone,
                     customerName: `${shipping.firstName} ${shipping.lastName}`,
                     items: items,
-                    shipping,
+                    shipping: shippingPayload,
+                    fulfillmentMethod,
                     payment: {
                         method: "paystack",
                         reference: paymentData.data.reference,
@@ -229,18 +260,19 @@ export default function CheckoutPage() {
                 }),
             });
 
-            // Store shipping info, cart items, and payment reference for callback page
-            // Use both sessionStorage and localStorage as backup
-            sessionStorage.setItem("checkoutShipping", JSON.stringify(shipping));
+            // Store shipping info, cart items, fulfillment method, and payment reference
+            sessionStorage.setItem("fulfillmentMethod", fulfillmentMethod);
+            sessionStorage.setItem("checkoutShipping", JSON.stringify(shippingPayload));
             sessionStorage.setItem("checkoutItems", JSON.stringify(items));
             sessionStorage.setItem("paymentReference", paymentData.data.reference);
             sessionStorage.setItem("pendingOrderId", orderId);
-            // Also store in localStorage as backup (more persistent across redirects)
-            localStorage.setItem("checkoutShipping", JSON.stringify(shipping));
+
+            localStorage.setItem("fulfillmentMethod", fulfillmentMethod);
+            localStorage.setItem("checkoutShipping", JSON.stringify(shippingPayload));
             localStorage.setItem("checkoutItems", JSON.stringify(items));
             localStorage.setItem("paymentReference", paymentData.data.reference);
             localStorage.setItem("pendingOrderId", orderId);
-            // Store delivery price for restoration
+
             if (deliveryPrice) {
                 localStorage.setItem("deliveryPrice", JSON.stringify(deliveryPrice));
                 sessionStorage.setItem("deliveryPrice", JSON.stringify(deliveryPrice));
@@ -285,11 +317,66 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Shipping Address */}
+                        {/* Fulfillment Method Choice */}
+                        <div className="rounded-lg bg-white p-6 shadow-sm">
+                            <h2 className="mb-4 text-xl font-bold text-zinc-900">How would you like to receive your order?</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleFulfillmentChange("delivery")}
+                                    className={`flex items-start gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                                        fulfillmentMethod === "delivery"
+                                            ? "border-[var(--brand-red)] bg-red-50/20 shadow-sm"
+                                            : "border-zinc-200 hover:border-zinc-300"
+                                    }`}
+                                >
+                                    <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                                        fulfillmentMethod === "delivery" ? "bg-[var(--brand-red)] text-white" : "bg-zinc-100 text-zinc-600"
+                                    }`}>
+                                        <Truck className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-zinc-900">Doorstep Delivery</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Direct delivery to your doorstep anywhere in Greater Accra / Ghana</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleFulfillmentChange("pickup")}
+                                    className={`flex items-start gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                                        fulfillmentMethod === "pickup"
+                                            ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
+                                            : "border-zinc-200 hover:border-zinc-300"
+                                    }`}
+                                >
+                                    <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                                        fulfillmentMethod === "pickup" ? "bg-emerald-600 text-white" : "bg-zinc-100 text-zinc-600"
+                                    }`}>
+                                        <Store className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-zinc-900">Store / Station Pickup</p>
+                                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">FREE</span>
+                                        </div>
+                                        <p className="text-xs text-zinc-500 mt-1">Pick up your order in store with zero delivery fees</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Customer & Delivery Details */}
                         <div className="rounded-lg bg-white p-6 shadow-sm">
                             <div className="mb-6 flex items-center gap-2">
-                                <Truck className="h-5 w-5 text-[var(--brand-red)]" />
-                                <h2 className="text-xl font-bold text-zinc-900">Shipping Address</h2>
+                                {fulfillmentMethod === "pickup" ? (
+                                    <Store className="h-5 w-5 text-emerald-600" />
+                                ) : (
+                                    <Truck className="h-5 w-5 text-[var(--brand-red)]" />
+                                )}
+                                <h2 className="text-xl font-bold text-zinc-900">
+                                    {fulfillmentMethod === "pickup" ? "Contact Details for Pickup" : "Shipping Address"}
+                                </h2>
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
@@ -338,88 +425,109 @@ export default function CheckoutPage() {
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        Region *
-                                    </label>
-                                    <Input
-                                        value={shipping.region}
-                                        disabled
-                                        className="bg-zinc-100 cursor-not-allowed"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        Landmark
-                                    </label>
-                                    <Input
-                                        value={shipping.landmark}
-                                        onChange={(e) => handleShippingChange("landmark", e.target.value)}
-                                        placeholder="Near mall, school, etc."
-                                    />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        City/Area *
-                                    </label>
-                                    <Select
-                                        value={shipping.town}
-                                        onValueChange={(value) => handleShippingChange("town", value)}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select City/Area" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {towns.map((town) => (
-                                                <SelectItem key={town} value={town}>
-                                                    {town}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {deliveryPrice && shipping.town && (
+
+                                {fulfillmentMethod === "pickup" ? (
                                     <div className="sm:col-span-2">
-                                        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                                             <div className="flex items-start gap-3">
-                                                <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
+                                                <Store className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
                                                 <div>
-                                                    <p className="text-sm font-semibold text-green-900">
-                                                        Delivery Fee: GH₵ {typeof deliveryPrice.price === 'number' ? deliveryPrice.price.toFixed(2) : 'N/A'}
+                                                    <p className="text-sm font-semibold text-emerald-900">
+                                                        Store Pickup Selected — FREE (GH₵ 0.00)
                                                     </p>
-                                                    <p className="mt-1 text-xs text-green-700">
-                                                        {deliveryPrice.found
-                                                            ? `Delivery to ${shipping.town}`
-                                                            : 'Standard delivery fee. Actual cost may vary.'}
+                                                    <p className="mt-1 text-xs text-emerald-700">
+                                                        No delivery address is required. We will reach out to you on <strong>{shipping.phone || "your phone number"}</strong> via call/WhatsApp once your items are ready for pickup.
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                                Region *
+                                            </label>
+                                            <Input
+                                                value={shipping.region}
+                                                disabled
+                                                className="bg-zinc-100 cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                                Landmark
+                                            </label>
+                                            <Input
+                                                value={shipping.landmark}
+                                                onChange={(e) => handleShippingChange("landmark", e.target.value)}
+                                                placeholder="Near mall, school, etc."
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                                City/Area *
+                                            </label>
+                                            <Select
+                                                value={shipping.town}
+                                                onValueChange={(value: string) => handleShippingChange("town", value)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select City/Area" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {towns.map((town) => (
+                                                        <SelectItem key={town} value={town}>
+                                                            {town}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        {deliveryPrice && shipping.town && (
+                                            <div className="sm:col-span-2">
+                                                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-green-900">
+                                                                Delivery Fee: GH₵ {typeof deliveryPrice.price === 'number' ? deliveryPrice.price.toFixed(2) : 'N/A'}
+                                                            </p>
+                                                            <p className="mt-1 text-xs text-green-700">
+                                                                {deliveryPrice.found
+                                                                    ? `Delivery to ${shipping.town}`
+                                                                    : 'Standard delivery fee. Actual cost may vary.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                                Digital Address (Ghana Post GPS)
+                                            </label>
+                                            <Input
+                                                value={shipping.digitalAddress}
+                                                onChange={(e) => handleShippingChange("digitalAddress", e.target.value)}
+                                                placeholder="e.g., GA-123-4567"
+                                            />
+                                            <p className="mt-1 text-xs text-zinc-500">Optional but helps with faster delivery</p>
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium text-zinc-700">
+                                                Country *
+                                            </label>
+                                            <Input
+                                                value={shipping.country}
+                                                disabled
+                                                className="bg-zinc-100 cursor-not-allowed"
+                                            />
+                                        </div>
+                                    </>
                                 )}
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        Digital Address (Ghana Post GPS)
-                                    </label>
-                                    <Input
-                                        value={shipping.digitalAddress}
-                                        onChange={(e) => handleShippingChange("digitalAddress", e.target.value)}
-                                        placeholder="e.g., GA-123-4567"
-                                    />
-                                    <p className="mt-1 text-xs text-zinc-500">Optional but helps with faster delivery</p>
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                                        Country *
-                                    </label>
-                                    <Input
-                                        value={shipping.country}
-                                        disabled
-                                        className="bg-zinc-100 cursor-not-allowed"
-                                    />
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -468,9 +576,17 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-600">Delivery Fee</span>
+                                    <span className="text-zinc-600">
+                                        {fulfillmentMethod === "pickup" ? "Pickup Fee" : "Delivery Fee"}
+                                    </span>
                                     <span className="font-semibold text-zinc-900">
-                                        {typeof estimatedShipping === 'number' && estimatedShipping > 0 ? `GH₵ ${estimatedShipping.toFixed(2)}` : '##'}
+                                        {fulfillmentMethod === "pickup" ? (
+                                            <span className="text-emerald-600 font-bold">FREE (GH₵ 0.00)</span>
+                                        ) : typeof estimatedShipping === 'number' && estimatedShipping > 0 ? (
+                                            `GH₵ ${estimatedShipping.toFixed(2)}`
+                                        ) : (
+                                            'GH₵ 0.00'
+                                        )}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-bold text-zinc-900">

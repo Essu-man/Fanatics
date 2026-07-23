@@ -42,12 +42,13 @@ function PaymentCallbackContent() {
         }
 
         const verifyPayment = async () => {
-            // Give a small delay to ensure user state is fully loaded
-            // This helps catch cases where authLoading is false but user isn't set yet
-            await new Promise(resolve => setTimeout(resolve, 300));
             // Mark as processing immediately to prevent duplicate calls
             hasProcessedRef.current = true;
             processedReferenceRef.current = reference;
+
+            // Give a small delay to ensure user state is fully loaded
+            // This helps catch cases where authLoading is false but user isn't set yet
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             try {
                 // Show mobile-friendly message after 10 seconds
@@ -101,7 +102,7 @@ function PaymentCallbackContent() {
 
                 if (!verifyResult.success) {
                     setStatus("error");
-                    setMessage(verifyResult.error || "Payment verification failed. Please contact support.");
+                    setMessage(verifyResult.error || verifyResult.details?.message || "Payment verification failed. Please contact support.");
                     return;
                 }
 
@@ -148,9 +149,19 @@ function PaymentCallbackContent() {
                     return;
                 }
 
-                // Get cart items from sessionStorage or localStorage (fallback if cart context is empty)
+                // Get cart items from sessionStorage or localStorage (fallback if cart context is empty or metadata)
                 const storedItems = sessionStorage.getItem("checkoutItems") || localStorage.getItem("checkoutItems");
-                const orderItems = storedItems ? JSON.parse(storedItems) : items;
+                let orderItems = storedItems ? JSON.parse(storedItems) : items;
+
+                if ((!orderItems || orderItems.length === 0) && verifyResult.data?.metadata?.items) {
+                    try {
+                        orderItems = typeof verifyResult.data.metadata.items === "string"
+                            ? JSON.parse(verifyResult.data.metadata.items)
+                            : verifyResult.data.metadata.items;
+                    } catch (e) {
+                        console.error("Error parsing items from metadata:", e);
+                    }
+                }
 
                 if (!orderItems || orderItems.length === 0) {
                     setStatus("error");
@@ -159,16 +170,20 @@ function PaymentCallbackContent() {
                 }
 
                 const shipping = JSON.parse(shippingInfo);
+                const storedFulfillment = sessionStorage.getItem("fulfillmentMethod") || localStorage.getItem("fulfillmentMethod");
+                const fulfillmentMethod = shipping.fulfillmentMethod || storedFulfillment || "delivery";
 
-                // Get delivery price from storage
-                const storedDeliveryPrice = sessionStorage.getItem("deliveryPrice") || localStorage.getItem("deliveryPrice");
+                // Get delivery price from storage (forced 0 if pickup)
                 let shippingCost = 0;
-                if (storedDeliveryPrice) {
-                    try {
-                        const priceData = JSON.parse(storedDeliveryPrice);
-                        shippingCost = priceData.price || 0;
-                    } catch (e) {
-                        console.error("Error parsing delivery price:", e);
+                if (fulfillmentMethod !== "pickup") {
+                    const storedDeliveryPrice = sessionStorage.getItem("deliveryPrice") || localStorage.getItem("deliveryPrice");
+                    if (storedDeliveryPrice) {
+                        try {
+                            const priceData = JSON.parse(storedDeliveryPrice);
+                            shippingCost = priceData.price || 0;
+                        } catch (e) {
+                            console.error("Error parsing delivery price:", e);
+                        }
                     }
                 }
 
@@ -202,11 +217,13 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("paymentCallback");
                     sessionStorage.removeItem("deliveryPrice");
                     sessionStorage.removeItem("pendingOrderId");
+                    sessionStorage.removeItem("fulfillmentMethod");
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
                     localStorage.removeItem("deliveryPrice");
                     localStorage.removeItem("pendingOrderId");
+                    localStorage.removeItem("fulfillmentMethod");
 
                     setTimeout(() => {
                         router.push(`/checkout/success?orderId=${checkData.orderId}`);
@@ -257,6 +274,7 @@ function PaymentCallbackContent() {
                             customization: item.customization || null,
                         })),
                         shipping,
+                        fulfillmentMethod,
                         payment: {
                             method: "paystack",
                             reference: reference,
@@ -294,12 +312,14 @@ function PaymentCallbackContent() {
                     sessionStorage.removeItem("paymentCallback");
                     sessionStorage.removeItem("deliveryPrice");
                     sessionStorage.removeItem("pendingOrderId");
+                    sessionStorage.removeItem("fulfillmentMethod");
                     // Also clear localStorage
                     localStorage.removeItem("checkoutShipping");
                     localStorage.removeItem("checkoutItems");
                     localStorage.removeItem("paymentReference");
                     localStorage.removeItem("deliveryPrice");
                     localStorage.removeItem("pendingOrderId");
+                    localStorage.removeItem("fulfillmentMethod");
 
                     // Redirect to success page
                     setTimeout(() => {
