@@ -203,6 +203,7 @@ export default function CheckoutPage() {
                         phone: shipping.phone,
                         fulfillmentMethod,
                         shipping: JSON.stringify(shippingPayload), // Store full shipping info as backup
+                        items: JSON.stringify(items),
                         custom_fields: [
                             {
                                 display_name: "Customer Name",
