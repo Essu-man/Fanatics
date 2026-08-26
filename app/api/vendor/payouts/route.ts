@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireVendorAuthDetailed } from "@/lib/api-auth";
 import { getAdminDb } from "@/lib/firestore-admin";
 import { Timestamp } from "firebase-admin/firestore";
-import { sendEmail, getAdminPayoutRequestEmail } from "@/lib/email";
+import { sendEmail, getPayoutRequestBreakdownEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -72,8 +72,11 @@ export async function GET(request: Request) {
         });
         payoutRequests.sort((a, b) => b.createdAtDate.getTime() - a.createdAtDate.getTime());
 
+        const commissionRate = typeof vendor.commissionRate === "number" ? vendor.commissionRate : 10;
+
         return NextResponse.json({
             success: true,
+            commissionRate,
             balances: {
                 available: balanceAvailable,
                 pending: balancePending,
@@ -114,9 +117,17 @@ export async function POST(request: Request) {
         const { amount } = body;
 
         const requestAmount = Number(amount);
+        const MIN_PAYOUT_AMOUNT = 20.00;
         if (isNaN(requestAmount) || requestAmount <= 0) {
             return NextResponse.json(
                 { success: false, error: "Invalid payout request amount" },
+                { status: 400 }
+            );
+        }
+
+        if (requestAmount < MIN_PAYOUT_AMOUNT) {
+            return NextResponse.json(
+                { success: false, error: `Minimum payout request amount is GH₵ ${MIN_PAYOUT_AMOUNT.toFixed(2)}` },
                 { status: 400 }
             );
         }
@@ -189,13 +200,73 @@ export async function POST(request: Request) {
             ? `Bank: ${vendor.bankName}, Branch: ${vendor.branch}, Acc #: ${vendor.accountNumber}, Holder: ${vendor.accountName}`
             : `Network: ${vendor.momoNetwork}, Number: ${vendor.momoNumber}`;
 
-        // Send email notification to Admin (non-blocking)
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+        // Compute complete financial breakdown metrics for notification emails
+        let netSaleTotal = 0;
+        let totalPaidOut = 0;
+        try {
+            const ledgerSnap = await db.collection("vendor_ledger_entries")
+                .where("vendorId", "==", auth.vendorId)
+                .get();
+            ledgerSnap.forEach(doc => {
+                const d = doc.data();
+                if (d.type === "sale" && (d.status === "available" || d.status === "completed" || d.status === "pending")) {
+                    netSaleTotal += Number(d.amount) || 0;
+                }
+                if (d.type === "payout" && d.status === "completed") {
+                    totalPaidOut += Math.abs(Number(d.amount) || 0);
+                }
+            });
+        } catch (e) {
+            console.error("Failed to fetch ledger for payout email breakdown:", e);
+        }
+
+        const commissionRate = typeof vendor.commissionRate === "number" ? vendor.commissionRate : 10;
+        const grossSales = commissionRate < 100 ? netSaleTotal / (1 - commissionRate / 100) : netSaleTotal;
+        const platformFeeAmount = grossSales - netSaleTotal;
+        const remainingAvailableBalance = Math.max(0, balanceAvailable - requestAmount);
+        const balancePending = vendor.balancePending ?? 0;
+
+        const emailParamsBase = {
+            vendorBusinessName: vendor.businessName || "Seller Store",
+            requestId: docRef.id,
+            requestedAmount: requestAmount,
+            remainingAvailableBalance,
+            grossSales: Number(grossSales.toFixed(2)),
+            commissionRate,
+            platformFeeAmount: Number(platformFeeAmount.toFixed(2)),
+            netPayableRevenue: Number(netSaleTotal.toFixed(2)),
+            totalPaidOut: Number(totalPaidOut.toFixed(2)),
+            balancePending,
+            payoutMethod: vendor.payoutMethod,
+            payoutDetailsString: detailsString,
+        };
+
+        // 1. Send detailed breakdown email to Vendor (non-blocking)
+        if (email) {
+            const vendorEmailHtml = getPayoutRequestBreakdownEmail({
+                ...emailParamsBase,
+                recipientType: "vendor",
+                recipientName: contactName,
+            });
+            sendEmail(
+                email,
+                `Payout Request Confirmation - ${vendor.businessName || "Seller Store"}`,
+                vendorEmailHtml
+            ).catch(err => console.error("Failed to send vendor payout breakdown email:", err));
+        }
+
+        // 2. Send detailed breakdown email to Admin (non-blocking)
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || process.env.SMTP_USER;
         if (adminEmail) {
+            const adminEmailHtml = getPayoutRequestBreakdownEmail({
+                ...emailParamsBase,
+                recipientType: "admin",
+                recipientName: "Admin",
+            });
             sendEmail(
                 adminEmail,
-                `New Payout Request - ${vendor.businessName || "Seller Store"}`,
-                getAdminPayoutRequestEmail(vendor.businessName || "Seller Store", requestAmount, vendor.payoutMethod, detailsString)
+                `New Payout Request - ${vendor.businessName || "Seller Store"} (GH₵ ${requestAmount.toFixed(2)})`,
+                adminEmailHtml
             ).catch(err => console.error("Failed to send admin payout request email:", err));
         }
 

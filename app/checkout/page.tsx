@@ -18,6 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../components/ui/select";
+import { calculatePaystackFee } from "@/lib/paystack";
 
 interface DeliveryPrice {
     price: number;
@@ -149,7 +150,10 @@ export default function CheckoutPage() {
     const subtotal = itemsSubtotal + customizationDetails.total;
     const estimatedShipping = fulfillmentMethod === "pickup" ? 0 : (typeof deliveryPrice?.price === 'number' ? deliveryPrice.price : 0);
     const tax = 0; // No tax
-    const total = subtotal + estimatedShipping + tax;
+    const baseTotal = subtotal + estimatedShipping + tax;
+    const paystackFee = calculatePaystackFee(baseTotal);
+    const paystackTotal = baseTotal + paystackFee;
+    const total = baseTotal; // UI display total without Paystack fee
 
     const handleShippingChange = (field: string, value: string) => {
         setShipping((prev) => ({ ...prev, [field]: value }));
@@ -197,7 +201,7 @@ export default function CheckoutPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     email: shipping.email,
-                    amount: total,
+                    amount: paystackTotal,
                     metadata: {
                         customerName: `${shipping.firstName} ${shipping.lastName}`,
                         phone: shipping.phone,
@@ -255,6 +259,7 @@ export default function CheckoutPage() {
                     subtotal,
                     shippingCost: estimatedShipping,
                     tax,
+                    paystackFee,
                     total,
                     paystackReference: paymentData.data.reference,
                     status: "awaiting_payment",

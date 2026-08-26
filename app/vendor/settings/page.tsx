@@ -81,6 +81,7 @@ export default function VendorSettingsPage() {
     const [deliveryEnabled, setDeliveryEnabled] = useState(true);
 
     const [payoutMethod, setPayoutMethod] = useState("Bank Transfer");
+    const [payoutSchedule, setPayoutSchedule] = useState("manual");
     const [bankName, setBankName] = useState("");
     const [branch, setBranch] = useState("");
     const [accountNumber, setAccountNumber] = useState("");
@@ -124,6 +125,7 @@ export default function VendorSettingsPage() {
             setBannerUrl(v.bannerUrl);
             setStatus(v.status);
             setPayoutMethod(v.payoutMethod || "Bank Transfer");
+            setPayoutSchedule((v as any).payoutSchedule || "manual");
             setBankName(v.bankName || "");
             setBranch(v.branch || "");
             setAccountNumber(v.accountNumber || "");
@@ -240,6 +242,7 @@ export default function VendorSettingsPage() {
                     logoUrl,
                     bannerUrl,
                     payoutMethod,
+                    payoutSchedule,
                     bankName: payoutMethod === "Bank Transfer" ? bankName.trim() : "",
                     branch: payoutMethod === "Bank Transfer" ? branch.trim() : "",
                     accountNumber: payoutMethod === "Bank Transfer" ? accountNumber.trim() : "",
@@ -582,6 +585,44 @@ export default function VendorSettingsPage() {
                             />
                             <span className="text-sm font-bold text-zinc-800">Mobile Money (MoMo)</span>
                         </label>
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-100 space-y-2">
+                        <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block">Payout Preference Schedule</label>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <label className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                                payoutSchedule === "manual" ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20" : "border-zinc-200 bg-white"
+                            }`}>
+                                <input
+                                    type="radio"
+                                    name="payoutSchedule"
+                                    value="manual"
+                                    checked={payoutSchedule === "manual"}
+                                    onChange={(e) => setPayoutSchedule(e.target.value)}
+                                    className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <div>
+                                    <div className="text-xs font-bold text-zinc-900">Manual On-Demand</div>
+                                    <div className="text-[11px] text-zinc-500">Withdraw available cleared funds anytime (Min. GH₵ 20.00).</div>
+                                </div>
+                            </label>
+                            <label className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                                payoutSchedule === "weekly" ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20" : "border-zinc-200 bg-white"
+                            }`}>
+                                <input
+                                    type="radio"
+                                    name="payoutSchedule"
+                                    value="weekly"
+                                    checked={payoutSchedule === "weekly"}
+                                    onChange={(e) => setPayoutSchedule(e.target.value)}
+                                    className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <div>
+                                    <div className="text-xs font-bold text-zinc-900">Automated Weekly Payouts</div>
+                                    <div className="text-[11px] text-zinc-500">Automatically disburse cleared balance every Friday afternoon.</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
                     {payoutMethod === "Bank Transfer" ? (

@@ -1,4 +1,11 @@
-// Paystack payment helper functions
+// Paystack fee constants & calculations
+export const PAYSTACK_FEE_PERCENTAGE = 1.95;
+
+export const calculatePaystackFee = (amount: number): number => {
+    if (!amount || amount <= 0) return 0;
+    return Number((amount * (PAYSTACK_FEE_PERCENTAGE / 100)).toFixed(2));
+};
+
 export interface PaystackConfig {
     publicKey: string;
     email: string;

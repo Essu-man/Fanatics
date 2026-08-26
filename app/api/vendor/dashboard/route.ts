@@ -198,6 +198,28 @@ export async function GET(request: Request) {
         const orderCount = orderIdsWithVendorItems.size;
         const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
 
+        const commissionRate = typeof auth.vendor.commissionRate === "number" ? auth.vendor.commissionRate : 10;
+        const platformFeeAmount = totalRevenue * (commissionRate / 100);
+        const netPayableRevenue = totalRevenue - platformFeeAmount;
+        const balanceAvailable = auth.vendor.balanceAvailable ?? 0;
+        const balancePending = auth.vendor.balancePending ?? 0;
+
+        let totalPaidOut = 0;
+        try {
+            const { getAdminDb } = await import("@/lib/firestore-admin");
+            const db = getAdminDb();
+            const ledgerSnap = await db.collection("vendor_ledger_entries")
+                .where("vendorId", "==", auth.vendorId)
+                .where("type", "==", "payout")
+                .where("status", "==", "completed")
+                .get();
+            ledgerSnap.forEach(doc => {
+                totalPaidOut += Math.abs(doc.data().amount || 0);
+            });
+        } catch (e) {
+            console.error("Failed to compute vendor totalPaidOut:", e);
+        }
+
         return NextResponse.json({
             success: true,
             store: {
@@ -206,6 +228,11 @@ export async function GET(request: Request) {
             },
             stats: {
                 revenue: `₵${totalRevenue.toFixed(2)}`,
+                commissionRate: commissionRate,
+                platformFee: `₵${platformFeeAmount.toFixed(2)}`,
+                netPayable: `₵${netPayableRevenue.toFixed(2)}`,
+                balanceAvailable: `₵${balanceAvailable.toFixed(2)}`,
+                balancePending: `₵${balancePending.toFixed(2)}`,
                 revenueChange: revenueChangeText,
                 orders: orderCount.toString(),
                 ordersChange: ordersChangeText,
@@ -215,6 +242,15 @@ export async function GET(request: Request) {
                 productsTotal: products.length.toString(),
                 lowStock: lowStockCount.toString(),
                 avgOrderValue: `₵${avgOrderValue.toFixed(2)}`,
+            },
+            breakdown: {
+                grossSales: totalRevenue,
+                commissionRate,
+                platformFeeAmount,
+                netPayableRevenue,
+                totalPaidOut,
+                balanceAvailable,
+                balancePending,
             },
             topProducts,
             revenueOverTime,

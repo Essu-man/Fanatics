@@ -6,6 +6,7 @@ import { ArrowLeft, Package, MapPin } from "lucide-react";
 import { useCart } from "../../providers/CartProvider";
 import CheckoutProgressTracker from "../../components/CheckoutProgressTracker";
 import PaystackButton from "../../components/PaystackButton";
+import { calculatePaystackFee } from "@/lib/paystack";
 
 export default function CheckoutPaymentPage() {
     const router = useRouter();
@@ -56,7 +57,10 @@ export default function CheckoutPaymentPage() {
     const isPickup = shippingInfo.fulfillmentMethod === "pickup";
     const subtotal = getCartTotal();
     const shipping = isPickup ? 0 : deliveryPrice;
-    const total = subtotal + shipping;
+    const baseTotal = subtotal + shipping;
+    const paystackFee = calculatePaystackFee(baseTotal);
+    const paystackTotal = baseTotal + paystackFee;
+    const total = baseTotal; // UI display total without Paystack fee
 
     return (
         <div className="min-h-screen bg-zinc-50">
@@ -192,7 +196,7 @@ export default function CheckoutPaymentPage() {
                             <div className="mt-6">
                                 <PaystackButton
                                     email={shippingInfo.email}
-                                    amount={total}
+                                    amount={paystackTotal}
                                     onSuccess={() => { }}
                                     metadata={{
                                         customerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`,

@@ -28,6 +28,7 @@ export async function GET(request: Request) {
             socialHandles: vendor.socialHandles ?? [],
             status: vendor.status,
             payoutMethod: vendor.payoutMethod ?? null,
+            payoutSchedule: (vendor as any).payoutSchedule ?? "manual",
             bankName: vendor.bankName ?? null,
             branch: vendor.branch ?? null,
             accountNumber: vendor.accountNumber ?? null,
@@ -68,6 +69,7 @@ export async function PATCH(request: Request) {
             bannerUrl,
             socialHandles,
             payoutMethod,
+            payoutSchedule,
             bankName,
             branch,
             accountNumber,
@@ -130,6 +132,9 @@ export async function PATCH(request: Request) {
 
         if (payoutMethod !== undefined) {
             updates.payoutMethod = payoutMethod;
+        }
+        if (payoutSchedule !== undefined) {
+            updates.payoutSchedule = payoutSchedule;
         }
         if (bankName !== undefined) {
             updates.bankName = bankName;

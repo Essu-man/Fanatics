@@ -26,10 +26,18 @@ import {
     ResponsiveContainer,
 } from "recharts";
 
+import BalanceBreakdownModal from "../components/vendor/BalanceBreakdownModal";
+import { useRouter } from "next/navigation";
+
 interface VendorDashboardData {
     store: { slug: string; businessName: string };
     stats: {
         revenue: string;
+        commissionRate?: number;
+        platformFee?: string;
+        netPayable?: string;
+        balanceAvailable?: string;
+        balancePending?: string;
         revenueChange: string;
         orders: string;
         ordersChange: string;
@@ -39,6 +47,15 @@ interface VendorDashboardData {
         productsTotal: string;
         lowStock: string;
         avgOrderValue: string;
+    };
+    breakdown?: {
+        grossSales: number;
+        commissionRate: number;
+        platformFeeAmount: number;
+        netPayableRevenue: number;
+        totalPaidOut: number;
+        balanceAvailable: number;
+        balancePending: number;
     };
     topProducts: { name: string; sales: number; revenue: string }[];
     revenueOverTime: { date: string; revenue: number; orders: number }[];
@@ -64,8 +81,10 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function VendorHomePage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<VendorDashboardData | null>(null);
+    const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -112,8 +131,25 @@ export default function VendorHomePage() {
         );
     }
 
+    const breakdownData = data?.breakdown || {
+        grossSales: Number(data?.stats.revenue?.replace(/[^0-9.]/g, "") || 0),
+        commissionRate: data?.stats.commissionRate ?? 10,
+        platformFeeAmount: Number(data?.stats.platformFee?.replace(/[^0-9.]/g, "") || 0),
+        netPayableRevenue: Number(data?.stats.netPayable?.replace(/[^0-9.]/g, "") || 0),
+        totalPaidOut: 0,
+        balanceAvailable: Number(data?.stats.balanceAvailable?.replace(/[^0-9.]/g, "") || 0),
+        balancePending: Number(data?.stats.balancePending?.replace(/[^0-9.]/g, "") || 0),
+    };
+
     return (
         <div className="space-y-8">
+            <BalanceBreakdownModal
+                isOpen={isBreakdownOpen}
+                onClose={() => setIsBreakdownOpen(false)}
+                data={breakdownData}
+                onWithdrawClick={() => router.push("/vendor/payouts")}
+            />
+
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-900">
@@ -137,20 +173,36 @@ export default function VendorHomePage() {
                 )}
             </div>
 
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/80 px-5 py-4 text-sm text-emerald-900">
-                <strong>Reading your numbers:</strong> Revenue and orders below count only line items from your
-                listings (not the full checkout total when a cart mixes sellers). Use this to see what is actually
-                driving your business.
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/80 px-5 py-4 text-sm text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <strong>Cediman Fee Breakdown:</strong> Based on the {data?.stats.commissionRate ?? 10}% platform fee rate, your actual net payable amount is calculated after subtracting Cediman's fee from gross product sales. Click any balance card below to view the breakdown.
+                </div>
+                <button
+                    onClick={() => setIsBreakdownOpen(true)}
+                    className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 underline hover:text-emerald-950"
+                >
+                    View Breakdown Popup &rarr;
+                </button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatsCard
-                    title="Your revenue"
+                    title="Actual Net Payable"
+                    value={data?.stats.netPayable ?? "₵0.00"}
+                    change={`Gross: ${data?.stats.revenue ?? "₵0.00"} · Fee (${data?.stats.commissionRate ?? 10}%): -${data?.stats.platformFee ?? "₵0.00"}`}
+                    changeType="positive"
+                    icon={DollarSign}
+                    iconColor="bg-emerald-600"
+                    onClick={() => setIsBreakdownOpen(true)}
+                    clickHint="View breakdown"
+                />
+                <StatsCard
+                    title="Gross Sales"
                     value={data?.stats.revenue ?? "₵0.00"}
                     change={data?.stats.revenueChange}
                     changeType={revenueChangeType}
-                    icon={DollarSign}
-                    iconColor="bg-emerald-600"
+                    icon={TrendingUp}
+                    iconColor="bg-blue-600"
                 />
                 <StatsCard
                     title="Orders with your items"
@@ -161,20 +213,14 @@ export default function VendorHomePage() {
                     iconColor="bg-[var(--brand-red)]"
                 />
                 <StatsCard
-                    title="Units sold"
-                    value={data?.stats.unitsSold ?? "0"}
-                    change={`Avg. per order: ${data?.stats.avgOrderValue ?? "₵0.00"}`}
+                    title="Available Balance"
+                    value={data?.stats.balanceAvailable ?? "₵0.00"}
+                    change={`Escrow pending: ${data?.stats.balancePending ?? "₵0.00"}`}
                     changeType="neutral"
-                    icon={TrendingUp}
-                    iconColor="bg-blue-600"
-                />
-                <StatsCard
-                    title="Listings in shop"
-                    value={data?.stats.productsLive ?? "0"}
-                    change={`${data?.stats.productsPending ?? "0"} pending · ${data?.stats.productsTotal ?? "0"} total`}
-                    changeType="neutral"
-                    icon={Package}
+                    icon={Boxes}
                     iconColor="bg-zinc-700"
+                    onClick={() => setIsBreakdownOpen(true)}
+                    clickHint="View breakdown"
                 />
             </div>
 

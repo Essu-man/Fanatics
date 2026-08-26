@@ -1359,3 +1359,167 @@ export const getVendorPayoutRejectedEmail = (
   `;
 };
 
+export interface PayoutBreakdownEmailParams {
+    recipientType: "vendor" | "admin";
+    recipientName: string;
+    vendorBusinessName: string;
+    requestId: string;
+    requestedAmount: number;
+    remainingAvailableBalance: number;
+    grossSales: number;
+    commissionRate: number;
+    platformFeeAmount: number;
+    netPayableRevenue: number;
+    totalPaidOut: number;
+    balancePending: number;
+    payoutMethod: string;
+    payoutDetailsString: string;
+    requestDate?: string;
+}
+
+export const getPayoutRequestBreakdownEmail = (params: PayoutBreakdownEmailParams): string => {
+    const {
+        recipientType,
+        recipientName,
+        vendorBusinessName,
+        requestId,
+        requestedAmount,
+        remainingAvailableBalance,
+        grossSales,
+        commissionRate,
+        platformFeeAmount,
+        netPayableRevenue,
+        totalPaidOut,
+        balancePending,
+        payoutMethod,
+        payoutDetailsString,
+        requestDate,
+    } = params;
+
+    const isAdmin = recipientType === "admin";
+    const formattedDate = requestDate
+        ? new Date(requestDate).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+        : new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+
+    const beforeAvailable = requestedAmount + remainingAvailableBalance;
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${isAdmin ? "New Payout Request" : "Payout Request Confirmation"} - ${vendorBusinessName}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.6; color: #18181b; margin: 0; padding: 0; background-color: #f4f4f5; }
+    .wrapper { max-width: 620px; margin: 24px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e4e4e7; }
+    .header { background: ${isAdmin ? "#18181b" : "linear-gradient(135deg, #059669 0%, #047857 100%)"}; color: #ffffff; padding: 28px 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+    .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.85; }
+    .content { padding: 28px 24px; }
+    .greeting { font-size: 15px; font-weight: 600; color: #27272a; margin-bottom: 12px; }
+    .message { font-size: 14px; color: #52525b; margin-bottom: 24px; }
+    .breakdown-card { background: #fafafa; border: 1px solid #e4e4e7; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+    .breakdown-title { font-size: 13px; font-weight: 800; text-transform: uppercase; tracking: 1px; color: #3f3f46; margin-bottom: 14px; border-bottom: 1px solid #e4e4e7; padding-bottom: 8px; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 14px; }
+    .row-border { border-bottom: 1px dashed #e4e4e7; }
+    .label { color: #71717a; font-weight: 500; }
+    .val { color: #18181b; font-weight: 700; font-family: monospace; }
+    .val-negative { color: #d97706; font-weight: 700; font-family: monospace; }
+    .val-highlight { color: #059669; font-weight: 800; font-family: monospace; font-size: 15px; }
+    .total-box { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 16px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .account-card { background: #f4f4f5; border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 13px; }
+    .account-title { font-weight: 800; color: #27272a; margin-bottom: 6px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    .footer { text-align: center; color: #a1a1aa; font-size: 12px; padding: 20px; background: #fafafa; border-top: 1px solid #f4f4f5; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>${isAdmin ? "NEW PAYOUT REQUEST" : "PAYOUT REQUEST CONFIRMED"}</h1>
+      <p>Cediman Marketplace Seller Financial Services</p>
+    </div>
+    <div class="content">
+      <div class="greeting">Hi ${recipientName},</div>
+      <div class="message">
+        ${isAdmin 
+            ? `Vendor <strong>${vendorBusinessName}</strong> has submitted a withdrawal request. Below is the complete financial breakdown and calculation snapshot for your records.`
+            : `Your withdrawal request for <strong>${vendorBusinessName}</strong> has been received and is pending admin approval. Below is your complete financial calculation breakdown.`}
+      </div>
+
+      <!-- Financial Breakdown Card -->
+      <div class="breakdown-card">
+        <div class="breakdown-title">Financial Calculation Breakdown</div>
+        <div class="row row-border">
+          <span class="label">Gross Product Sales:</span>
+          <span class="val">GH₵ ${grossSales.toFixed(2)}</span>
+        </div>
+        <div class="row row-border">
+          <span class="label">Cediman Platform Fee (${commissionRate}%):</span>
+          <span class="val-negative">- GH₵ ${platformFeeAmount.toFixed(2)}</span>
+        </div>
+        <div class="row row-border">
+          <span class="label">Net Revenue Earned:</span>
+          <span class="val">GH₵ ${netPayableRevenue.toFixed(2)}</span>
+        </div>
+        ${totalPaidOut > 0 ? `
+        <div class="row row-border">
+          <span class="label">Previous Withdrawals Disbursed:</span>
+          <span class="val-negative">- GH₵ ${totalPaidOut.toFixed(2)}</span>
+        </div>
+        ` : ""}
+        <div class="row row-border">
+          <span class="label">Available Balance Before Request:</span>
+          <span class="val">GH₵ ${beforeAvailable.toFixed(2)}</span>
+        </div>
+        
+        <!-- Requested Amount Box -->
+        <div class="total-box">
+          <div>
+            <div style="font-weight: 800; color: #065f46; font-size: 13px;">REQUESTED WITHDRAWAL AMOUNT</div>
+            <div style="font-size: 11px; color: #047857;">Request ID: ${requestId}</div>
+          </div>
+          <div style="font-size: 18px; font-weight: 900; color: #047857; font-family: monospace;">
+            GH₵ ${requestedAmount.toFixed(2)}
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <div class="row">
+            <span class="label">Remaining Withdrawable Balance:</span>
+            <span class="val">GH₵ ${remainingAvailableBalance.toFixed(2)}</span>
+          </div>
+          ${balancePending > 0 ? `
+          <div class="row">
+            <span class="label">Pending Escrow Balance (Unconfirmed Orders):</span>
+            <span class="val">GH₵ ${balancePending.toFixed(2)}</span>
+          </div>
+          ` : ""}
+        </div>
+      </div>
+
+      <!-- Account Destination Details -->
+      <div class="account-card">
+        <div class="account-title">Payout Destination Account</div>
+        <div><strong>Method:</strong> ${payoutMethod}</div>
+        <div><strong>Details:</strong> ${payoutDetailsString}</div>
+        <div style="margin-top: 6px; color: #71717a; font-size: 11px;">Request Date: ${formattedDate}</div>
+      </div>
+
+      <p style="font-size: 12px; color: #71717a; margin-bottom: 0;">
+        ${isAdmin 
+            ? "Log into the Admin Panel to review and process or approve this withdrawal request."
+            : "Payout requests are typically processed within 24 hours. If you have any questions regarding your calculation, please contact support@cediman.com."}
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Cediman Marketplace Financial Services</strong></p>
+      <p>© ${new Date().getFullYear()} Cediman. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+};
+
